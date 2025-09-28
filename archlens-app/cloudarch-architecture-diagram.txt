@@ -1,0 +1,315 @@
+# CloudArch Project Architecture Diagram
+# AI-Powered Cloud Architecture Analysis Platform
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                USER INTERFACE LAYER                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        NEXT.JS FRONTEND                               │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │   Header    │  │  Dashboard  │  │  Analyses   │  │  Checklist  │  │   │
+│  │  │ Component   │  │    Page     │  │    Page     │  │    Page     │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │Evaluation   │  │Analysis     │  │Dashboard    │  │Historical   │  │   │
+│  │  │Modal        │  │Results      │  │Stats        │  │Analyses     │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  ┌─────────────┐  ┌─────────────┐                                    │   │
+│  │  │FileUpload   │  │Checklist    │                                    │   │
+│  │  │Component    │  │Manager      │                                    │   │
+│  │  └─────────────┘  └─────────────┘                                    │   │
+│  │                                                                       │   │
+│  │  • React Components with TypeScript                                  │   │
+│  │  • Tailwind CSS for Enterprise Styling                              │   │
+│  │  • Responsive Design (Mobile/Desktop)                               │   │
+│  │  • Real-time Status Updates                                         │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              API LAYER                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        NEXT.JS API ROUTES                             │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │   /api/     │  │   /api/     │  │   /api/     │  │   /api/     │  │   │
+│  │  │  analyze    │  │  analyses   │  │ dashboard   │  │ checklist   │  │   │
+│  │  │             │  │             │  │             │  │             │  │   │
+│  │  │ • File      │  │ • CRUD      │  │ • Stats     │  │ • CRUD      │  │   │
+│  │  │   Upload    │  │   Ops       │  │ • Metrics   │  │   Ops       │  │   │
+│  │  │ • LLM       │  │ • Search    │  │ • Trends    │  │ • Default   │  │   │
+│  │  │   Analysis  │  │ • Filter    │  │ • Charts    │  │   Init      │  │   │
+│  │  │ • Image     │  │ • Export    │  │ • Reports   │  │ • Categories│  │   │
+│  │  │   Optimize  │  │ • Paginate  │  │ • Alerts    │  │ • Priorities│  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  ┌─────────────┐  ┌─────────────┐                                    │   │
+│  │  │   /api/     │  │   /api/     │                                    │   │
+│  │  │  config     │  │  status     │                                    │   │
+│  │  │             │  │             │                                    │   │
+│  │  │ • Settings  │  │ • LLM       │                                    │   │
+│  │  │ • Env Vars  │  │   Status    │                                    │   │
+│  │  │ • Health    │  │ • Provider  │                                    │   │
+│  │  │   Checks    │  │   Count     │                                    │   │
+│  │  └─────────────┘  └─────────────┘                                    │   │
+│  │                                                                       │   │
+│  │  • RESTful API Design                                                │   │
+│  │  • Request/Response Validation                                       │   │
+│  │  • Error Handling & Logging                                          │   │
+│  │  • Authentication & Authorization                                    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            BUSINESS LOGIC LAYER                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        SERVICE LAYER                                  │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │Analysis     │  │Checklist    │  │Image        │  │MongoDB      │  │   │
+│  │  │Service      │  │Service      │  │Optimizer    │  │Connection   │  │   │
+│  │  │             │  │             │  │             │  │             │  │   │
+│  │  │ • Save      │  │ • CRUD      │  │ • Sharp.js  │  │ • Mongoose  │  │   │
+│  │  │   Analysis  │  │   Ops       │  │   Library   │  │   ODM       │  │   │
+│  │  │ • Get       │  │ • Default   │  │ • Resize    │  │ • Connection│  │   │
+│  │  │   Stats     │  │   Init      │  │ • Compress  │  │   Pooling   │  │   │
+│  │  │ • Search    │  │ • Categories│  │ • Format    │  │ • Error     │  │   │
+│  │  │ • Export    │  │ • Filtering │  │   Convert   │  │   Handling  │  │   │
+│  │  │ • Update    │  │ • Validation│  │ • Quality   │  │ • Retry     │  │   │
+│  │  │ • Delete    │  │ • Sorting   │  │   Control   │  │   Logic     │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  • Business Logic Separation                                          │   │
+│  │  • Data Validation & Sanitization                                     │   │
+│  │  • Error Handling & Logging                                           │   │
+│  │  • Performance Optimization                                           │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              LLM INTEGRATION LAYER                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        LLM CLIENT SYSTEM                              │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │LLM Factory  │  │LLM Client   │  │LLM Types    │  │Token        │  │   │
+│  │  │             │  │             │  │             │  │Managers     │  │   │
+│  │  │ • Provider  │  │ • OpenAI    │  │ • Request   │  │ • Apigee    │  │   │
+│  │  │   Selection │  │ • Anthropic │  │   Types     │  │ • Enterprise│  │   │
+│  │  │ • Config    │  │ • Gemini    │  │ • Response  │  │ • OAuth     │  │   │
+│  │  │   Management│  │ • Ollama    │  │   Types     │  │ • JWT       │  │   │
+│  │  │ • Fallback  │  │ • Local     │  │ • Error     │  │ • Refresh   │  │   │
+│  │  │   Logic     │  │ • Enterprise│  │   Handling  │  │   Tokens    │  │   │
+│  │  │ • Health    │  │ • Apigee    │  │ • Validation│  │ • Caching   │  │   │
+│  │  │   Checks    │  │             │  │ • Parsing   │  │ • Security  │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  • Multi-Provider Support                                            │   │
+│  │  • Automatic Failover                                                │   │
+│  │  • Rate Limiting & Retry Logic                                       │   │
+│  │  • Response Parsing & Validation                                     │   │
+│  │  • Cost Optimization                                                 │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            EXTERNAL LLM PROVIDERS                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
+│  │   OpenAI    │  │ Anthropic   │  │   Google    │  │   Ollama    │  │ Local   │ │
+│  │             │  │             │  │   Gemini    │  │             │  │ Models  │ │
+│  │ • GPT-4     │  │ • Claude-3  │  │ • Gemini    │  │ • Llama2    │  │ • Custom│ │
+│  │ • GPT-3.5   │  │ • Claude-2  │  │ • PaLM      │  │ • Mistral   │  │ • Fine- │ │
+│  │ • DALL-E    │  │ • Claude    │  │ • Bard      │  │ • CodeLlama │  │   tuned │ │
+│  │ • Whisper   │  │ • Haiku     │  │ • Imagen    │  │ • Custom    │  │ • Open  │ │
+│  │ • Embeddings│  │ • Sonnet    │  │ • Embeddings│  │ • Models    │  │   Source│ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  └─────────┘ │
+│                                                                                   │
+│  ┌─────────────┐  ┌─────────────┐                                                │
+│  │ Enterprise  │  │   Apigee    │                                                │
+│  │   LLM       │  │   Gateway   │                                                │
+│  │             │  │             │                                                │
+│  │ • Private   │  │ • API       │                                                │
+│  │   Models    │  │   Gateway   │                                                │
+│  │ • On-prem   │  │ • Rate      │                                                │
+│  │   Deploy    │  │   Limiting  │                                                │
+│  │ • Custom    │  │ • Security  │                                                │
+│  │   Training  │  │ • Analytics │                                                │
+│  │ • Compliance│  │ • Monitoring│                                                │
+│  └─────────────┘  └─────────────┘                                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              DATA LAYER                                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        MONGODB DATABASE                               │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │Analyses     │  │Checklist    │  │Users        │  │Sessions     │  │   │
+│  │  │Collection   │  │Items        │  │Collection   │  │Collection   │  │   │
+│  │  │             │  │Collection   │  │             │  │             │  │   │
+│  │  │ • Analysis  │  │ • Security  │  │ • User      │  │ • Session   │  │   │
+│  │  │   Results   │  │   Items     │  │   Profiles  │  │   Data      │  │   │
+│  │  │ • Metadata  │  │ • Compliance│  │ • Preferences│  │ • Tokens    │  │   │
+│  │  │ • Scores    │  │   Items     │  │ • Settings  │  │ • Expiry    │  │   │
+│  │  │ • Timestamps│  │ • Cost      │  │ • History   │  │ • Security  │  │   │
+│  │  │ • File Info │  │   Items     │  │ • Analytics │  │ • Tracking  │  │   │
+│  │  │ • LLM Info  │  │ • Custom    │  │ • Permissions│  │ • Audit     │  │   │
+│  │  │ • Status    │  │   Items     │  │ • Roles     │  │   Logs      │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  • Document-based Storage                                            │   │
+│  │  • Flexible Schema (Mongoose ODM)                                    │   │
+│  │  • Indexing & Query Optimization                                     │   │
+│  │  • Aggregation Pipelines                                             │   │
+│  │  • Backup & Recovery                                                 │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            FILE PROCESSING LAYER                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        FILE HANDLING SYSTEM                           │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │Image        │  │IaC File     │  │Text File    │  │File         │  │   │
+│  │  │Processing   │  │Processing   │  │Processing   │  │Validation   │  │   │
+│  │  │             │  │             │  │             │  │             │  │   │
+│  │  │ • PNG/JPG   │  │ • Terraform │  │ • YAML      │  │ • Size      │  │   │
+│  │  │ • WebP/GIF  │  │ • CloudForm│  │ • JSON      │  │   Limits    │  │   │
+│  │  │ • Resize    │  │ • ARM       │  │ • XML       │  │ • Type      │  │   │
+│  │  │ • Compress  │  │ • Pulumi    │  │ • Markdown  │  │   Checking  │  │   │
+│  │  │ • Optimize  │  │ • Parse     │  │ • Parse     │  │ • Security  │  │   │
+│  │  │ • Base64    │  │ • Validate  │  │ • Extract   │  │   Scanning  │  │   │
+│  │  │ • Format    │  │ • Extract   │  │ • Structure │  │ • Virus     │  │   │
+│  │  │   Convert   │  │   Resources │  │   Analysis  │  │   Scanning  │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  • Multi-format Support                                              │   │
+│  │  • Content Validation                                                │   │
+│  │  • Security Scanning                                                 │   │
+│  │  • Performance Optimization                                          │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ANALYSIS ENGINE LAYER                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        TWO-STAGE ANALYSIS                             │   │
+│  │  ┌─────────────────────────────────────────────────────────────────┐   │   │
+│  │  │                    STAGE 1: EXTRACTION                         │   │   │
+│  │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │   │   │
+│  │  │  │Component    │  │Connection   │  │Metadata     │  │Network  │ │   │   │
+│  │  │  │Detection    │  │Analysis     │  │Extraction   │  │Topology │ │   │   │
+│  │  │  │             │  │             │  │             │  │         │ │   │   │
+│  │  │  │ • Cloud     │  │ • API       │  │ • Arch      │  │ • VPCs  │ │   │   │
+│  │  │  │   Services  │  │   Calls     │  │   Type      │  │ • Subnets│ │   │   │
+│  │  │  │ • Compute   │  │ • Data      │  │ • Cloud     │  │ • Security│ │   │   │
+│  │  │  │   Resources │  │   Flow      │  │   Provider  │  │   Groups │ │   │   │
+│  │  │  │ • Storage   │  │ • Network   │  │ • Complexity│  │ • Load   │ │   │   │
+│  │  │  │   Systems   │  │   Links     │  │ • Purpose   │  │   Balancers│ │   │   │
+│  │  │  │ • Database  │  │ • Dependencies│  │ • Environment│  │ • DNS   │ │   │   │
+│  │  │  │   Systems   │  │             │  │ • Version   │  │ • CDN    │ │   │   │
+│  │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────┘ │   │   │
+│  │  └─────────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                       │   │
+│  │  ┌─────────────────────────────────────────────────────────────────┐   │   │
+│  │  │                    STAGE 2: ANALYSIS                           │   │   │
+│  │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │   │   │
+│  │  │  │Security     │  │Reliability  │  │Cost         │  │Compliance│ │   │   │
+│  │  │  │Analysis     │  │Analysis     │  │Analysis     │  │Analysis  │ │   │   │
+│  │  │  │             │  │             │  │             │  │         │ │   │   │
+│  │  │  │ • Risk      │  │ • High      │  │ • Resource  │  │ • CIS    │ │   │   │
+│  │  │  │   Assessment│  │   Availability│  │   Optimization│  │   Controls│ │   │   │
+│  │  │  │ • Vulnerability│  │ • Fault     │  │ • Cost      │  │ • PCI-DSS│ │   │   │
+│  │  │  │   Scanning  │  │   Tolerance  │  │   Estimation│  │ • HIPAA  │ │   │   │
+│  │  │  │ • Access    │  │ • Disaster   │  │ • Savings    │  │ • GDPR   │ │   │   │
+│  │  │  │   Control   │  │   Recovery   │  │   Potential │  │ • SOC2   │ │   │   │
+│  │  │  │ • Encryption│  │ • Monitoring │  │ • Right-     │  │ • ISO27001│ │   │   │
+│  │  │  │   Analysis  │  │ • Alerting   │  │   Sizing    │  │ • NIST   │ │   │   │
+│  │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────┘ │   │   │
+│  │  └─────────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                       │   │
+│  │  • AI-Powered Analysis                                                │   │
+│  │  • Checklist-Based Evaluation                                         │   │
+│  │  • Structured Recommendations                                         │   │
+│  │  • Scoring & Metrics                                                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            CONFIGURATION LAYER                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        CONFIGURATION MANAGEMENT                       │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │Environment  │  │LLM Provider │  │Database     │  │Application  │  │   │
+│  │  │Variables    │  │Config       │  │Config       │  │Settings     │  │   │
+│  │  │             │  │             │  │             │  │             │  │   │
+│  │  │ • API Keys  │  │ • OpenAI    │  │ • MongoDB   │  │ • Feature   │  │   │
+│  │  │ • Secrets   │  │ • Anthropic │  │   URI       │  │   Flags     │  │   │
+│  │  │ • URLs      │  │ • Gemini    │  │ • Connection│  │ • Limits    │  │   │
+│  │  │ • Ports     │  │ • Ollama    │  │   Pool      │  │ • Timeouts  │  │   │
+│  │  │ • Debug     │  │ • Local     │  │ • Indexes   │  │ • Retries   │  │   │
+│  │  │   Flags     │  │ • Enterprise│  │ • Backup    │  │ • Logging   │  │   │
+│  │  │ • Logging   │  │ • Apigee    │  │   Strategy  │  │ • Security  │  │   │
+│  │  │   Levels    │  │             │  │ • Security  │  │   Policies  │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  • Environment-based Configuration                                    │   │
+│  │  • Secure Secret Management                                           │   │
+│  │  • Dynamic Provider Selection                                         │   │
+│  │  • Health Monitoring                                                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+# Data Flow Summary:
+# 1. User Upload → File Validation → Image Optimization → LLM Analysis → Database Storage
+# 2. Dashboard Request → API → Service Layer → Database Query → Aggregated Results
+# 3. Checklist Management → CRUD Operations → Database Updates → Real-time UI Updates
+# 4. LLM Provider Selection → Health Check → Request Routing → Response Processing
+
+# Key Features:
+# • Multi-LLM Provider Support with Automatic Failover
+# • Two-Stage AI Analysis (Extraction + Detailed Analysis)
+# • Comprehensive Checklist-Based Evaluation
+# • Real-time Dashboard with Analytics
+# • Enterprise-Grade Security & Compliance
+# • Scalable Microservices Architecture
+# • MongoDB for Flexible Data Storage
+# • Image Optimization for Large Files
+# • RESTful API Design
+# • TypeScript for Type Safety
+
+# Technology Stack:
+# • Frontend: Next.js 14, React 18, TypeScript, Tailwind CSS
+# • Backend: Next.js API Routes, Node.js
+# • Database: MongoDB with Mongoose ODM
+# • LLM Integration: OpenAI, Anthropic, Gemini, Ollama, Local, Enterprise
+# • Image Processing: Sharp.js
+# • Authentication: JWT, OAuth (Enterprise)
+# • Monitoring: CloudWatch, Custom Metrics
+# • Deployment: Docker, Kubernetes (Enterprise)
+
+# Security Features:
+# • Input Validation & Sanitization
+# • File Type & Size Validation
+# • SQL Injection Prevention
+# • XSS Protection
+# • CSRF Protection
+# • Rate Limiting
+# • API Key Management
+# • Encrypted Data Storage
+# • Audit Logging
+# • Role-Based Access Control (Enterprise)

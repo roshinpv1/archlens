@@ -1,0 +1,175 @@
+# CloudArch - Simple Architecture Overview
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              CLOUDARCH PLATFORM                               │
+│                        AI-Powered Cloud Architecture Analysis                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                USER LAYER                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
+│  │   Web       │    │   Mobile    │    │   Desktop   │    │   API       │     │
+│  │  Browser    │    │     App     │    │     App     │    │  Clients    │     │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            NEXT.JS APPLICATION                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        FRONTEND (React + TypeScript)                  │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │ Dashboard   │  │ Analyses    │  │ Checklist   │  │ Evaluation  │  │   │
+│  │  │ Page        │  │ Page        │  │ Page        │  │ Modal       │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  │                                                                       │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │ File Upload │  │ Analysis    │  │ Dashboard   │  │ Historical  │  │   │
+│  │  │ Component   │  │ Results     │  │ Stats       │  │ Analyses    │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        BACKEND (API Routes)                           │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │ /api/analyze│  │ /api/analyses│  │ /api/dashboard│  │ /api/checklist│  │   │
+│  │  │             │  │             │  │             │  │             │  │   │
+│  │  │ • File      │  │ • CRUD      │  │ • Stats     │  │ • CRUD      │  │   │
+│  │  │   Processing│  │   Operations│  │ • Metrics   │  │   Operations│  │   │
+│  │  │ • LLM       │  │ • Search    │  │ • Reports   │  │ • Default   │  │   │
+│  │  │   Analysis  │  │ • Filter    │  │ • Charts    │  │   Init      │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            SERVICE LAYER                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │Analysis     │  │Checklist    │  │Image        │  │MongoDB      │           │
+│  │Service      │  │Service      │  │Optimizer    │  │Connection   │           │
+│  │             │  │             │  │             │  │             │           │
+│  │ • Save      │  │ • CRUD      │  │ • Sharp.js  │  │ • Mongoose  │           │
+│  │   Analysis  │  │   Ops       │  │   Library   │  │   ODM       │           │
+│  │ • Get       │  │ • Default   │  │ • Resize    │  │ • Connection│           │
+│  │   Stats     │  │   Init      │  │ • Compress  │  │   Pooling   │           │
+│  │ • Search    │  │ • Categories│  │ • Format    │  │ • Error     │           │
+│  │ • Export    │  │ • Filtering │  │   Convert   │  │   Handling  │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            LLM INTEGRATION                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │LLM Factory  │  │LLM Client   │  │LLM Types    │  │Token        │           │
+│  │             │  │             │  │             │  │Managers     │           │
+│  │ • Provider  │  │ • OpenAI    │  │ • Request   │  │ • Apigee    │           │
+│  │   Selection │  │ • Anthropic │  │   Types     │  │ • Enterprise│           │
+│  │ • Config    │  │ • Gemini    │  │ • Response  │  │ • OAuth     │           │
+│  │   Management│  │ • Ollama    │  │   Types     │  │ • JWT       │           │
+│  │ • Fallback  │  │ • Local     │  │ • Error     │  │ • Refresh   │           │
+│  │   Logic     │  │ • Enterprise│  │   Handling  │  │   Tokens    │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          EXTERNAL LLM PROVIDERS                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │   OpenAI    │  │ Anthropic   │  │   Google    │  │   Ollama    │           │
+│  │             │  │             │  │   Gemini    │  │             │           │
+│  │ • GPT-4     │  │ • Claude-3  │  │ • Gemini    │  │ • Llama2    │           │
+│  │ • GPT-3.5   │  │ • Claude-2  │  │ • PaLM      │  │ • Mistral   │           │
+│  │ • DALL-E    │  │ • Claude    │  │ • Bard      │  │ • CodeLlama │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘           │
+│                                                                                 │
+│  ┌─────────────┐  ┌─────────────┐                                                │
+│  │ Enterprise  │  │   Apigee    │                                                │
+│  │   LLM       │  │   Gateway   │                                                │
+│  │             │  │             │                                                │
+│  │ • Private   │  │ • API       │                                                │
+│  │   Models    │  │   Gateway   │                                                │
+│  │ • On-prem   │  │ • Rate      │                                                │
+│  │   Deploy    │  │   Limiting  │                                                │
+│  └─────────────┘  └─────────────┘                                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              MONGODB DATABASE                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
+│  │Analyses     │  │Checklist    │  │Users        │  │Sessions     │           │
+│  │Collection   │  │Items        │  │Collection   │  │Collection   │           │
+│  │             │  │Collection   │  │             │  │             │           │
+│  │ • Analysis  │  │ • Security  │  │ • User      │  │ • Session   │           │
+│  │   Results   │  │   Items     │  │   Profiles  │  │   Data      │           │
+│  │ • Metadata  │  │ • Compliance│  │ • Preferences│  │ • Tokens    │           │
+│  │ • Scores    │  │   Items     │  │ • Settings  │  │ • Expiry    │           │
+│  │ • Timestamps│  │ • Cost      │  │ • History   │  │ • Security  │           │
+│  │ • File Info │  │   Items     │  │ • Analytics │  │ • Tracking  │           │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+# Two-Stage Analysis Process:
+# ┌─────────────────────────────────────────────────────────────────────────────────┐
+# │                            ANALYSIS WORKFLOW                                  │
+# ├─────────────────────────────────────────────────────────────────────────────────┤
+# │  ┌─────────────────────────────────────────────────────────────────────────┐   │
+# │  │                    STAGE 1: EXTRACTION                                │   │
+# │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+# │  │  │Component    │  │Connection   │  │Metadata     │  │Network      │  │   │
+# │  │  │Detection    │  │Analysis     │  │Extraction   │  │Topology     │  │   │
+# │  │  │             │  │             │  │             │  │             │  │   │
+# │  │  │ • Cloud     │  │ • API       │  │ • Arch      │  │ • VPCs      │  │   │
+# │  │  │   Services  │  │   Calls     │  │   Type      │  │ • Subnets   │  │   │
+# │  │  │ • Compute   │  │ • Data      │  │ • Cloud     │  │ • Security  │  │   │
+# │  │  │   Resources │  │   Flow      │  │   Provider  │  │   Groups    │  │   │
+# │  │  │ • Storage   │  │ • Network   │  │ • Complexity│  │ • Load      │  │   │
+# │  │  │   Systems   │  │   Links     │  │ • Purpose   │  │   Balancers │  │   │
+# │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+# │  └─────────────────────────────────────────────────────────────────────────┘   │
+# │                                    │                                           │
+# │                                    ▼                                           │
+# │  ┌─────────────────────────────────────────────────────────────────────────┐   │
+# │  │                    STAGE 2: ANALYSIS                                  │   │
+# │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+# │  │  │Security     │  │Reliability  │  │Cost         │  │Compliance   │  │   │
+# │  │  │Analysis     │  │Analysis     │  │Analysis     │  │Analysis     │  │   │
+# │  │  │             │  │             │  │             │  │             │  │   │
+# │  │  │ • Risk      │  │ • High      │  │ • Resource  │  │ • CIS       │  │   │
+# │  │  │   Assessment│  │   Availability│  │   Optimization│  │   Controls │  │   │
+# │  │  │ • Vulnerability│  │ • Fault     │  │ • Cost      │  │ • PCI-DSS  │  │   │
+# │  │  │   Scanning  │  │   Tolerance  │  │   Estimation│  │ • HIPAA    │  │   │
+# │  │  │ • Access    │  │ • Disaster   │  │ • Savings    │  │ • GDPR     │  │   │
+# │  │  │   Control   │  │   Recovery   │  │   Potential │  │ • SOC2     │  │   │
+# │  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+# │  └─────────────────────────────────────────────────────────────────────────┘   │
+# └─────────────────────────────────────────────────────────────────────────────────┘
+
+# Key Features:
+# • Multi-LLM Provider Support with Automatic Failover
+# • Two-Stage AI Analysis (Extraction + Detailed Analysis)
+# • Comprehensive Checklist-Based Evaluation
+# • Real-time Dashboard with Analytics
+# • Enterprise-Grade Security & Compliance
+# • Scalable Microservices Architecture
+# • MongoDB for Flexible Data Storage
+# • Image Optimization for Large Files
+# • RESTful API Design
+# • TypeScript for Type Safety
+
+# Technology Stack:
+# • Frontend: Next.js 14, React 18, TypeScript, Tailwind CSS
+# • Backend: Next.js API Routes, Node.js
+# • Database: MongoDB with Mongoose ODM
+# • LLM Integration: OpenAI, Anthropic, Gemini, Ollama, Local, Enterprise
+# • Image Processing: Sharp.js
+# • Authentication: JWT, OAuth (Enterprise)
+# • Monitoring: CloudWatch, Custom Metrics
+# • Deployment: Docker, Kubernetes (Enterprise)
