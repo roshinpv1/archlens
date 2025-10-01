@@ -82,7 +82,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
-                  <span>Processed with {results.llmProvider?.toUpperCase()}</span>
+                  <span>Processed with {(results.llmProvider || 'unknown').toString().toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -111,7 +111,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                         results.environment === 'staging' ? 'bg-warning-light text-warning' :
                         'bg-info-light text-info'
                       }`}>
-                        {results.environment.charAt(0).toUpperCase() + results.environment.slice(1)}
+                        {(results.environment || 'unknown').toString().charAt(0).toUpperCase() + (results.environment || 'unknown').toString().slice(1)}
                       </span>
                     </div>
                   </div>
@@ -365,42 +365,54 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
 
         {activeTab === 'risks' && (
           <div className="space-y-4">
-            {results.risks.map((risk) => (
-              <div key={risk.id} className="bg-secondary rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold text-foreground">{risk.title}</h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level)}`}>
-                    {risk.level.toUpperCase()}
-                  </span>
+            {results.risks && Array.isArray(results.risks) ? (
+              results.risks.map((risk) => (
+                <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="font-semibold text-foreground">{risk.title || 'Unknown Risk'}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || 'medium')}`}>
+                      {(risk.level || 'medium').toString().toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-foreground">Recommendations:</h5>
+                    <ul className="list-disc list-inside space-y-1">
+                      {risk.recommendations && Array.isArray(risk.recommendations) ? (
+                        risk.recommendations.map((rec, index) => (
+                          <li key={index} className="text-sm text-muted-foreground">
+                            {typeof rec === 'string' ? rec : rec.toString()}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-sm text-muted-foreground">No recommendations available</li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
-                <p className="text-muted-foreground mb-3">{risk.description}</p>
-                <div className="space-y-2">
-                  <h5 className="font-medium text-foreground">Recommendations:</h5>
-                  <ul className="list-disc list-inside space-y-1">
-                    {risk.recommendations.map((rec, index) => (
-                      <li key={index} className="text-sm text-muted-foreground">{rec}</li>
-                    ))}
-                  </ul>
-                </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                No risks identified
               </div>
-            ))}
+            )}
 
-            {results.complianceGaps.length > 0 && (
+            {results.complianceGaps && Array.isArray(results.complianceGaps) && results.complianceGaps.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">Compliance Gaps</h3>
                 <div className="space-y-4">
                   {results.complianceGaps.map((gap) => (
-                    <div key={gap.id} className="bg-secondary rounded-lg p-4">
+                    <div key={gap.id || `gap-${Math.random()}`} className="bg-secondary rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-semibold text-foreground">{gap.requirement}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(gap.severity)}`}>
-                          {gap.severity.toUpperCase()}
+                        <h4 className="font-semibold text-foreground">{gap.requirement || 'Unknown Requirement'}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(gap.severity || 'medium')}`}>
+                          {(gap.severity || 'medium').toString().toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-muted-foreground mb-3">{gap.description}</p>
+                      <p className="text-muted-foreground mb-3">{gap.description || 'No description available'}</p>
                       <div className="space-y-2">
                         <h5 className="font-medium text-foreground">Remediation:</h5>
-                        <p className="text-sm text-muted-foreground">{gap.remediation}</p>
+                        <p className="text-sm text-muted-foreground">{gap.remediation || 'No remediation provided'}</p>
                       </div>
                     </div>
                   ))}
