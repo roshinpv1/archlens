@@ -108,8 +108,8 @@ export function createConfigForProvider(provider: LLMProvider): LLMConfig {
       return {
         provider,
         model: process.env.APIGEE_MODEL || 'gpt-4',
-        apiKey: process.env.APIGEE_CONSUMER_KEY,
-        baseUrl: process.env.ENTERPRISE_BASE_URL,
+        apiKey: process.env.APIGEE_CONSUMER_KEY, // Used for OAuth client credentials
+        baseUrl: process.env.ENTERPRISE_BASE_URL, // Apigee enterprise endpoint
         temperature: parseFloat(process.env.APIGEE_TEMPERATURE || '0.1'),
         maxTokens: parseInt(process.env.APIGEE_MAX_TOKENS || '4000'),
         timeout: parseInt(process.env.APIGEE_TIMEOUT || '600000')
