@@ -49,6 +49,7 @@ export async function saveAnalysis(analysis: ArchitectureAnalysis): Promise<IAna
       timestamp: analysis.timestamp || new Date(),
       fileName: analysis.fileName,
       fileType: analysis.fileType,
+      originalFile: analysis.originalFile,
       appId: analysis.appId,
       componentName: analysis.componentName,
       description: analysis.description,

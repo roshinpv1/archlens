@@ -7,6 +7,15 @@ export interface IAnalysis extends Document {
   fileName: string;
   fileType: 'image' | 'iac' | 'text';
   
+  // File Storage
+  originalFile?: {
+    name: string;
+    size: number;
+    type: string;
+    data: string; // Base64 encoded file data
+    mimeType: string;
+  };
+  
   // Application Metadata
   appId?: string;
   componentName?: string;
@@ -35,7 +44,7 @@ export interface IAnalysis extends Document {
     requirement: string;
     description: string;
     severity: string;
-    recommendation: string;
+    remediation: string;
     components: string[];
   }>;
   
@@ -84,6 +93,15 @@ const AnalysisSchema = new Schema<IAnalysis>({
   fileName: { type: String, required: true },
   fileType: { type: String, enum: ['image', 'iac', 'text'], required: true },
   
+  // File Storage
+  originalFile: {
+    name: { type: String },
+    size: { type: Number },
+    type: { type: String },
+    data: { type: String }, // Base64 encoded file data
+    mimeType: { type: String }
+  },
+  
   // Application Metadata
   appId: { type: String },
   componentName: { type: String },
@@ -112,7 +130,7 @@ const AnalysisSchema = new Schema<IAnalysis>({
     requirement: String,
     description: String,
     severity: String,
-    recommendation: String,
+    remediation: String,
     components: [String]
   }],
   

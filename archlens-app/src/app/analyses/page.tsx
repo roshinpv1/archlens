@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { HistoricalAnalyses } from '@/components/HistoricalAnalyses';
 import { EvaluationModal } from '@/components/EvaluationModal';
+import { AnalysisResults } from '@/components/AnalysisResults';
 import { Plus, Search, Filter, Download } from 'lucide-react';
+import { ArchitectureAnalysis } from '@/types/architecture';
 
 interface Analysis {
   _id: string;
@@ -35,6 +37,8 @@ export default function AnalysesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [showNewAnalysisModal, setShowNewAnalysisModal] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'analysis'>('list');
+  const [analysisResults, setAnalysisResults] = useState<ArchitectureAnalysis | null>(null);
 
   const fetchAnalyses = async () => {
     try {
@@ -100,11 +104,68 @@ export default function AnalysesPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleViewAnalysis = (analysis: Analysis) => {
-    setSelectedAnalysis(analysis);
-    // For now, we'll just log it. In a real app, you might navigate to a detail page
-    console.log('Viewing analysis:', analysis);
-    // You could also navigate to a detail page: router.push(`/analyses/${analysis._id}`)
+  const handleViewAnalysis = async (analysis: Analysis) => {
+    try {
+      setLoading(true);
+      console.log('Fetching analysis details for:', analysis._id);
+      
+      // Fetch the full analysis data
+      const response = await fetch(`/api/analysis/${analysis._id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analysis details');
+      }
+      
+      const analysisData = await response.json();
+      console.log('Analysis data received:', analysisData);
+      
+      // Convert the analysis data to ArchitectureAnalysis format
+      const architectureAnalysis: ArchitectureAnalysis = {
+        id: analysisData._id,
+        timestamp: new Date(analysisData.timestamp),
+        fileName: analysisData.fileName,
+        fileType: analysisData.fileType,
+        originalFile: analysisData.originalFile,
+        appId: analysisData.appId,
+        componentName: analysisData.componentName,
+        description: analysisData.description,
+        environment: analysisData.environment,
+        version: analysisData.version,
+        components: analysisData.components || [],
+        connections: analysisData.connections || [],
+        risks: analysisData.risks || [],
+        complianceGaps: analysisData.complianceGaps || [],
+        costIssues: analysisData.costIssues || [],
+        recommendations: analysisData.recommendations || [],
+        resiliencyScore: analysisData.resiliencyScore || 0,
+        securityScore: analysisData.securityScore || 0,
+        costEfficiencyScore: analysisData.costEfficiencyScore || 0,
+        complianceScore: analysisData.complianceScore || 0,
+        estimatedSavingsUSD: analysisData.estimatedSavingsUSD || 0,
+        summary: analysisData.summary || '',
+        architectureDescription: analysisData.architectureDescription || '',
+        processingTime: analysisData.processingTime || 0,
+        llmProvider: analysisData.llmProvider || 'unknown',
+        llmModel: analysisData.llmModel || 'unknown'
+      };
+      
+      setAnalysisResults(architectureAnalysis);
+      setViewMode('analysis');
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching analysis:', error);
+      alert('Failed to load analysis details');
+      setLoading(false);
+    }
+  };
+
+  const handleAnalysisStart = (progress: any) => {
+    console.log('Analysis started:', progress);
+    // You can add progress tracking logic here if needed
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setAnalysisResults(null);
   };
 
   return (
@@ -169,45 +230,56 @@ export default function AnalysesPage() {
           </div>
         </div>
 
-        {/* Analyses List */}
-        <div className="bg-surface border border-border rounded-xl shadow-sm">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-foreground-muted">Loading analyses...</p>
-            </div>
-          ) : analyses.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-foreground-muted" />
+        {/* Conditional Content */}
+        {viewMode === 'list' ? (
+          /* Analyses List */
+          <div className="bg-surface border border-border rounded-xl shadow-sm">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-foreground-muted">Loading analyses...</p>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No analyses found</h3>
-              <p className="text-foreground-muted mb-4">
-                {searchTerm || filterEnvironment 
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'Get started by creating your first architecture analysis.'
-                }
-              </p>
-              {!searchTerm && !filterEnvironment && (
-                <button
-                  onClick={() => setShowNewAnalysisModal(true)}
-                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
-                >
-                  Create First Analysis
-                </button>
-              )}
-            </div>
-          ) : (
-            <HistoricalAnalyses 
-              analyses={analyses}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              onRefresh={fetchAnalyses}
-              onViewAnalysis={handleViewAnalysis}
+            ) : analyses.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-foreground-muted" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">No analyses found</h3>
+                <p className="text-foreground-muted mb-4">
+                  {searchTerm || filterEnvironment 
+                    ? 'Try adjusting your search or filter criteria.'
+                    : 'Get started by creating your first architecture analysis.'
+                  }
+                </p>
+                {!searchTerm && !filterEnvironment && (
+                  <button
+                    onClick={() => setShowNewAnalysisModal(true)}
+                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                  >
+                    Create First Analysis
+                  </button>
+                )}
+              </div>
+            ) : (
+              <HistoricalAnalyses 
+                analyses={analyses}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onRefresh={fetchAnalyses}
+                onViewAnalysis={handleViewAnalysis}
+              />
+            )}
+          </div>
+        ) : (
+          /* Analysis Results View */
+          analysisResults && (
+            <AnalysisResults 
+              results={analysisResults}
+              onNewAnalysis={handleBackToList}
             />
-          )}
-        </div>
+          )
+        )}
       </main>
 
       {/* New Analysis Modal */}
@@ -215,6 +287,7 @@ export default function AnalysesPage() {
         <EvaluationModal
           isOpen={showNewAnalysisModal}
           onClose={() => setShowNewAnalysisModal(false)}
+          onAnalysisStart={handleAnalysisStart}
           onAnalysisComplete={() => {
             setShowNewAnalysisModal(false);
             fetchAnalyses(); // Refresh the analyses list

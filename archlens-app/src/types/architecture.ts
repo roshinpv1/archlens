@@ -114,6 +114,15 @@ export interface ArchitectureAnalysis {
   fileName: string;
   fileType: "image" | "iac" | "text";
   
+  // File Storage
+  originalFile?: {
+    name: string;
+    size: number;
+    type: string;
+    data: string; // Base64 encoded file data
+    mimeType: string;
+  };
+  
   // Application Metadata
   appId?: string;
   componentName?: string;

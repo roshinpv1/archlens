@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FileText, Calendar, Shield, TrendingUp, DollarSign, Target, Search, Filter, ChevronLeft, ChevronRight, Eye, Trash2 } from "lucide-react";
+import { FileText, Calendar, Shield, TrendingUp, DollarSign, Target, Search, Filter, ChevronLeft, ChevronRight, Eye, Trash2, Download, Image, File } from "lucide-react";
 import { IAnalysis } from "@/models/Analysis";
+import { FilePreviewModal } from "./FilePreviewModal";
 
 interface AnalysesResponse {
   analyses: IAnalysis[];
@@ -30,6 +31,10 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
   const [searchTerm, setSearchTerm] = useState("");
   const [environmentFilter, setEnvironmentFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  
+  // File preview modal
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<IAnalysis | null>(null);
 
   const fetchAnalyses = useCallback(async () => {
     try {
@@ -56,6 +61,49 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
       setLoading(false);
     }
   }, [currentPage, searchTerm, environmentFilter]);
+
+  const handleDownloadFile = async (analysis: IAnalysis) => {
+    try {
+      const response = await fetch(`/api/analysis/${analysis._id}/file`);
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = analysis.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file');
+    }
+  };
+
+  const getFileIcon = (fileType: string) => {
+    switch (fileType) {
+      case 'image':
+        return <Image className="w-4 h-4" />;
+      case 'iac':
+        return <FileText className="w-4 h-4" />;
+      default:
+        return <File className="w-4 h-4" />;
+    }
+  };
+
+  const handlePreviewFile = (analysis: IAnalysis) => {
+    setSelectedAnalysis(analysis);
+    setPreviewModalOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewModalOpen(false);
+    setSelectedAnalysis(null);
+  };
 
   useEffect(() => {
     fetchAnalyses();
@@ -92,10 +140,12 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
       staging: 'bg-warning-light text-warning',
       development: 'bg-info-light text-info',
       testing: 'bg-info-light text-info',
-      sandbox: 'bg-secondary text-secondary-foreground'
+      sandbox: 'bg-secondary text-secondary-foreground',
+      unknown: 'bg-muted text-foreground'
     };
     
-    return colors[environment as keyof typeof colors] || 'bg-muted text-foreground';
+    const env = (environment || 'unknown').toLowerCase();
+    return colors[env as keyof typeof colors] || 'bg-muted text-foreground';
   };
 
   if (loading) {
@@ -215,16 +265,19 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
                 <div className="space-y-2">
                   <div className="flex items-center space-x-3">
                     <h3 className="text-lg font-semibold text-foreground">
-                      {analysis.appId} - {analysis.componentName}
+                      {analysis.appId || 'Unnamed App'} - {analysis.componentName || 'Unnamed Component'}
                     </h3>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEnvironmentBadge(analysis.environment || 'unknown')}`}>
-                      {analysis.environment?.toUpperCase() || 'UNKNOWN'}
+                      {(analysis.environment || 'unknown').toString().toUpperCase()}
                     </span>
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-foreground-muted">
                     <div className="flex items-center space-x-1">
-                      <FileText className="w-4 h-4" />
-                      <span>{analysis.fileName}</span>
+                      {getFileIcon(analysis.fileType)}
+                      <span>{analysis.fileName || 'Unknown File'}</span>
+                      {analysis.originalFile && (
+                        <span className="text-xs text-green-600">(stored)</span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
@@ -246,6 +299,28 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
                   >
                     <Eye className="w-4 h-4" />
                   </button>
+                  {analysis.originalFile ? (
+                    <>
+                      <button
+                        onClick={() => handlePreviewFile(analysis)}
+                        className="p-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        title="Preview file"
+                      >
+                        {getFileIcon(analysis.fileType)}
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(analysis)}
+                        className="p-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                        title="Download original file"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-2 text-foreground-muted/50" title="Original file not available">
+                      {getFileIcon(analysis.fileType)}
+                    </div>
+                  )}
                   <button
                     onClick={() => handleDeleteAnalysis(analysis._id)}
                     className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
@@ -363,6 +438,13 @@ export function HistoricalAnalyses({ onViewAnalysis }: HistoricalAnalysesProps) 
           </div>
         </div>
       )}
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={previewModalOpen}
+        onClose={handleClosePreview}
+        analysis={selectedAnalysis}
+      />
     </div>
   );
 }

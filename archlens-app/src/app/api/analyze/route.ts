@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
     const environment = formData.get('environment') as string;
     const version = formData.get('version') as string;
 
+    // Debug: Log the received form data
+    console.log('📝 Received form data:');
+    console.log('appId:', appId);
+    console.log('componentName:', componentName);
+    console.log('description:', description);
+    console.log('environment:', environment);
+    console.log('version:', version);
+
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
@@ -309,11 +317,12 @@ Expected JSON Schema:
   "complianceGaps": [
     {
       "id": "gap1",
-      "title": "Compliance Gap",
-      "description": "Detailed gap description",
-      "standard": "SOC2|ISO27001|PCI-DSS|HIPAA",
+      "framework": "SOC2|ISO27001|PCI-DSS|HIPAA|GDPR|CIS",
+      "requirement": "Specific compliance requirement (e.g., 'Data encryption at rest', 'Access logging', 'Data retention policy')",
+      "description": "Detailed gap description explaining what is missing",
       "severity": "high|medium|low",
-      "recommendation": "How to fix this gap"
+      "affectedComponents": ["component1", "component2"],
+      "remediation": "Specific steps to fix this compliance gap"
     }
   ],
   "costIssues": [
@@ -368,6 +377,10 @@ IMPORTANT:
 - connections must be an array of objects, not a string
 - risks, complianceGaps, costIssues, recommendations must be arrays, not strings
 - recommendations must be objects with: id, issue, fix, impact, effort, priority, category
+- complianceGaps must have: id, framework, requirement, description, severity, remediation, components
+- requirement field must be specific (e.g., "Data encryption at rest", "Access logging", "Data retention policy")
+- framework field must be one of: "SOC2", "ISO27001", "PCI-DSS", "HIPAA", "GDPR", "CIS"
+- remediation field must provide specific steps to fix the gap
 - impact values: "low" | "medium" | "high"
 - effort values: "low" | "medium" | "high" 
 - category values: "security" | "reliability" | "performance" | "cost" | "compliance"
@@ -484,12 +497,32 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     console.log('costEfficiencyScore:', parsed.costEfficiencyScore, 'type:', typeof parsed.costEfficiencyScore);
     console.log('complianceScore:', parsed.complianceScore, 'type:', typeof parsed.complianceScore);
 
+    // Prepare original file data for storage
+    let originalFileData: string | null = null;
+    if (file.type.startsWith('image/')) {
+      // For images, we already have the original base64 from earlier
+      const fileBuffer = await file.arrayBuffer();
+      originalFileData = Buffer.from(fileBuffer).toString('base64');
+    } else {
+      // For text files (IAC), read the content
+      const fileText = await file.text();
+      originalFileData = Buffer.from(fileText).toString('base64');
+    }
+
     // Create analysis object with enhanced data from both stages
     const analysis: ArchitectureAnalysis = {
       id: `analysis-${Date.now()}`,
       timestamp: new Date(),
       fileName: file.name,
       fileType: fileType,
+      // Store original file data
+      originalFile: {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        data: originalFileData,
+        mimeType: file.type
+      },
       appId,
       componentName,
       description,
