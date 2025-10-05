@@ -6,7 +6,7 @@ import { EvaluationModal } from "@/components/EvaluationModal";
 import { AnalysisResults } from "@/components/AnalysisResults";
 import { DashboardStats } from "@/components/DashboardStats";
 import { HistoricalAnalyses } from "@/components/HistoricalAnalyses";
-import { ArchitectureAnalysis, AnalysisProgress } from "@/types/architecture";
+import { ArchitectureAnalysis, AnalysisProgress, RiskLevel } from "@/types/architecture";
 import { IAnalysis } from "@/models/Analysis";
 import { Plus, BarChart3, History, TrendingUp } from "lucide-react";
 
@@ -26,14 +26,14 @@ export default function Home() {
     
     // Ensure recommendations is an array of objects with proper structure
     if (sanitizedResults.recommendations && Array.isArray(sanitizedResults.recommendations)) {
-      sanitizedResults.recommendations = sanitizedResults.recommendations.map((rec: any) => ({
-        id: rec.id || `rec-${Date.now()}-${Math.random()}`,
-        issue: rec.issue || rec.title || 'Unknown issue',
-        fix: rec.fix || rec.description || 'No fix provided',
-        impact: rec.impact || 'medium',
-        effort: rec.effort || 'medium',
-        priority: rec.priority || 1,
-        category: rec.category || 'security'
+      sanitizedResults.recommendations = (sanitizedResults.recommendations as unknown as Record<string, unknown>[]).map((rec: Record<string, unknown>) => ({
+        id: (rec.id as string) || `rec-${Date.now()}-${Math.random()}`,
+        issue: (rec.issue as string) || (rec.title as string) || 'Unknown issue',
+        fix: (rec.fix as string) || (rec.description as string) || 'No fix provided',
+        impact: (rec.impact as RiskLevel) || RiskLevel.MEDIUM,
+        effort: (rec.effort as 'low' | 'medium' | 'high') || 'medium',
+        priority: typeof rec.priority === 'number' ? rec.priority : parseInt(rec.priority as string) || 1,
+        category: (rec.category as 'security' | 'reliability' | 'performance' | 'cost' | 'compliance') || 'security'
       }));
     }
     

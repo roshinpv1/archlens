@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CloudArch - Cloud Architecture Review System",
+  title: "CloudArc - Cloud Architecture Review System",
   description: "AI-powered cloud architecture analysis and review system supporting multiple cloud platforms",
 };
 

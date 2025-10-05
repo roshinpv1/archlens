@@ -27,7 +27,7 @@ export async function optimizeImage(
   options: ImageOptimizationOptions = {}
 ): Promise<ImageOptimizationResult> {
   const {
-    quality = 60,
+    quality = 100,
     maxWidth = 512,
     maxHeight = 512
   } = options;

@@ -96,21 +96,31 @@ export async function POST(request: NextRequest) {
     const extractionPrompt = `You are an expert cloud architect. Analyze this ${fileType === 'image' ? 'architecture diagram' : 'infrastructure code'} and extract ALL architectural components, connections, and metadata.
 
 ${fileType === 'image' ? 
-  'This is a base64-encoded architecture diagram. Analyze the visual components, connections, and labels to understand the cloud architecture.' :
-  'This is infrastructure code. Parse all resources, services, and their configurations to understand the complete architecture.'
+  'This is a base64-encoded architecture diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. Look for cloud provider logos, service names, and architectural patterns.' :
+  'This is infrastructure code. Parse all resources, services, and their configurations to understand the complete architecture. Identify cloud providers from resource types, service names, and provider configurations.'
 }
 
 CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
+
+IMPORTANT: For cloud provider detection, look for:
+- AWS: EC2, S3, Lambda, RDS, VPC, CloudFront, Route53, IAM, etc.
+- Azure: App Service, Blob Storage, Functions, SQL Database, Virtual Network, CDN, DNS, etc.
+- GCP: Compute Engine, Cloud Storage, Cloud Functions, Cloud SQL, VPC, Cloud CDN, etc.
+- Hybrid: On-premises components, private clouds, multi-cloud connections
+- Kubernetes: EKS, AKS, GKE, or generic Kubernetes deployments
 
 Return ONLY valid JSON without any prefix or suffix:
 
 {
   "metadata": {
-    "architectureType": "microservices|monolith|serverless|hybrid",
-    "cloudProviders": ["aws", "azure", "gcp"],
+    "architectureType": "microservices|monolith|serverless|hybrid|multi-cloud",
+    "cloudProviders": ["aws", "azure", "gcp", "on-premises", "kubernetes"],
+    "hybridCloudModel": "single-cloud|multi-cloud|hybrid-cloud|on-premises-only",
+    "primaryCloudProvider": "aws|azure|gcp|on-premises|multi-cloud",
     "estimatedComplexity": "low|medium|high",
-    "primaryPurpose": "web application|api|data processing|other",
-    "environmentType": "development|staging|production"
+    "primaryPurpose": "web application|api|data processing|ml-ai|iot|other",
+    "environmentType": "development|staging|production",
+    "deploymentModel": "public-cloud|private-cloud|hybrid-cloud|multi-cloud|edge-computing"
   },
   "components": [
     {
@@ -119,10 +129,14 @@ Return ONLY valid JSON without any prefix or suffix:
       "type": "compute",
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
+      "cloudRegion": "East US",
+      "cloudAvailabilityZone": "East US 1",
+      "isManagedService": true,
+      "isServerless": false,
       "configuration": {
         "instanceType": "Standard_B1s",
         "region": "East US",
-        "availabilityZone": null,
+        "availabilityZone": "East US 1",
         "tags": {},
         "customProperties": {}
       },
@@ -137,6 +151,9 @@ Return ONLY valid JSON without any prefix or suffix:
       "type": "api_call",
       "protocol": "http",
       "port": 80,
+      "crossCloud": false,
+      "crossRegion": false,
+      "isPrivate": false,
       "description": "API calls from web application to API Gateway"
     }
   ],
@@ -248,6 +265,12 @@ Content: ${fileContent}`;
 
 Context: App "${componentName}" in ${environment} environment.
 
+CLOUD PROVIDER CONTEXT:
+- Primary Cloud Provider: ${extractedData.metadata?.primaryCloudProvider || 'unknown'}
+- Hybrid Cloud Model: ${extractedData.metadata?.hybridCloudModel || 'unknown'}
+- Deployment Model: ${extractedData.metadata?.deploymentModel || 'unknown'}
+- Cloud Providers Used: ${extractedData.metadata?.cloudProviders?.join(', ') || 'unknown'}
+
 Architecture Data:
 ${JSON.stringify(extractedData, null, 2)}
 
@@ -271,6 +294,14 @@ INSTRUCTIONS:
 7. Provide realistic scores (0-100) based on compliance with the checklist items
 8. Focus on high-priority items first, then medium-priority items
 9. Count how many checklist items are fully implemented vs missing to calculate scores
+
+CLOUD PROVIDER-SPECIFIC ANALYSIS:
+- For AWS: Focus on IAM policies, VPC security, S3 bucket policies, CloudTrail logging, Config rules
+- For Azure: Focus on RBAC, NSG rules, Storage account security, Azure Policy, Security Center
+- For GCP: Focus on IAM bindings, VPC firewall rules, Cloud Storage IAM, Cloud Audit Logs, Security Command Center
+- For Multi-Cloud: Focus on cross-cloud security, data governance, identity federation, network connectivity
+- For Hybrid Cloud: Focus on on-premises integration, data sovereignty, network segmentation, compliance boundaries
+- For Kubernetes: Focus on RBAC, network policies, pod security policies, admission controllers, secrets management
 
 CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
 
@@ -301,6 +332,9 @@ Expected JSON Schema:
       "type": "api_call",
       "protocol": "http",
       "port": 80,
+      "crossCloud": false,
+      "crossRegion": false,
+      "isPrivate": false,
       "description": "API calls from web application to API Gateway"
     }
   ],
@@ -492,10 +526,10 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     
     // Debug: Log the scores from LLM response
     console.log('🔍 LLM Response Scores:');
-    console.log('resiliencyScore:', parsed.resiliencyScore, 'type:', typeof parsed.resiliencyScore);
-    console.log('securityScore:', parsed.securityScore, 'type:', typeof parsed.securityScore);
-    console.log('costEfficiencyScore:', parsed.costEfficiencyScore, 'type:', typeof parsed.costEfficiencyScore);
-    console.log('complianceScore:', parsed.complianceScore, 'type:', typeof parsed.complianceScore);
+    console.log('resiliencyScore:', parsed.scores?.resiliencyScore, 'type:', typeof parsed.scores?.resiliencyScore);
+    console.log('securityScore:', parsed.scores?.securityScore, 'type:', typeof parsed.scores?.securityScore);
+    console.log('costEfficiencyScore:', parsed.scores?.costEfficiencyScore, 'type:', typeof parsed.scores?.costEfficiencyScore);
+    console.log('complianceScore:', parsed.scores?.complianceScore, 'type:', typeof parsed.scores?.complianceScore);
 
     // Prepare original file data for storage
     let originalFileData: string | null = null;
@@ -536,10 +570,10 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       costIssues: parsed.costIssues || [],
       recommendations: parsed.recommendations || [],
       // Enhanced scoring from Stage 2
-      resiliencyScore: parsed.resiliencyScore || 0,
-      securityScore: parsed.securityScore || 0,
-      costEfficiencyScore: parsed.costEfficiencyScore || 0,
-      complianceScore: parsed.complianceScore || 0,
+      resiliencyScore: parsed.scores?.resiliencyScore || 0,
+      securityScore: parsed.scores?.securityScore || 0,
+      costEfficiencyScore: parsed.scores?.costEfficiencyScore || 0,
+      complianceScore: parsed.scores?.complianceScore || 0,
       estimatedSavingsUSD: parsed.costIssues?.reduce((sum: number, opt: { estimatedSavings?: number }) => sum + (opt.estimatedSavings || 0), 0) || 0,
       summary: parsed.summary || extractedData.summary || '',
       architectureDescription: parsed.architectureDescription || extractedData.summary || '',

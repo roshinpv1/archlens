@@ -6,7 +6,8 @@ import { HistoricalAnalyses } from '@/components/HistoricalAnalyses';
 import { EvaluationModal } from '@/components/EvaluationModal';
 import { AnalysisResults } from '@/components/AnalysisResults';
 import { Plus, Search, Filter, Download } from 'lucide-react';
-import { ArchitectureAnalysis } from '@/types/architecture';
+import { ArchitectureAnalysis, AnalysisProgress } from '@/types/architecture';
+import { IAnalysis } from '@/models/Analysis';
 
 interface Analysis {
   _id: string;
@@ -104,7 +105,7 @@ export default function AnalysesPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleViewAnalysis = async (analysis: Analysis) => {
+  const handleViewAnalysis = async (analysis: IAnalysis) => {
     try {
       setLoading(true);
       console.log('Fetching analysis details for:', analysis._id);
@@ -158,7 +159,7 @@ export default function AnalysesPage() {
     }
   };
 
-  const handleAnalysisStart = (progress: any) => {
+  const handleAnalysisStart = (progress: AnalysisProgress) => {
     console.log('Analysis started:', progress);
     // You can add progress tracking logic here if needed
   };
@@ -262,11 +263,6 @@ export default function AnalysesPage() {
               </div>
             ) : (
               <HistoricalAnalyses 
-                analyses={analyses}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                onRefresh={fetchAnalyses}
                 onViewAnalysis={handleViewAnalysis}
               />
             )}

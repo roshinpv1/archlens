@@ -70,7 +70,7 @@ export function Header() {
               <Cloud className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">CloudArch</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">CloudArc</h1>
               <p className="text-sm text-foreground-muted font-medium">Enterprise Cloud Architecture Review</p>
             </div>
           </div>
@@ -102,15 +102,15 @@ export function Header() {
             </Link>
             
             <Link
-              href="/config"
+              href="/configuration"
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
-                pathname === '/config'
+                pathname.startsWith('/configuration')
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
               }`}
             >
-              <FileText className="w-4 h-4" />
-              <span>Checklist</span>
+              <Settings className="w-4 h-4" />
+              <span>Configuration</span>
             </Link>
           </nav>
           
@@ -125,16 +125,7 @@ export function Header() {
           {/* Navigation & Status Section */}
           <div className="flex items-center space-x-6">
             {/* Feature Indicators */}
-            <div className="hidden lg:flex items-center space-x-6 text-sm">
-              <div className="flex items-center space-x-2 px-3 py-2 bg-success-light text-success rounded-lg font-medium">
-                <Shield className="w-4 h-4" />
-                <span>Security Analysis</span>
-              </div>
-              <div className="flex items-center space-x-2 px-3 py-2 bg-warning-light text-warning rounded-lg font-medium">
-                <Zap className="w-4 h-4" />
-                <span>Cost Optimization</span>
-              </div>
-            </div>
+            
             
             {/* Action Buttons */}
             <div className="flex items-center space-x-3">
@@ -267,16 +258,16 @@ export function Header() {
               </Link>
               
               <Link
-                href="/config"
+                href="/configuration"
                 onClick={() => setShowMobileMenu(false)}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
-                  pathname === '/config'
+                  pathname.startsWith('/configuration')
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
                 }`}
               >
-                <FileText className="w-5 h-5" />
-                <span>Checklist</span>
+                <Settings className="w-5 h-5" />
+                <span>Configuration</span>
               </Link>
             </nav>
           </div>

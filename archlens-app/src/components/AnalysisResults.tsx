@@ -381,7 +381,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                       {risk.recommendations && Array.isArray(risk.recommendations) ? (
                         risk.recommendations.map((rec, index) => (
                           <li key={index} className="text-sm text-muted-foreground">
-                            {typeof rec === 'string' ? rec : rec.toString()}
+                            {typeof rec === 'string' ? rec : String(rec)}
                           </li>
                         ))
                       ) : (

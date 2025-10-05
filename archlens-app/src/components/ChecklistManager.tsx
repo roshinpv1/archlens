@@ -1,556 +1,606 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
-  Edit3, 
+  Edit, 
   Trash2, 
-  Power, 
-  PowerOff, 
   Search, 
-  Filter, 
-  ChevronDown,
+  Filter,
+  CheckSquare,
+  Square,
+  Save,
+  X,
   AlertCircle,
-  CheckCircle,
-  Clock,
-  User
-} from "lucide-react";
-import { IChecklistItem } from "@/models/ChecklistItem";
-import { CHECKLIST_CATEGORIES, PRIORITY_LEVELS, OWNER_TYPES } from "@/types/checklist";
+  Shield,
+  Zap,
+  DollarSign,
+  Target,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
-interface ChecklistManagerProps {
-  onStatsUpdate: () => void;
+interface ChecklistItem {
+  id: string;
+  item: string;
+  description: string;
+  category: 'security' | 'reliability' | 'performance' | 'cost' | 'compliance';
+  recommendedAction: string;
+  owner: string;
+  priority: 'high' | 'medium' | 'low';
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export function ChecklistManager({ onStatsUpdate }: ChecklistManagerProps) {
-  const [items, setItems] = useState<IChecklistItem[]>([]);
+export function ChecklistManager() {
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<IChecklistItem | null>(null);
-  
-  // Filters
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Form state
-  const [formData, setFormData] = useState<{
-    category: string;
-    item: string;
-    description: string;
-    recommendedAction: string;
-    owner: string;
-    priority: 'High' | 'Medium' | 'Low';
-    enabled: boolean;
-  }>({
-    category: "",
-    item: "",
-    description: "",
-    recommendedAction: "",
-    owner: "",
-    priority: "Medium",
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
+  const [newItem, setNewItem] = useState<Partial<ChecklistItem>>({
+    item: '',
+    description: '',
+    category: 'security',
+    recommendedAction: '',
+    owner: '',
+    priority: 'medium',
     enabled: true
   });
 
+  // Mock data for demonstration
   useEffect(() => {
-    fetchItems();
+    const mockItems: ChecklistItem[] = [
+      {
+        id: '1',
+        item: 'Network segmentation',
+        description: 'Implement proper network segmentation to isolate different tiers and environments',
+        category: 'security',
+        recommendedAction: 'Implement VPC/VNet per environment; use subnets, NSGs, security groups, private endpoints and service endpoints',
+        owner: 'Network Team',
+        priority: 'high',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      },
+      {
+        id: '2',
+        item: 'Encryption at rest',
+        description: 'Ensure all data is encrypted at rest using appropriate encryption methods',
+        category: 'security',
+        recommendedAction: 'Enforce provider-managed or customer-managed KMS encryption for storage, DBs, buckets. Audit key policies',
+        owner: 'Security Team',
+        priority: 'high',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      },
+      {
+        id: '3',
+        item: 'Strong authentication',
+        description: 'Implement strong authentication mechanisms for all user access',
+        category: 'security',
+        recommendedAction: 'Enforce MFA for all accounts, require FIDO2/2FA for admins. Remove unused root/owner keys',
+        owner: 'Security Team',
+        priority: 'high',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      },
+      {
+        id: '4',
+        item: 'Backup and recovery',
+        description: 'Implement comprehensive backup and disaster recovery procedures',
+        category: 'reliability',
+        recommendedAction: 'Set up automated backups with RTO/RPO targets. Test restore procedures regularly',
+        owner: 'DevOps Team',
+        priority: 'high',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      },
+      {
+        id: '5',
+        item: 'Resource monitoring',
+        description: 'Implement comprehensive monitoring and alerting for all resources',
+        category: 'performance',
+        recommendedAction: 'Set up monitoring for CPU, memory, disk, network. Configure alerts for thresholds',
+        owner: 'DevOps Team',
+        priority: 'medium',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      },
+      {
+        id: '6',
+        item: 'Cost optimization',
+        description: 'Implement cost optimization strategies and monitoring',
+        category: 'cost',
+        recommendedAction: 'Use reserved instances, spot instances, auto-scaling. Monitor and optimize costs regularly',
+        owner: 'Finance Team',
+        priority: 'medium',
+        enabled: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01')
+      }
+    ];
+    
+    setTimeout(() => {
+      setChecklistItems(mockItems);
+      setLoading(false);
+    }, 1000);
   }, []);
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/checklist');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch checklist items');
-      }
-      
-      const data = await response.json();
-      setItems(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const filteredItems = checklistItems.filter(item => {
+    const matchesSearch = item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.recommendedAction.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !filterCategory || item.category === filterCategory;
+    const matchesPriority = !filterPriority || item.priority === filterPriority;
     
-    try {
-      const url = editingItem ? `/api/checklist/${editingItem._id}` : '/api/checklist';
-      const method = editingItem ? 'PATCH' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to ${editingItem ? 'update' : 'create'} checklist item`);
-      }
-      
-      await fetchItems();
-      onStatsUpdate();
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+    return matchesSearch && matchesCategory && matchesPriority;
+  });
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'security':
+        return <Shield className="w-4 h-4" />;
+      case 'reliability':
+        return <CheckSquare className="w-4 h-4" />;
+      case 'performance':
+        return <Zap className="w-4 h-4" />;
+      case 'cost':
+        return <DollarSign className="w-4 h-4" />;
+      case 'compliance':
+        return <Target className="w-4 h-4" />;
+      default:
+        return <CheckSquare className="w-4 h-4" />;
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this checklist item?')) return;
-    
-    try {
-      const response = await fetch(`/api/checklist/${id}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete checklist item');
-      }
-      
-      await fetchItems();
-      onStatsUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'security':
+        return 'bg-red-100 text-red-800';
+      case 'reliability':
+        return 'bg-green-100 text-green-800';
+      case 'performance':
+        return 'bg-blue-100 text-blue-800';
+      case 'cost':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'compliance':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const handleToggle = async (id: string) => {
-    try {
-      const response = await fetch(`/api/checklist/${id}?action=toggle`, {
-        method: 'PATCH'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to toggle checklist item');
-      }
-      
-      await fetchItems();
-      onStatsUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    }
-  };
-
-  const handleEdit = (item: IChecklistItem) => {
-    setEditingItem(item);
-    setFormData({
-      category: item.category,
-      item: item.item,
-      description: item.description,
-      recommendedAction: item.recommendedAction,
-      owner: item.owner,
-      priority: item.priority,
-      enabled: item.enabled
-    });
-    setShowAddForm(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      category: "",
-      item: "",
-      description: "",
-      recommendedAction: "",
-      owner: "",
-      priority: "Medium" as const,
-      enabled: true
-    });
-    setEditingItem(null);
-    setShowAddForm(false);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'text-error bg-error-light';
-      case 'Medium': return 'text-warning bg-warning-light';
-      case 'Low': return 'text-info bg-info-light';
-      default: return 'text-foreground-muted bg-muted';
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Filter items
-  const filteredItems = items.filter(item => {
-    const matchesSearch = !searchTerm || 
-      item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !categoryFilter || item.category === categoryFilter;
-    const matchesPriority = !priorityFilter || item.priority === priorityFilter;
-    const matchesStatus = !statusFilter || 
-      (statusFilter === 'enabled' && item.enabled) ||
-      (statusFilter === 'disabled' && !item.enabled);
-    
-    return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
-  });
-
-  // Group items by category
-  const groupedItems = filteredItems.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
+  const handleAddItem = () => {
+    if (newItem.item && newItem.description && newItem.recommendedAction) {
+      const item: ChecklistItem = {
+        id: Date.now().toString(),
+        item: newItem.item,
+        description: newItem.description,
+        category: newItem.category as ChecklistItem['category'],
+        recommendedAction: newItem.recommendedAction,
+        owner: newItem.owner || 'Unassigned',
+        priority: newItem.priority as ChecklistItem['priority'],
+        enabled: newItem.enabled || true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      setChecklistItems(prev => [item, ...prev]);
+      setNewItem({
+        item: '',
+        description: '',
+        category: 'security',
+        recommendedAction: '',
+        owner: '',
+        priority: 'medium',
+        enabled: true
+      });
+      setShowAddModal(false);
     }
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, IChecklistItem[]>);
+  };
+
+  const handleEditItem = (item: ChecklistItem) => {
+    setEditingItem(item);
+    setNewItem(item);
+    setShowAddModal(true);
+  };
+
+  const handleUpdateItem = () => {
+    if (editingItem && newItem.item && newItem.description && newItem.recommendedAction) {
+      setChecklistItems(prev => prev.map(item => 
+        item.id === editingItem.id 
+          ? { ...item, ...newItem, updatedAt: new Date() }
+          : item
+      ));
+      setEditingItem(null);
+      setNewItem({
+        item: '',
+        description: '',
+        category: 'security',
+        recommendedAction: '',
+        owner: '',
+        priority: 'medium',
+        enabled: true
+      });
+      setShowAddModal(false);
+    }
+  };
+
+  const handleDeleteItem = (id: string) => {
+    if (confirm('Are you sure you want to delete this checklist item?')) {
+      setChecklistItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const handleToggleEnabled = (id: string) => {
+    setChecklistItems(prev => prev.map(item => 
+      item.id === id 
+        ? { ...item, enabled: !item.enabled, updatedAt: new Date() }
+        : item
+    ));
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingItem(null);
+    setNewItem({
+      item: '',
+      description: '',
+      category: 'security',
+      recommendedAction: '',
+      owner: '',
+      priority: 'medium',
+      enabled: true
+    });
+  };
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
-              <div className="h-20 bg-muted rounded"></div>
+      <div className="space-y-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-surface border border-border rounded-xl p-6 animate-pulse">
+            <div className="flex items-start justify-between mb-4">
+              <div className="space-y-2">
+                <div className="h-6 bg-muted rounded w-1/3"></div>
+                <div className="h-4 bg-muted rounded w-1/4"></div>
+              </div>
+              <div className="h-6 bg-muted rounded w-16"></div>
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <div className="h-4 bg-muted rounded w-full"></div>
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center space-x-2 bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Item</span>
-          </button>
-          
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 px-3 py-2 border border-border rounded-lg hover:bg-secondary transition-colors text-sm"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Filters</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Checklist Management</h2>
+          <p className="text-foreground-muted">
+            Manage security and compliance checklist items for architecture evaluations
+          </p>
         </div>
-        
-        <div className="text-sm text-foreground-muted">
-          Showing {filteredItems.length} of {items.length} items
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Item
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search checklist items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="">All Categories</option>
+            <option value="security">Security</option>
+            <option value="reliability">Reliability</option>
+            <option value="performance">Performance</option>
+            <option value="cost">Cost</option>
+            <option value="compliance">Compliance</option>
+          </select>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
         </div>
       </div>
 
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-muted/30 rounded-xl p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-surface border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-8 h-8 text-blue-600" />
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search items..."
-                  className="input-base pl-10"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Category</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="input-base"
-              >
-                <option value="">All categories</option>
-                {CHECKLIST_CATEGORIES.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Priority</label>
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="input-base"
-              >
-                <option value="">All priorities</option>
-                {PRIORITY_LEVELS.map(priority => (
-                  <option key={priority} value={priority}>{priority}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="input-base"
-              >
-                <option value="">All statuses</option>
-                <option value="enabled">Enabled</option>
-                <option value="disabled">Disabled</option>
-              </select>
+              <p className="text-2xl font-bold text-foreground">{checklistItems.length}</p>
+              <p className="text-sm text-foreground-muted">Total Items</p>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-error-light border border-error/20 rounded-xl p-4">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+        <div className="bg-surface border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="w-8 h-8 text-green-600" />
             <div>
-              <div className="font-medium text-error mb-1">Error</div>
-              <p className="text-error/80 text-sm">{error}</p>
+              <p className="text-2xl font-bold text-foreground">{checklistItems.filter(item => item.enabled).length}</p>
+              <p className="text-sm text-foreground-muted">Enabled</p>
             </div>
           </div>
         </div>
-      )}
+        <div className="bg-surface border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <Shield className="w-8 h-8 text-red-600" />
+            <div>
+              <p className="text-2xl font-bold text-foreground">{checklistItems.filter(item => item.priority === 'high').length}</p>
+              <p className="text-sm text-foreground-muted">High Priority</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <Target className="w-8 h-8 text-purple-600" />
+            <div>
+              <p className="text-2xl font-bold text-foreground">{new Set(checklistItems.map(item => item.category)).size}</p>
+              <p className="text-sm text-foreground-muted">Categories</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Add/Edit Form */}
-      {showAddForm && (
-        <div className="bg-surface border border-border rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            {editingItem ? 'Edit Checklist Item' : 'Add New Checklist Item'}
-          </h3>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Category <span className="text-primary">*</span>
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="input-base"
-                  required
+      {/* Checklist Items */}
+      <div className="space-y-4">
+        {filteredItems.map((item) => (
+          <div key={item.id} className="bg-surface border border-border rounded-xl p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-3">
+                <button
+                  onClick={() => handleToggleEnabled(item.id)}
+                  className="mt-1 text-foreground-muted hover:text-foreground transition-colors"
                 >
-                  <option value="">Select category</option>
-                  {CHECKLIST_CATEGORIES.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Item Name <span className="text-primary">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.item}
-                  onChange={(e) => setFormData({ ...formData, item: e.target.value })}
-                  placeholder="e.g., Strong authentication"
-                  className="input-base"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Description <span className="text-primary">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of the requirement"
-                className="input-base"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Recommended Action <span className="text-primary">*</span>
-              </label>
-              <textarea
-                value={formData.recommendedAction}
-                onChange={(e) => setFormData({ ...formData, recommendedAction: e.target.value })}
-                placeholder="Detailed recommended action or implementation guidance"
-                rows={3}
-                className="input-base resize-none"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Owner <span className="text-primary">*</span>
-                </label>
-                <select
-                  value={formData.owner}
-                  onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                  className="input-base"
-                  required
-                >
-                  <option value="">Select owner</option>
-                  {OWNER_TYPES.map(owner => (
-                    <option key={owner} value={owner}>{owner}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Priority <span className="text-primary">*</span>
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'High' | 'Medium' | 'Low' })}
-                  className="input-base"
-                  required
-                >
-                  {PRIORITY_LEVELS.map(priority => (
-                    <option key={priority} value={priority}>{priority}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
-                <div className="flex items-center space-x-3 mt-3">
-                  <input
-                    type="checkbox"
-                    id="enabled"
-                    checked={formData.enabled}
-                    onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
-                    className="w-4 h-4 text-primary bg-surface border-border rounded focus:ring-primary focus:ring-2"
-                  />
-                  <label htmlFor="enabled" className="text-sm text-foreground">
-                    Enabled in evaluations
-                  </label>
+                  {item.enabled ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                </button>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">{item.item}</h3>
+                  <p className="text-foreground-muted text-sm mb-2">{item.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(item.category)}`}>
+                      {getCategoryIcon(item.category)}
+                      <span className="ml-1 capitalize">{item.category}</span>
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(item.priority)}`}>
+                      {item.priority} priority
+                    </span>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                      {item.owner}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleEditItem(item)}
+                  className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteItem(item.id)}
+                  className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             
-            <div className="flex items-center space-x-3 pt-4">
+            <div className="bg-muted rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-2">Recommended Action:</h4>
+              <p className="text-sm text-foreground-muted">{item.recommendedAction}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredItems.length === 0 && (
+        <div className="text-center py-12">
+          <CheckSquare className="w-16 h-16 text-foreground-muted mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No checklist items found</h3>
+          <p className="text-foreground-muted mb-4">
+            {searchTerm || filterCategory || filterPriority
+              ? 'Try adjusting your search or filter criteria.'
+              : 'Get started by adding your first checklist item.'
+            }
+          </p>
+          {!searchTerm && !filterCategory && !filterPriority && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+            >
+              Add Checklist Item
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-semibold text-foreground">
+                {editingItem ? 'Edit Checklist Item' : 'Add Checklist Item'}
+              </h2>
               <button
-                type="submit"
-                className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-lg font-medium transition-colors"
+                onClick={handleCloseModal}
+                className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
               >
-                {editingItem ? 'Update Item' : 'Add Item'}
+                <X className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  value={newItem.item || ''}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, item: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Enter checklist item name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Description *
+                </label>
+                <textarea
+                  value={newItem.description || ''}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Describe what this checklist item covers"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Category *
+                  </label>
+                  <select
+                    value={newItem.category || 'security'}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as ChecklistItem['category'] }))}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="security">Security</option>
+                    <option value="reliability">Reliability</option>
+                    <option value="performance">Performance</option>
+                    <option value="cost">Cost</option>
+                    <option value="compliance">Compliance</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Priority *
+                  </label>
+                  <select
+                    value={newItem.priority || 'medium'}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, priority: e.target.value as ChecklistItem['priority'] }))}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Owner
+                </label>
+                <input
+                  type="text"
+                  value={newItem.owner || ''}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, owner: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Enter owner/team name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Recommended Action *
+                </label>
+                <textarea
+                  value={newItem.recommendedAction || ''}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, recommendedAction: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="Describe the recommended action to address this item"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="enabled"
+                  checked={newItem.enabled || false}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, enabled: e.target.checked }))}
+                  className="rounded border-border"
+                />
+                <label htmlFor="enabled" className="text-sm text-foreground">
+                  Enable this checklist item
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 p-6 border-t border-border">
               <button
-                type="button"
-                onClick={resetForm}
-                className="px-6 py-2 border border-border rounded-lg hover:bg-secondary transition-colors font-medium"
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-foreground-muted hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
+              <button
+                onClick={editingItem ? handleUpdateItem : handleAddItem}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                {editingItem ? 'Update' : 'Add'} Item
+              </button>
             </div>
-          </form>
-        </div>
-      )}
-
-      {/* Items List */}
-      {Object.keys(groupedItems).length === 0 ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-foreground-muted mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Items Found</h3>
-          <p className="text-foreground-muted">
-            {items.length === 0 
-              ? "No checklist items exist yet. Add your first item to get started."
-              : "No items match your current filters. Try adjusting your search criteria."
-            }
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedItems).map(([category, categoryItems]) => (
-            <div key={category} className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
-                {category} ({categoryItems.length})
-              </h3>
-              
-              <div className="space-y-3">
-                {categoryItems.map((item) => (
-                  <div
-                    key={item._id}
-                    className={`bg-surface border rounded-xl p-4 transition-all ${
-                      item.enabled ? 'border-border hover:shadow-sm' : 'border-border bg-muted/30 opacity-75'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center space-x-3">
-                          <h4 className="font-semibold text-foreground">{item.item}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(item.priority)}`}>
-                            {item.priority}
-                          </span>
-                          {item.enabled ? (
-                            <CheckCircle className="w-4 h-4 text-success" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-warning" />
-                          )}
-                        </div>
-                        
-                        <p className="text-foreground-muted text-sm">{item.description}</p>
-                        
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <p className="text-sm text-foreground">{item.recommendedAction}</p>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-xs text-foreground-muted">
-                          <div className="flex items-center space-x-1">
-                            <User className="w-3 h-3" />
-                            <span>{item.owner}</span>
-                          </div>
-                          <div>
-                            Updated {new Date(item.updatedAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 ml-4">
-                        <button
-                          onClick={() => handleToggle(item._id)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            item.enabled 
-                              ? 'text-success hover:bg-success-light' 
-                              : 'text-warning hover:bg-warning-light'
-                          }`}
-                          title={item.enabled ? 'Disable item' : 'Enable item'}
-                        >
-                          {item.enabled ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-                        </button>
-                        
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-2 text-foreground-muted hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
-                          title="Edit item"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        
-                        <button
-                          onClick={() => handleDelete(item._id)}
-                          className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
-                          title="Delete item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          </div>
         </div>
       )}
     </div>

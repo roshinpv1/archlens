@@ -23,9 +23,9 @@ export interface IAnalysis extends Document {
   environment?: string;
   version?: string;
   
-  // Analysis Results - Use any[] to match Mixed schema
-  components: any[];
-  connections: any[];
+  // Analysis Results - Use unknown[] to match Mixed schema
+  components: unknown[];
+  connections: unknown[];
   
   risks: Array<{
     id: string;

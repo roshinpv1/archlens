@@ -172,7 +172,7 @@ export default function ConfigPage() {
               </p>
             </div>
             
-            <ChecklistManager onStatsUpdate={handleStatsUpdate} />
+            <ChecklistManager />
           </div>
         </div>
       </main>

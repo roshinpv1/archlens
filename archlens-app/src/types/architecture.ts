@@ -18,7 +18,25 @@ export enum CloudProvider {
   AWS = "aws",
   AZURE = "azure",
   GCP = "gcp",
+  ON_PREMISES = "on-premises",
+  KUBERNETES = "kubernetes",
+  MULTI_CLOUD = "multi-cloud",
   GENERIC = "generic"
+}
+
+export enum HybridCloudModel {
+  SINGLE_CLOUD = "single-cloud",
+  MULTI_CLOUD = "multi-cloud",
+  HYBRID_CLOUD = "hybrid-cloud",
+  ON_PREMISES_ONLY = "on-premises-only"
+}
+
+export enum DeploymentModel {
+  PUBLIC_CLOUD = "public-cloud",
+  PRIVATE_CLOUD = "private-cloud",
+  HYBRID_CLOUD = "hybrid-cloud",
+  MULTI_CLOUD = "multi-cloud",
+  EDGE_COMPUTING = "edge-computing"
 }
 
 export enum ConnectionType {
@@ -54,6 +72,10 @@ export interface ArchitectureComponent {
   type: ComponentType;
   cloudService?: string;
   cloudProvider?: CloudProvider;
+  cloudRegion?: string;
+  cloudAvailabilityZone?: string;
+  isManagedService?: boolean;
+  isServerless?: boolean;
   description?: string;
   metadata?: Record<string, unknown>;
 }
@@ -63,6 +85,11 @@ export interface ComponentConnection {
   source: string; // Component ID
   target: string; // Component ID
   type: ConnectionType;
+  protocol?: string;
+  port?: number;
+  crossCloud?: boolean;
+  crossRegion?: boolean;
+  isPrivate?: boolean;
   description?: string;
   direction?: "inbound" | "outbound" | "bidirectional";
   metadata?: Record<string, unknown>;
@@ -108,6 +135,17 @@ export interface Recommendation {
   category: "security" | "reliability" | "performance" | "cost" | "compliance";
 }
 
+export interface ArchitectureMetadata {
+  architectureType: "microservices" | "monolith" | "serverless" | "hybrid" | "multi-cloud";
+  cloudProviders: CloudProvider[];
+  hybridCloudModel: HybridCloudModel;
+  primaryCloudProvider: CloudProvider | "multi-cloud";
+  estimatedComplexity: "low" | "medium" | "high";
+  primaryPurpose: "web application" | "api" | "data processing" | "ml-ai" | "iot" | "other";
+  environmentType: "development" | "staging" | "production";
+  deploymentModel: DeploymentModel;
+}
+
 export interface ArchitectureAnalysis {
   id: string;
   timestamp: Date;
@@ -129,6 +167,9 @@ export interface ArchitectureAnalysis {
   description?: string;
   environment?: string;
   version?: string;
+  
+  // Architecture Metadata
+  metadata?: ArchitectureMetadata;
   
   // Core Analysis
   components: ArchitectureComponent[];
