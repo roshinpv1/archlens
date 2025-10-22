@@ -771,10 +771,10 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     
     // Debug: Log the scores from LLM response
     console.log('🔍 LLM Response Scores:');
-    console.log('resiliencyScore:', parsed.scores?.resiliencyScore, 'type:', typeof parsed.scores?.resiliencyScore);
-    console.log('securityScore:', parsed.scores?.securityScore, 'type:', typeof parsed.scores?.securityScore);
-    console.log('costEfficiencyScore:', parsed.scores?.costEfficiencyScore, 'type:', typeof parsed.scores?.costEfficiencyScore);
-    console.log('complianceScore:', parsed.scores?.complianceScore, 'type:', typeof parsed.scores?.complianceScore);
+    console.log('resiliencyScore:', parsed.resiliencyScore, 'type:', typeof parsed.resiliencyScore);
+    console.log('securityScore:', parsed.securityScore, 'type:', typeof parsed.securityScore);
+    console.log('costEfficiencyScore:', parsed.costEfficiencyScore, 'type:', typeof parsed.costEfficiencyScore);
+    console.log('complianceScore:', parsed.complianceScore, 'type:', typeof parsed.complianceScore);
 
     // Prepare original file data for storage
     let originalFileData: string | null = null;
@@ -815,14 +815,14 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       costIssues: parsed.costIssues || [],
       recommendations: parsed.recommendations || [],
       // Enhanced scoring from Stage 2
-      resiliencyScore: parsed.scores?.resiliencyScore || 0,
-      securityScore: parsed.scores?.securityScore || 0,
-      costEfficiencyScore: parsed.scores?.costEfficiencyScore || 0,
-      complianceScore: parsed.scores?.complianceScore || 0,
+      resiliencyScore: parsed.resiliencyScore || 0,
+      securityScore: parsed.securityScore || 0,
+      costEfficiencyScore: parsed.costEfficiencyScore || 0,
+      complianceScore: parsed.complianceScore || 0,
       estimatedSavingsUSD: parsed.costIssues?.reduce((sum: number, opt: { estimatedSavings?: number }) => sum + (opt.estimatedSavings || 0), 0) || 0,
       summary: parsed.summary || extractedData.summary || '',
       architectureDescription: parsed.architectureDescription || extractedData.summary || '',
-      processingTime: Date.now() - startTime,
+      processingTime: Math.round((Date.now() - startTime) / 1000 * 100) / 100, // Convert to seconds with 2 decimal places
       llmProvider: llmClient.getConfig().provider,
       llmModel: llmClient.getConfig().model || 'unknown',
       // Image optimization metadata (if applicable)

@@ -35,6 +35,11 @@ export interface LLMResponseData {
   risks?: Risk[];
   complianceGaps?: ComplianceGap[];
   costIssues?: CostIssue[];
+  // Scores can be at root level or nested under scores
+  resiliencyScore?: number;
+  securityScore?: number;
+  costEfficiencyScore?: number;
+  complianceScore?: number;
   scores?: {
     resiliencyScore?: number;
     securityScore?: number;

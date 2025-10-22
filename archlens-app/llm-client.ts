@@ -223,6 +223,35 @@ export class LLMClient {
     try {
       const baseUrl = this.config.baseUrl || 'http://localhost:11434';
       
+      // Check if prompt contains base64 image data
+      const isImagePrompt = prompt.includes('Base64 Image Data:');
+      let messages;
+      
+      if (isImagePrompt) {
+        // Extract base64 data and text prompt
+        const base64Match = prompt.match(/Base64 Image Data: (.+)/);
+        const textPrompt = prompt.replace(/Base64 Image Data: .+/, '').trim();
+        
+        if (base64Match) {
+          const base64Data = base64Match[1];
+          const imageMimeType = this.detectImageMimeType(base64Data);
+          
+          messages = [{
+            role: 'user',
+            content: [
+              { type: 'text', text: textPrompt || 'Analyze this architecture diagram and extract all components, connections, and metadata.' },
+              { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Data}` } }
+            ]
+          }];
+        } else {
+          // Fallback to text-only if base64 extraction fails
+          messages = [{ role: 'user', content: prompt }];
+        }
+      } else {
+        // Standard text-only prompt
+        messages = [{ role: 'user', content: prompt }];
+      }
+
       const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: {
@@ -230,7 +259,7 @@ export class LLMClient {
         },
         body: JSON.stringify({
           model: this.config.model,
-          messages: [{ role: 'user', content: prompt }],
+          messages,
           options: {
             temperature: this.config.temperature,
             num_predict: this.config.maxTokens
@@ -263,6 +292,23 @@ export class LLMClient {
     }
   }
 
+  private detectImageMimeType(base64Data: string): string {
+    // Detect image type from base64 data
+    if (base64Data.startsWith('/9j/') || base64Data.startsWith('/9j/4AAQ')) {
+      return 'image/jpeg';
+    } else if (base64Data.startsWith('iVBORw0KGgo')) {
+      return 'image/png';
+    } else if (base64Data.startsWith('R0lGOD')) {
+      return 'image/gif';
+    } else if (base64Data.startsWith('UklGR')) {
+      return 'image/webp';
+    } else if (base64Data.startsWith('PHN2Zy')) {
+      return 'image/svg+xml';
+    }
+    // Default to PNG if unknown
+    return 'image/png';
+  }
+
   private async callLocal(prompt: string, timeout: number): Promise<string> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -280,12 +326,41 @@ export class LLMClient {
         headers['Authorization'] = `Bearer ${this.config.apiKey}`;
       }
 
+      // Check if prompt contains base64 image data
+      const isImagePrompt = prompt.includes('Base64 Image Data:');
+      let messages;
+      
+      if (isImagePrompt) {
+        // Extract base64 data and text prompt
+        const base64Match = prompt.match(/Base64 Image Data: (.+)/);
+        const textPrompt = prompt.replace(/Base64 Image Data: .+/, '').trim();
+        
+        if (base64Match) {
+          const base64Data = base64Match[1];
+          const imageMimeType = this.detectImageMimeType(base64Data);
+          
+          messages = [{
+            role: 'user',
+            content: [
+              { type: 'text', text: textPrompt || 'Analyze this architecture diagram and extract all components, connections, and metadata.' },
+              { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Data}` } }
+            ]
+          }];
+        } else {
+          // Fallback to text-only if base64 extraction fails
+          messages = [{ role: 'user', content: prompt }];
+        }
+      } else {
+        // Standard text-only prompt
+        messages = [{ role: 'user', content: prompt }];
+      }
+
       const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           model: this.config.model,
-          messages: [{ role: 'user', content: prompt }],
+          messages,
           temperature: this.config.temperature,
           max_tokens: this.config.maxTokens
         }),

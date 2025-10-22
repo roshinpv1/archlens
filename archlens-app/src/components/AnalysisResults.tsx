@@ -124,7 +124,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                 )}
                 <div className="space-y-1">
                   <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">Processing Time</div>
-                  <div className="text-sm font-semibold text-foreground">{results.processingTime}ms</div>
+                  <div className="text-sm font-semibold text-foreground">{results.processingTime}s</div>
                 </div>
               </div>
             )}
