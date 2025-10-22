@@ -7,17 +7,12 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  Filter,
   Shield,
   User,
-  Mail,
   Calendar,
-  MoreVertical,
   CheckCircle,
   XCircle,
   Clock,
-  Key,
-  Settings,
   Save
 } from 'lucide-react';
 

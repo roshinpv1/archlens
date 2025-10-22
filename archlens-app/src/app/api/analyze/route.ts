@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Stage 1: Complete extraction from original file content
-    const extractionPrompt = `You are an expert cloud architect. Analyze this ${fileType === 'image' ? 'architecture diagram' : 'infrastructure code'} and extract ALL architectural components, connections, and metadata.
+    const extractionPrompt = `You are an expert cloud architect with deep expertise in multi-cloud environments. Analyze this ${fileType === 'image' ? 'architecture diagram' : 'infrastructure code'} and extract ALL architectural components, connections, and metadata with 100% accuracy.
 
 ${fileType === 'image' ? 
   'This is a base64-encoded architecture diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. Look for cloud provider logos, service names, and architectural patterns.' :
@@ -102,12 +102,63 @@ ${fileType === 'image' ?
 
 CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
 
-IMPORTANT: For cloud provider detection, look for:
-- AWS: EC2, S3, Lambda, RDS, VPC, CloudFront, Route53, IAM, etc.
-- Azure: App Service, Blob Storage, Functions, SQL Database, Virtual Network, CDN, DNS, etc.
-- GCP: Compute Engine, Cloud Storage, Cloud Functions, Cloud SQL, VPC, Cloud CDN, etc.
-- Hybrid: On-premises components, private clouds, multi-cloud connections
-- Kubernetes: EKS, AKS, GKE, or generic Kubernetes deployments
+ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators:
+
+AWS Services & Patterns:
+- Compute: EC2, Lambda, ECS, EKS, Fargate, Batch, Lightsail, Auto Scaling
+- Storage: S3, EBS, EFS, FSx, Glacier, Storage Gateway
+- Database: RDS, DynamoDB, ElastiCache, Redshift, Neptune, DocumentDB, Timestream
+- Networking: VPC, CloudFront, Route53, API Gateway, ELB, ALB, NLB, Direct Connect, Transit Gateway
+- Security: IAM, KMS, Secrets Manager, Certificate Manager, WAF, Shield, GuardDuty
+- Analytics: Kinesis, EMR, Athena, QuickSight, CloudWatch, X-Ray
+- AI/ML: SageMaker, Rekognition, Comprehend, Polly, Lex, Personalize
+- Management: CloudFormation, CloudTrail, Config, Systems Manager, OpsWorks
+- Developer Tools: CodeCommit, CodeBuild, CodeDeploy, CodePipeline, X-Ray
+- Patterns: aws-*, amazon-*, *.amazonaws.com, arn:aws:*
+
+Azure Services & Patterns:
+- Compute: Virtual Machines, App Service, Functions, Container Instances, AKS, Batch, Service Fabric
+- Storage: Blob Storage, File Storage, Queue Storage, Table Storage, Disk Storage, Archive Storage
+- Database: SQL Database, Cosmos DB, Database for MySQL/PostgreSQL, Redis Cache, Synapse Analytics
+- Networking: Virtual Network, Load Balancer, Application Gateway, CDN, DNS, ExpressRoute, VPN Gateway
+- Security: Azure AD, Key Vault, Security Center, Sentinel, DDoS Protection, WAF
+- Analytics: Data Factory, Stream Analytics, HDInsight, Databricks, Power BI, Monitor
+- AI/ML: Cognitive Services, Machine Learning, Bot Service, Computer Vision, Speech Services
+- Management: Resource Manager, Policy, Blueprints, Cost Management, Advisor
+- Developer Tools: DevOps, App Configuration, Service Bus, Event Grid, Logic Apps
+- Patterns: azure-*, microsoft-*, *.azure.com, *.windows.net, /subscriptions/
+
+GCP Services & Patterns:
+- Compute: Compute Engine, App Engine, Cloud Functions, GKE, Cloud Run, Batch, Preemptible VMs
+- Storage: Cloud Storage, Persistent Disk, Filestore, Cloud SQL, Spanner, Firestore, Bigtable
+- Networking: VPC, Cloud Load Balancing, Cloud CDN, Cloud DNS, Cloud Interconnect, Cloud NAT
+- Security: Cloud IAM, Secret Manager, Security Command Center, Cloud Armor, Identity Platform
+- Analytics: BigQuery, Dataflow, Dataproc, Pub/Sub, Cloud Composer, Data Studio, Monitoring
+- AI/ML: AI Platform, AutoML, Vision API, Speech-to-Text, Translation API, Dialogflow
+- Management: Cloud Resource Manager, Deployment Manager, Cloud Console, Cloud Shell
+- Developer Tools: Cloud Build, Container Registry, Artifact Registry, Cloud Source Repositories
+- Patterns: gcp-*, google-*, *.googleapis.com, *.gcp.com, projects/
+
+Kubernetes & Container Platforms:
+- Managed Services: EKS (AWS), AKS (Azure), GKE (GCP), OpenShift, Rancher
+- Resources: Pods, Services, Deployments, ConfigMaps, Secrets, Ingress, PersistentVolumes
+- Patterns: apiVersion: v1, kind: Pod/Service/Deployment, kubernetes.io/, k8s.io/
+
+Hybrid & Multi-Cloud Patterns:
+- On-Premises: VMware, Hyper-V, Bare Metal, Private Cloud, Data Center
+- Multi-Cloud: Cross-cloud connections, data replication, disaster recovery
+- Edge Computing: CDN, Edge Locations, IoT Gateways, 5G Networks
+- Patterns: hybrid, on-premises, private-cloud, multi-cloud, edge
+
+CRITICAL DETECTION RULES:
+1. Examine EVERY component for cloud provider indicators
+2. Look for provider-specific naming conventions and resource types
+3. Check for provider-specific configuration patterns and metadata
+4. Identify cross-cloud connections and hybrid architectures
+5. Detect container orchestration platforms (Kubernetes, Docker Swarm)
+6. Recognize serverless and managed service patterns
+7. Identify networking and security service providers
+8. Look for provider-specific monitoring and management tools
 
 Return ONLY valid JSON without any prefix or suffix:
 
@@ -250,6 +301,150 @@ Content: ${fileContent}`;
       connections: ensureArrayStage1(rawExtractedData.connections, []),
       summary: rawExtractedData.summary || ''
     };
+
+    // ENHANCED CLOUD PROVIDER VALIDATION
+    console.log('🔍 Validating cloud provider detection accuracy...');
+    
+    // Function to detect cloud provider from component details
+    const detectCloudProviderFromComponent = (component: Record<string, unknown>): string[] => {
+      const providers: string[] = [];
+      const name = String(component.name || '').toLowerCase();
+      const type = String(component.type || '').toLowerCase();
+      const cloudService = String(component.cloudService || '').toLowerCase();
+      const description = String(component.description || '').toLowerCase();
+      const config = component.configuration || {};
+      
+      // AWS Detection
+      const awsPatterns = [
+        'ec2', 's3', 'lambda', 'rds', 'vpc', 'cloudfront', 'route53', 'iam', 'kms',
+        'elastic', 'dynamodb', 'sns', 'sqs', 'api gateway', 'elb', 'alb', 'nlb',
+        'cloudformation', 'cloudtrail', 'config', 'systems manager', 'sagemaker',
+        'rekognition', 'comprehend', 'polly', 'lex', 'personalize', 'kinesis',
+        'emr', 'athena', 'quicksight', 'cloudwatch', 'x-ray', 'codecommit',
+        'codebuild', 'codedeploy', 'codepipeline', 'fargate', 'eks', 'ecs',
+        'batch', 'lightsail', 'ebs', 'efs', 'fsx', 'glacier', 'storage gateway',
+        'elasticache', 'redshift', 'neptune', 'documentdb', 'timestream',
+        'direct connect', 'transit gateway', 'secrets manager', 'certificate manager',
+        'waf', 'shield', 'guardduty', 'aws-', 'amazon-', 'amazonaws.com', 'arn:aws:'
+      ];
+      
+      // Azure Detection
+      const azurePatterns = [
+        'app service', 'blob storage', 'functions', 'sql database', 'virtual network',
+        'load balancer', 'application gateway', 'cdn', 'dns', 'expressroute',
+        'vpn gateway', 'azure ad', 'key vault', 'security center', 'sentinel',
+        'ddos protection', 'waf', 'data factory', 'stream analytics', 'hdinsight',
+        'databricks', 'power bi', 'monitor', 'cognitive services', 'machine learning',
+        'bot service', 'computer vision', 'speech services', 'resource manager',
+        'policy', 'blueprints', 'cost management', 'advisor', 'devops',
+        'app configuration', 'service bus', 'event grid', 'logic apps',
+        'container instances', 'aks', 'batch', 'service fabric', 'file storage',
+        'queue storage', 'table storage', 'disk storage', 'archive storage',
+        'cosmos db', 'database for mysql', 'database for postgresql', 'redis cache',
+        'synapse analytics', 'azure-', 'microsoft-', 'azure.com', 'windows.net',
+        '/subscriptions/'
+      ];
+      
+      // GCP Detection
+      const gcpPatterns = [
+        'compute engine', 'app engine', 'cloud functions', 'gke', 'cloud run',
+        'batch', 'preemptible vms', 'cloud storage', 'persistent disk', 'filestore',
+        'cloud sql', 'spanner', 'firestore', 'bigtable', 'vpc', 'cloud load balancing',
+        'cloud cdn', 'cloud dns', 'cloud interconnect', 'cloud nat', 'cloud iam',
+        'secret manager', 'security command center', 'cloud armor', 'identity platform',
+        'bigquery', 'dataflow', 'dataproc', 'pub/sub', 'cloud composer', 'data studio',
+        'monitoring', 'ai platform', 'automl', 'vision api', 'speech-to-text',
+        'translation api', 'dialogflow', 'cloud resource manager', 'deployment manager',
+        'cloud console', 'cloud shell', 'cloud build', 'container registry',
+        'artifact registry', 'cloud source repositories', 'gcp-', 'google-',
+        'googleapis.com', 'gcp.com', 'projects/'
+      ];
+      
+      // Kubernetes Detection
+      const k8sPatterns = [
+        'kubernetes', 'k8s', 'pod', 'service', 'deployment', 'configmap', 'secret',
+        'ingress', 'persistentvolume', 'statefulset', 'daemonset', 'job', 'cronjob',
+        'namespace', 'rbac', 'network policy', 'pod security policy', 'admission controller',
+        'kubernetes.io/', 'k8s.io/', 'apiVersion:', 'kind:', 'eks', 'aks', 'gke',
+        'openshift', 'rancher'
+      ];
+      
+      // Check all patterns
+      const allText = `${name} ${type} ${cloudService} ${description} ${JSON.stringify(config)}`.toLowerCase();
+      
+      if (awsPatterns.some(pattern => allText.includes(pattern))) {
+        providers.push('aws');
+      }
+      if (azurePatterns.some(pattern => allText.includes(pattern))) {
+        providers.push('azure');
+      }
+      if (gcpPatterns.some(pattern => allText.includes(pattern))) {
+        providers.push('gcp');
+      }
+      if (k8sPatterns.some(pattern => allText.includes(pattern))) {
+        providers.push('kubernetes');
+      }
+      
+      return providers;
+    };
+    
+    // Validate and enhance cloud provider detection
+    const detectedProviders = new Set<string>();
+    extractedData.components.forEach((component: Record<string, unknown>) => {
+      const componentProviders = detectCloudProviderFromComponent(component);
+      componentProviders.forEach(provider => detectedProviders.add(provider));
+    });
+    
+    // Additional file content analysis for missed providers
+    if (fileType !== 'image') {
+      const fileContentLower = fileContent.toLowerCase();
+      
+      // AWS patterns in file content
+      if (fileContentLower.includes('aws:') || fileContentLower.includes('amazon:') || 
+          fileContentLower.includes('provider "aws"') || fileContentLower.includes('provider "amazon"') ||
+          fileContentLower.includes('arn:aws:') || fileContentLower.includes('amazonaws.com')) {
+        detectedProviders.add('aws');
+      }
+      
+      // Azure patterns in file content
+      if (fileContentLower.includes('azure:') || fileContentLower.includes('microsoft:') ||
+          fileContentLower.includes('provider "azurerm"') || fileContentLower.includes('provider "azure"') ||
+          fileContentLower.includes('azure.com') || fileContentLower.includes('windows.net') ||
+          fileContentLower.includes('/subscriptions/')) {
+        detectedProviders.add('azure');
+      }
+      
+      // GCP patterns in file content
+      if (fileContentLower.includes('google:') || fileContentLower.includes('gcp:') ||
+          fileContentLower.includes('provider "google"') || fileContentLower.includes('provider "gcp"') ||
+          fileContentLower.includes('googleapis.com') || fileContentLower.includes('gcp.com') ||
+          fileContentLower.includes('projects/')) {
+        detectedProviders.add('gcp');
+      }
+      
+      // Kubernetes patterns in file content
+      if (fileContentLower.includes('apiVersion:') || fileContentLower.includes('kind:') ||
+          fileContentLower.includes('kubernetes.io/') || fileContentLower.includes('k8s.io/') ||
+          fileContentLower.includes('metadata:') || fileContentLower.includes('spec:')) {
+        detectedProviders.add('kubernetes');
+      }
+    }
+    
+    // Update metadata with enhanced detection
+    if (detectedProviders.size > 0) {
+      const detectedProvidersArray = Array.from(detectedProviders);
+      extractedData.metadata = {
+        ...extractedData.metadata,
+        cloudProviders: detectedProvidersArray,
+        primaryCloudProvider: detectedProvidersArray[0] || 'unknown',
+        hybridCloudModel: detectedProvidersArray.length > 1 ? 'multi-cloud' : 
+                          detectedProvidersArray.includes('kubernetes') ? 'hybrid-cloud' : 'single-cloud'
+      };
+      
+      console.log(`✅ Enhanced cloud provider detection: ${detectedProvidersArray.join(', ')}`);
+    } else {
+      console.log('⚠️ No cloud providers detected from components or file content, using LLM detection');
+    }
     
     console.log('Stage 1 complete: Extracted', extractedData.components?.length || 0, 'components');
     console.log('Stage 1 components type:', typeof extractedData.components, 'isArray:', Array.isArray(extractedData.components));
@@ -261,15 +456,65 @@ Content: ${fileContent}`;
     console.log(`Found ${enabledItems.length} active checklist items across ${new Set(enabledItems.map(item => item.category)).size} categories`);
     
     // STAGE 2: Comprehensive analysis
-    const analysisPrompt = `Analyze this architecture and provide comprehensive security, risk, and compliance assessment.
+    const analysisPrompt = `Analyze this architecture and provide comprehensive security, risk, and compliance assessment with enhanced cloud provider awareness.
 
 Context: App "${componentName}" in ${environment} environment.
 
-CLOUD PROVIDER CONTEXT:
+ENHANCED CLOUD PROVIDER CONTEXT:
 - Primary Cloud Provider: ${extractedData.metadata?.primaryCloudProvider || 'unknown'}
 - Hybrid Cloud Model: ${extractedData.metadata?.hybridCloudModel || 'unknown'}
 - Deployment Model: ${extractedData.metadata?.deploymentModel || 'unknown'}
 - Cloud Providers Used: ${extractedData.metadata?.cloudProviders?.join(', ') || 'unknown'}
+- Architecture Type: ${extractedData.metadata?.architectureType || 'unknown'}
+- Estimated Complexity: ${extractedData.metadata?.estimatedComplexity || 'unknown'}
+
+CLOUD PROVIDER-SPECIFIC ANALYSIS:
+Based on the detected cloud providers, focus your analysis on provider-specific best practices:
+
+${extractedData.metadata?.cloudProviders?.includes('aws') ? `
+AWS-SPECIFIC CONSIDERATIONS:
+- Security: IAM policies, S3 bucket policies, VPC security groups, NACLs, WAF rules, KMS encryption
+- Compliance: AWS Config, CloudTrail, GuardDuty, Security Hub, Well-Architected Framework
+- Cost: Reserved Instances, Spot Instances, S3 storage classes, CloudWatch costs
+- Reliability: Multi-AZ deployments, Auto Scaling, ELB health checks, RDS backups
+- Performance: CloudFront, ElastiCache, RDS read replicas, EBS optimization
+` : ''}
+
+${extractedData.metadata?.cloudProviders?.includes('azure') ? `
+AZURE-SPECIFIC CONSIDERATIONS:
+- Security: Azure AD RBAC, NSG rules, Key Vault, Security Center, Sentinel, DDoS Protection
+- Compliance: Azure Policy, Blueprint, Compliance Manager, Security Center recommendations
+- Cost: Reserved Instances, Spot VMs, Storage tiers, Cost Management, Advisor recommendations
+- Reliability: Availability Sets, Load Balancer, SQL Database geo-replication, Backup Vault
+- Performance: CDN, Redis Cache, SQL Database read replicas, Premium Storage
+` : ''}
+
+${extractedData.metadata?.cloudProviders?.includes('gcp') ? `
+GCP-SPECIFIC CONSIDERATIONS:
+- Security: Cloud IAM, VPC firewall rules, Secret Manager, Security Command Center, Cloud Armor
+- Compliance: Cloud Asset Inventory, Security Command Center, Cloud Audit Logs, Policy Intelligence
+- Cost: Committed Use Discounts, Preemptible VMs, Storage classes, Cost Management, Recommender
+- Reliability: Managed Instance Groups, Load Balancing, Cloud SQL replicas, Persistent Disk snapshots
+- Performance: Cloud CDN, Memorystore, Cloud SQL read replicas, SSD persistent disks
+` : ''}
+
+${extractedData.metadata?.cloudProviders?.includes('kubernetes') ? `
+KUBERNETES-SPECIFIC CONSIDERATIONS:
+- Security: RBAC, Network Policies, Pod Security Policies, Admission Controllers, Secrets management
+- Compliance: CIS Kubernetes Benchmark, Pod Security Standards, Network segmentation
+- Cost: Resource requests/limits, Horizontal Pod Autoscaler, Cluster autoscaling, Node optimization
+- Reliability: Pod disruption budgets, Health checks, Rolling updates, StatefulSets
+- Performance: Resource optimization, Service mesh, Ingress controllers, Storage classes
+` : ''}
+
+${extractedData.metadata?.hybridCloudModel === 'multi-cloud' || extractedData.metadata?.hybridCloudModel === 'hybrid-cloud' ? `
+MULTI-CLOUD/HYBRID CONSIDERATIONS:
+- Security: Cross-cloud identity federation, data encryption in transit, network connectivity
+- Compliance: Data sovereignty, cross-border data transfer, unified compliance monitoring
+- Cost: Cross-cloud cost optimization, data transfer costs, vendor lock-in mitigation
+- Reliability: Disaster recovery across clouds, data replication, failover strategies
+- Performance: Cross-cloud latency, data synchronization, network optimization
+` : ''}
 
 Architecture Data:
 ${JSON.stringify(extractedData, null, 2)}

@@ -10,13 +10,8 @@ import {
   Webhook,
   CheckCircle,
   AlertCircle,
-  Info,
   Settings,
-  ToggleLeft,
-  ToggleRight,
   Clock,
-  User,
-  Shield,
   Zap
 } from 'lucide-react';
 

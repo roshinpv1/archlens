@@ -9,14 +9,11 @@ import {
   Trash2, 
   Eye, 
   EyeOff,
-  AlertTriangle,
   CheckCircle,
   Lock,
   Key,
   Users,
-  Globe,
-  Clock,
-  Settings
+  Globe
 } from 'lucide-react';
 
 interface SecurityPolicy {

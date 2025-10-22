@@ -132,11 +132,11 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
 
     // Debug: Log the request data
     console.log('📝 Sending analysis request:');
-    console.log('appId:', request.metadata.appId);
-    console.log('componentName:', request.metadata.componentName);
-    console.log('description:', request.metadata.description);
-    console.log('environment:', request.metadata.environment);
-    console.log('version:', request.metadata.version);
+    console.log('appId:', request.metadata?.appId);
+    console.log('componentName:', request.metadata?.componentName);
+    console.log('description:', request.metadata?.description);
+    console.log('environment:', request.metadata?.environment);
+    console.log('version:', request.metadata?.version);
 
     onAnalysisStart({
       stage: "uploading",
@@ -148,13 +148,13 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
       const formData = new FormData();
       formData.append('file', request.file);
       // Send individual fields as expected by the analyze route
-      formData.append('appId', request.metadata.appId);
-      formData.append('componentName', request.metadata.componentName);
-      if (request.metadata.description) {
+      formData.append('appId', request.metadata?.appId || '');
+      formData.append('componentName', request.metadata?.componentName || '');
+      if (request.metadata?.description) {
         formData.append('description', request.metadata.description);
       }
-      formData.append('environment', request.metadata.environment);
-      if (request.metadata.version) {
+      formData.append('environment', request.metadata?.environment || 'development');
+      if (request.metadata?.version) {
         formData.append('version', request.metadata.version);
       }
 

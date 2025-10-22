@@ -6,18 +6,14 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  Filter,
   CheckSquare,
   Square,
   Save,
   X,
-  AlertCircle,
   Shield,
   Zap,
   DollarSign,
-  Target,
-  Eye,
-  EyeOff
+  Target
 } from 'lucide-react';
 
 interface ChecklistItem {

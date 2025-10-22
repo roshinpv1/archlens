@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Cloud, Shield, Zap, Activity, CheckCircle, AlertCircle, XCircle, Settings, Bell, Home, BarChart3, FileText, Menu, X } from "lucide-react";
+import { Cloud, Activity, CheckCircle, AlertCircle, XCircle, Settings, Bell, Home, BarChart3, Menu, X, Library } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -99,6 +99,18 @@ export function Header() {
             >
               <BarChart3 className="w-4 h-4" />
               <span>Analyses</span>
+            </Link>
+            
+            <Link
+              href="/library"
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                pathname.startsWith('/library')
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+              }`}
+            >
+              <Library className="w-4 h-4" />
+              <span>Library</span>
             </Link>
             
             <Link
@@ -255,6 +267,19 @@ export function Header() {
               >
                 <BarChart3 className="w-5 h-5" />
                 <span>Analyses</span>
+              </Link>
+              
+              <Link
+                href="/library"
+                onClick={() => setShowMobileMenu(false)}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                  pathname.startsWith('/library')
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+                }`}
+              >
+                <Library className="w-5 h-5" />
+                <span>Library</span>
               </Link>
               
               <Link

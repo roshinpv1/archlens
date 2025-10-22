@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Palette, 
   Save, 
   Upload, 
   Eye, 
-  Download,
   Image,
-  Type,
-  Layout,
-  Sun,
-  Moon,
-  Monitor,
-  Settings,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';

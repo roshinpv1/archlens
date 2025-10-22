@@ -2,33 +2,17 @@
 
 import { useState } from 'react';
 import { Header } from '@/components/Header';
-import { BlueprintManager } from '@/components/BlueprintManager';
-import { ChecklistManager } from '@/components/ChecklistManager';
 import { DatabaseConfig } from '@/components/DatabaseConfig';
 import { SecurityConfig } from '@/components/SecurityConfig';
 import { UserManagement } from '@/components/UserManagement';
 import { NotificationsConfig } from '@/components/NotificationsConfig';
 import { AppearanceConfig } from '@/components/AppearanceConfig';
-import { Settings, CheckSquare, FileText, Database, Shield, Users, Bell, Palette } from 'lucide-react';
+import { Settings, Database, Shield, Users, Bell, Palette } from 'lucide-react';
 
 export default function ConfigurationPage() {
-  const [activeTab, setActiveTab] = useState('checklist');
+  const [activeTab, setActiveTab] = useState('database');
 
   const configurationSections = [
-    {
-      id: 'checklist',
-      name: 'Checklist Management',
-      description: 'Manage security and compliance checklist items',
-      icon: CheckSquare,
-      color: 'text-blue-600'
-    },
-    {
-      id: 'blueprints',
-      name: 'Blueprint Library',
-      description: 'Manage architecture blueprints and IAC templates',
-      icon: FileText,
-      color: 'text-green-600'
-    },
     {
       id: 'database',
       name: 'Database Settings',
@@ -117,16 +101,6 @@ export default function ConfigurationPage() {
           {/* Configuration Content */}
           <div className="lg:col-span-3">
             <div className="bg-surface border border-border rounded-xl p-8">
-              {activeTab === 'checklist' && (
-                <ChecklistManager />
-              )}
-
-              {activeTab === 'blueprints' && (
-                <div>
-                  <BlueprintManager />
-                </div>
-              )}
-
               {activeTab === 'database' && (
                 <DatabaseConfig />
               )}

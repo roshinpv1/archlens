@@ -28,8 +28,8 @@ export async function optimizeImage(
 ): Promise<ImageOptimizationResult> {
   const {
     quality = 100,
-    maxWidth = 512,
-    maxHeight = 512
+    maxWidth = 768,
+    maxHeight = 768
   } = options;
 
   try {
