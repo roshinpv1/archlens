@@ -49,7 +49,7 @@ export function DatabaseConfig() {
     connectionString: process.env.MONGODB_URI || '',
     host: 'localhost',
     port: 27017,
-    database: 'cloudarch',
+    database: 'CloudArc',
     username: '',
     password: '',
     ssl: false,
@@ -267,7 +267,7 @@ export function DatabaseConfig() {
                 value={config.connectionString}
                 onChange={(e) => handleInputChange('connectionString', e.target.value)}
                 className="w-full px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="mongodb://localhost:27017/cloudarch"
+                placeholder="mongodb://localhost:27017/CloudArc"
               />
             </div>
 

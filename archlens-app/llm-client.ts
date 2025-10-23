@@ -419,15 +419,56 @@ export class LLMClient {
         // Ignore JSON parse errors for headers
       }
 
-      const response = await fetch(this.config.baseUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      // Check if prompt contains base64 image data
+      const isImagePrompt = prompt.includes('Base64 Image Data:');
+      let requestBody: any;
+
+      if (isImagePrompt) {
+        // Extract base64 image data and text prompt
+        const base64Match = prompt.match(/Base64 Image Data: (.+)/);
+        const textPrompt = prompt.replace(/Base64 Image Data: .+/, '').trim();
+        
+        if (base64Match) {
+          const base64Data = base64Match[1];
+          const imageMimeType = this.detectImageMimeType(base64Data);
+          
+          // Enterprise providers may support different formats
+          // Try OpenAI-compatible format first
+          requestBody = {
+            model: this.config.model,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: textPrompt },
+                  { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Data}` } }
+                ]
+              }
+            ],
+            temperature: this.config.temperature,
+            max_tokens: this.config.maxTokens
+          };
+        } else {
+          requestBody = {
+            model: this.config.model,
+            prompt: textPrompt,
+            temperature: this.config.temperature,
+            max_tokens: this.config.maxTokens
+          };
+        }
+      } else {
+        requestBody = {
           model: this.config.model,
           prompt: prompt,
           temperature: this.config.temperature,
           max_tokens: this.config.maxTokens
-        }),
+        };
+      }
+
+      const response = await fetch(this.config.baseUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       });
 
@@ -443,7 +484,8 @@ export class LLMClient {
       }
 
       const data = await response.json();
-      return data.response;
+      // Handle both OpenAI-compatible and custom response formats
+      return data.response || data.choices?.[0]?.message?.content || data.content || data.text || '';
 
     } catch (error) {
       clearTimeout(timeoutId);
@@ -485,6 +527,35 @@ export class LLMClient {
         });
       };
 
+      // Check if prompt contains base64 image data
+      const isImagePrompt = prompt.includes('Base64 Image Data:');
+      let messages: any[];
+
+      if (isImagePrompt) {
+        // Extract base64 image data and text prompt
+        const base64Match = prompt.match(/Base64 Image Data: (.+)/);
+        const textPrompt = prompt.replace(/Base64 Image Data: .+/, '').trim();
+        
+        if (base64Match) {
+          const base64Data = base64Match[1];
+          const imageMimeType = this.detectImageMimeType(base64Data);
+          
+          messages = [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: textPrompt },
+                { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Data}` } }
+              ]
+            }
+          ];
+        } else {
+          messages = [{ role: 'user', content: textPrompt }];
+        }
+      } else {
+        messages = [{ role: 'user', content: prompt }];
+      }
+
       const headers = {
         'x-w-request-date': new Date().toISOString(),
         'Authorization': `Bearer ${apigeeToken}`,
@@ -501,7 +572,7 @@ export class LLMClient {
         headers,
         body: JSON.stringify({
           model: this.config.model,
-          messages: [{ role: 'user', content: prompt }],
+          messages: messages,
           temperature: this.config.temperature,
           max_tokens: this.config.maxTokens
         }),

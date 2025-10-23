@@ -10,8 +10,6 @@ import {
   Tag, 
   FileText, 
   Image, 
-  Copy,
-  Share2,
   Edit,
   Trash2,
   Eye,
@@ -21,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
+import { formatDate } from '@/utils/dateUtils';
 
 interface BlueprintViewerProps {
   blueprint: Blueprint;
@@ -52,7 +51,7 @@ export function BlueprintViewer({
       case BlueprintType.IAC:
         return <FileText className="w-6 h-6" />;
       case BlueprintType.TEMPLATE:
-        return <Copy className="w-6 h-6" />;
+        return <FileText className="w-6 h-6" />;
       default:
         return <FileText className="w-6 h-6" />;
     }
@@ -84,30 +83,6 @@ export function BlueprintViewer({
     onRate?.(blueprint, rating);
   };
 
-  const handleShare = async () => {
-    const shareData = {
-      title: blueprint.name,
-      text: blueprint.description,
-      url: window.location.href
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log('Error sharing:', err);
-      }
-    } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(window.location.href);
-      // You could show a toast notification here
-    }
-  };
-
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    // You could show a toast notification here
-  };
 
   if (!isOpen) return null;
 
@@ -115,31 +90,17 @@ export function BlueprintViewer({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+        <div className="flex items-center justify-between p-6 border-b border-border overflow-hidden">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
               {getFileIcon(blueprint.type)}
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">{blueprint.name}</h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-semibold text-foreground truncate" title={blueprint.name}>{blueprint.name}</h2>
               <p className="text-sm text-foreground-muted">v{blueprint.version}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-              title="Share"
-            >
-              <Share2 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleCopyLink}
-              className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-              title="Copy Link"
-            >
-              <Copy className="w-5 h-5" />
-            </button>
             {onEdit && (
               <button
                 onClick={() => onEdit(blueprint)}
@@ -378,12 +339,12 @@ export function BlueprintViewer({
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-foreground-muted" />
                       <span className="text-sm text-foreground-muted">Created:</span>
-                      <span className="text-sm text-foreground">{blueprint.createdAt.toLocaleDateString()}</span>
+                      <span className="text-sm text-foreground">{formatDate(blueprint.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-foreground-muted" />
                       <span className="text-sm text-foreground-muted">Updated:</span>
-                      <span className="text-sm text-foreground">{blueprint.updatedAt.toLocaleDateString()}</span>
+                      <span className="text-sm text-foreground">{formatDate(blueprint.updatedAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -434,7 +395,7 @@ export function BlueprintViewer({
                         <div className="text-sm text-foreground-muted">Current version</div>
                       </div>
                       <div className="text-sm text-foreground-muted">
-                        {blueprint.updatedAt.toLocaleDateString()}
+                        {formatDate(blueprint.updatedAt)}
                       </div>
                     </div>
                   </div>

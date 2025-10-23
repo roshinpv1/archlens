@@ -265,6 +265,49 @@ h4 { font-size: var(--font-size-lg); }
 .status-error { color: var(--error); background-color: var(--error-light); }
 .status-info { color: var(--info); background-color: var(--info-light); }
 
+/* Line Clamp Utilities for Text Truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Blueprint Card Specific Styles */
+.blueprint-card {
+  overflow: hidden;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.blueprint-card .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blueprint-card .flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.blueprint-card .min-w-0 {
+  min-width: 0;
+}
+
 /* Print Styles for Enterprise Reports */
 @media print {
   body { background: white; color: black; }

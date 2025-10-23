@@ -158,7 +158,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                    CloudArch Dashboard
+                    CloudArc Dashboard
                   </h1>
                   <p className="text-lg text-foreground-muted mt-1">
                     Enterprise cloud architecture analysis and monitoring

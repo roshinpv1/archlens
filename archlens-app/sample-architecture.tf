@@ -1,4 +1,4 @@
-# Sample Cloud Architecture for Testing CloudArch
+# Sample Cloud Architecture for Testing CloudArc
 # This is a typical 3-tier web application architecture
 
 # VPC and Networking

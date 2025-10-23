@@ -131,38 +131,44 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
     setStep(step - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateStep(2)) {
-      const blueprint: Blueprint = {
-        id: Date.now().toString(),
-        name: blueprintData.name,
-        description: blueprintData.description,
-        type: blueprintData.type as Blueprint['type'],
-        category: blueprintData.category as Blueprint['category'],
-        tags: blueprintData.tags,
-        cloudProviders: [blueprintData.cloudProvider],
-        complexity: blueprintData.complexity as Blueprint['complexity'],
-        isPublic: blueprintData.isPublic,
-        fileSize: selectedFile?.size || 0,
-        fileName: selectedFile?.name || '',
-        fileType: selectedFile?.type || '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy: 'Current User',
-        downloadCount: 0,
-        rating: 0,
-        version: '1.0.0',
-        metadata: {
-          estimatedCost: blueprintData.estimatedCost ? parseInt(blueprintData.estimatedCost) : undefined,
-          deploymentTime: blueprintData.deploymentTime || undefined
-        },
-        downloads: 0,
-        author: 'Current User'
-      };
-      
-      onUpload(blueprint);
-      onClose();
-      resetForm();
+      try {
+        console.log('📤 Uploading blueprint:', blueprintData.name);
+        
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', selectedFile!);
+        formData.append('name', blueprintData.name);
+        formData.append('description', blueprintData.description);
+        formData.append('type', blueprintData.type);
+        formData.append('category', blueprintData.category);
+        formData.append('tags', JSON.stringify(blueprintData.tags));
+        formData.append('cloudProvider', blueprintData.cloudProvider);
+        formData.append('complexity', blueprintData.complexity);
+        formData.append('isPublic', blueprintData.isPublic.toString());
+        formData.append('estimatedCost', blueprintData.estimatedCost);
+        formData.append('deploymentTime', blueprintData.deploymentTime);
+        
+        const response = await fetch('/api/blueprints', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const newBlueprint = await response.json();
+          console.log('✅ Blueprint uploaded successfully:', newBlueprint.name);
+          onUpload(newBlueprint);
+          onClose();
+          resetForm();
+        } else {
+          console.error('❌ Failed to upload blueprint:', response.statusText);
+          alert('Failed to upload blueprint. Please try again.');
+        }
+      } catch (error) {
+        console.error('❌ Error uploading blueprint:', error);
+        alert('Error uploading blueprint. Please try again.');
+      }
     }
   };
 

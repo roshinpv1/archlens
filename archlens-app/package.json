@@ -1,5 +1,5 @@
 {
-  "name": "cloudarch-app",
+  "name": "CloudArc-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,9 +7,13 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "init-checklist": "node scripts/initialize-checklist.js"
+    "init-checklist": "node scripts/initialize-checklist.js",
+    "setup-embeddings": "./scripts/setup-embeddings.sh",
+    "start-services": "echo 'Starting embeddings services...' && ollama serve & docker run -d --name qdrant-archlens -p 6333:6333 -p 6334:6334 qdrant/qdrant && echo 'Services started! Run npm run dev to start the app.'",
+    "stop-services": "echo 'Stopping embeddings services...' && pkill -f ollama && docker stop qdrant-archlens && docker rm qdrant-archlens && echo 'Services stopped!'"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.7.0",
     "@types/file-saver": "^2.0.7",
     "@types/mongodb": "^4.0.6",
     "file-saver": "^2.0.5",

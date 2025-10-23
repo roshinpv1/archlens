@@ -1,4 +1,4 @@
-# CloudArch - Cloud Architecture Review System
+# CloudArc - Cloud Architecture Review System
 
 A comprehensive AI-powered cloud architecture analysis and review system that supports multiple cloud platforms and provides detailed analysis of architecture diagrams and Infrastructure as Code (IaC) files.
 
@@ -29,7 +29,7 @@ A comprehensive AI-powered cloud architecture analysis and review system that su
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd cloudarch-app
+cd CloudArc-app
 ```
 
 2. Install dependencies:

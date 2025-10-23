@@ -1,7 +1,7 @@
-# CloudArch - Simple Architecture Overview
+# CloudArc - Simple Architecture Overview
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CLOUDARCH PLATFORM                               │
+│                              CloudArc PLATFORM                               │
 │                        AI-Powered Cloud Architecture Analysis                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 

@@ -15,17 +15,16 @@ import {
   Copy,
   X,
   BarChart3,
-  Share2,
   GitBranch
 } from 'lucide-react';
 import { BlueprintUploadModal } from './BlueprintUploadModal';
 import { BlueprintViewer } from './BlueprintViewer';
 import { BlueprintEditModal } from './BlueprintEditModal';
 import { BlueprintVersionManager } from './BlueprintVersionManager';
-import { BlueprintSharing } from './BlueprintSharing';
 import { BlueprintSearch } from './BlueprintSearch';
 import { BlueprintAnalytics } from './BlueprintAnalytics';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
+import { formatDate } from '@/utils/dateUtils';
 
 interface SearchFilters {
   search: string;
@@ -56,7 +55,6 @@ export function BlueprintManager() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
   const [showVersionManager, setShowVersionManager] = useState(false);
-  const [showSharing, setShowSharing] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'search' | 'analytics'>('list');
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
@@ -76,94 +74,33 @@ export function BlueprintManager() {
     }
   });
 
-  // Mock data for demonstration
+  // Fetch blueprints from API
   useEffect(() => {
-    const mockBlueprints: Blueprint[] = [
-      {
-        id: '1',
-        name: 'E-commerce Microservices Architecture',
-        description: 'Complete e-commerce platform with microservices architecture on AWS',
-        type: BlueprintType.ARCHITECTURE,
-        category: BlueprintCategory.E_COMMERCE,
-        tags: ['microservices', 'aws', 'e-commerce', 'scalable'],
-        fileName: 'ecommerce-architecture.png',
-        fileSize: 2048576,
-        fileType: 'image/png',
-        thumbnail: '/api/placeholder/300/200',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-        createdBy: 'John Doe',
-        isPublic: true,
-        downloadCount: 45,
-        rating: 4.8,
-        version: '1.2.0',
-        cloudProviders: ['aws'],
-        complexity: BlueprintComplexity.HIGH,
-        metadata: {
-          components: 12,
-          connections: 18,
-          estimatedCost: 2500,
-          deploymentTime: '2-3 weeks'
+    const fetchBlueprints = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Fetching blueprints from API...');
+        
+        const response = await fetch('/api/blueprints');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Blueprints fetched successfully:', data.blueprints?.length || 0, 'blueprints');
+          setBlueprints(data.blueprints || []);
+        } else {
+          console.error('❌ Failed to fetch blueprints:', response.statusText);
+          // Fallback to empty array
+          setBlueprints([]);
         }
-      },
-      {
-        id: '2',
-        name: 'Kubernetes Production Setup',
-        description: 'Production-ready Kubernetes cluster with monitoring and logging',
-        type: BlueprintType.IAC,
-        category: BlueprintCategory.DEVOPS,
-        tags: ['kubernetes', 'terraform', 'monitoring', 'production'],
-        fileName: 'k8s-production.tf',
-        fileSize: 153600,
-        fileType: 'text/plain',
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-12'),
-        createdBy: 'Jane Smith',
-        isPublic: true,
-        downloadCount: 32,
-        rating: 4.6,
-        version: '2.1.0',
-        cloudProviders: ['aws', 'azure'],
-        complexity: BlueprintComplexity.HIGH,
-        metadata: {
-          components: 8,
-          connections: 15,
-          estimatedCost: 1800,
-          deploymentTime: '1-2 weeks'
-        }
-      },
-      {
-        id: '3',
-        name: 'Simple Web Application',
-        description: 'Basic web application with database and CDN',
-        type: BlueprintType.TEMPLATE,
-        category: BlueprintCategory.WEB_DEVELOPMENT,
-        tags: ['web', 'simple', 'database', 'cdn'],
-        fileName: 'simple-web-app.yaml',
-        fileSize: 8192,
-        fileType: 'text/yaml',
-        createdAt: new Date('2024-01-08'),
-        updatedAt: new Date('2024-01-08'),
-        createdBy: 'Mike Johnson',
-        isPublic: true,
-        downloadCount: 67,
-        rating: 4.2,
-        version: '1.0.0',
-        cloudProviders: ['aws'],
-        complexity: BlueprintComplexity.LOW,
-        metadata: {
-          components: 4,
-          connections: 6,
-          estimatedCost: 500,
-          deploymentTime: '2-3 days'
-        }
+      } catch (error) {
+        console.error('❌ Error fetching blueprints:', error);
+        // Fallback to empty array
+        setBlueprints([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setTimeout(() => {
-      setBlueprints(mockBlueprints);
-      setLoading(false);
-    }, 1000);
+    };
+
+    fetchBlueprints();
   }, []);
 
   const filteredBlueprints = blueprints.filter(blueprint => {
@@ -218,6 +155,25 @@ export function BlueprintManager() {
     // Add the new blueprint to the list
     setBlueprints(prev => [newBlueprint, ...prev]);
     setShowUploadModal(false);
+    console.log('✅ Blueprint uploaded successfully:', newBlueprint.name);
+  };
+
+  const refreshBlueprints = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Refreshing blueprints...');
+      
+      const response = await fetch('/api/blueprints');
+      if (response.ok) {
+        const data = await response.json();
+        setBlueprints(data.blueprints || []);
+        console.log('✅ Blueprints refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing blueprints:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleView = (blueprint: Blueprint) => {
@@ -258,9 +214,27 @@ export function BlueprintManager() {
     setShowEditModal(true);
   };
 
-  const handleDelete = (blueprint: Blueprint) => {
+  const handleDelete = async (blueprint: Blueprint) => {
     if (confirm(`Are you sure you want to delete "${blueprint.name}"?`)) {
-      setBlueprints(blueprints.filter(b => b.id !== blueprint.id));
+      try {
+        console.log('🗑️ Deleting blueprint:', blueprint.name);
+        
+        const response = await fetch(`/api/blueprints/${blueprint.id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          console.log('✅ Blueprint deleted successfully');
+          // Remove from local state
+          setBlueprints(prev => prev.filter(b => b.id !== blueprint.id));
+        } else {
+          console.error('❌ Failed to delete blueprint:', response.statusText);
+          alert('Failed to delete blueprint. Please try again.');
+        }
+      } catch (error) {
+        console.error('❌ Error deleting blueprint:', error);
+        alert('Error deleting blueprint. Please try again.');
+      }
     }
   };
 
@@ -287,12 +261,34 @@ export function BlueprintManager() {
     }
   };
 
-  const handleSaveEdit = (updatedBlueprint: Blueprint) => {
-    setBlueprints(prev => prev.map(b => 
-      b.id === updatedBlueprint.id ? updatedBlueprint : b
-    ));
-    setShowEditModal(false);
-    setEditingBlueprint(null);
+  const handleSaveEdit = async (updatedBlueprint: Blueprint) => {
+    try {
+      console.log('💾 Saving blueprint changes:', updatedBlueprint.name);
+      
+      const response = await fetch(`/api/blueprints/${updatedBlueprint.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedBlueprint),
+      });
+
+      if (response.ok) {
+        console.log('✅ Blueprint updated successfully');
+        // Update local state
+        setBlueprints(prev => prev.map(b => 
+          b.id === updatedBlueprint.id ? updatedBlueprint : b
+        ));
+        setShowEditModal(false);
+        setEditingBlueprint(null);
+      } else {
+        console.error('❌ Failed to update blueprint:', response.statusText);
+        alert('Failed to update blueprint. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error updating blueprint:', error);
+      alert('Error updating blueprint. Please try again.');
+    }
   };
 
   const handleVersionManager = (blueprint: Blueprint) => {
@@ -300,18 +296,6 @@ export function BlueprintManager() {
     setShowVersionManager(true);
   };
 
-  const handleSharing = (blueprint: Blueprint) => {
-    setSelectedBlueprint(blueprint);
-    setShowSharing(true);
-  };
-
-  const handleVisibilityChange = (isPublic: boolean) => {
-    if (selectedBlueprint) {
-      setBlueprints(prev => prev.map(b => 
-        b.id === selectedBlueprint.id ? { ...b, isPublic } : b
-      ));
-    }
-  };
 
   const handleSearchFiltersChange = (filters: SearchFilters) => {
     setSearchFilters(filters);
@@ -349,6 +333,14 @@ export function BlueprintManager() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={refreshBlueprints}
+            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
+            title="Refresh blueprints"
+          >
+            <Search className="w-4 h-4" />
+            Refresh
+          </button>
           <button
             onClick={() => setShowAnalytics(true)}
             className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
@@ -441,85 +433,78 @@ export function BlueprintManager() {
       {/* Blueprints Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredBlueprints.map((blueprint) => (
-          <div key={blueprint.id} className="bg-surface border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
+          <div key={blueprint.id} className="blueprint-card bg-surface border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start gap-4 mb-4">
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                 {getFileIcon(blueprint.type)}
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{blueprint.name}</h3>
-                <p className="text-sm text-foreground-muted line-clamp-2">{blueprint.description}</p>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <h3 className="font-semibold text-foreground truncate" title={blueprint.name}>{blueprint.name}</h3>
+                <p className="text-sm text-foreground-muted line-clamp-2" title={blueprint.description}>{blueprint.description}</p>
               </div>
             </div>
 
             <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getComplexityColor(blueprint.complexity)}`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getComplexityColor(blueprint.complexity)}`}>
                   {blueprint.complexity} complexity
                 </span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium whitespace-nowrap">
                   v{blueprint.version}
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 overflow-hidden">
                 {blueprint.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs">
+                  <span key={tag} className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap truncate max-w-20" title={tag}>
                     {tag}
                   </span>
                 ))}
                 {blueprint.tags.length > 3 && (
-                  <span className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs">
+                  <span className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap">
                     +{blueprint.tags.length - 3}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-foreground-muted">
-                <div className="flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  {blueprint.downloadCount}
+              <div className="flex items-center gap-4 text-sm text-foreground-muted overflow-hidden">
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <Download className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{blueprint.downloadCount}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3" />
-                  {blueprint.rating}
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <Star className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{blueprint.rating}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {blueprint.createdAt.toLocaleDateString()}
+                <div className="flex items-center gap-1 whitespace-nowrap min-w-0">
+                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{formatDate(blueprint.createdAt)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-hidden">
               <button
                 onClick={() => handleView(blueprint)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors min-w-0"
               >
-                <Eye className="w-4 h-4" />
-                View
+                <Eye className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">View</span>
               </button>
               <button
                 onClick={() => handleDownload(blueprint)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors min-w-0"
               >
-                <Download className="w-4 h-4" />
-                Download
+                <Download className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Download</span>
               </button>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-shrink-0">
                 <button
                   onClick={() => handleVersionManager(blueprint)}
                   className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   title="Version Management"
                 >
                   <GitBranch className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleSharing(blueprint)}
-                  className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  title="Share"
-                >
-                  <Share2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleEdit(blueprint)}
@@ -610,18 +595,6 @@ export function BlueprintManager() {
         />
       )}
 
-      {/* Blueprint Sharing */}
-      {selectedBlueprint && (
-        <BlueprintSharing
-          blueprint={selectedBlueprint}
-          isOpen={showSharing}
-          onClose={() => {
-            setShowSharing(false);
-            setSelectedBlueprint(null);
-          }}
-          onVisibilityChange={handleVisibilityChange}
-        />
-      )}
 
       {/* Blueprint Analytics */}
       {showAnalytics && (

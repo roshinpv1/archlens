@@ -85,6 +85,21 @@ export interface IAnalysis extends Document {
   createdBy?: string;
   tags?: string[];
   status: 'completed' | 'processing' | 'failed';
+  
+  // Similar blueprints from vector search
+  similarBlueprints?: Array<{
+    id: string;
+    score: number;
+    blueprint: {
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      cloudProvider: string;
+      complexity: string;
+      tags: string[];
+    };
+  }>;
 }
 
 // Define the schema
@@ -170,7 +185,22 @@ const AnalysisSchema = new Schema<IAnalysis>({
   // Additional metadata
   createdBy: { type: String },
   tags: [{ type: String }],
-  status: { type: String, enum: ['completed', 'processing', 'failed'], default: 'completed' }
+  status: { type: String, enum: ['completed', 'processing', 'failed'], default: 'completed' },
+  
+  // Similar blueprints from vector search
+  similarBlueprints: [{
+    id: String,
+    score: Number,
+    blueprint: {
+      id: String,
+      name: String,
+      type: String,
+      category: String,
+      cloudProvider: String,
+      complexity: String,
+      tags: [String]
+    }
+  }]
 }, {
   timestamps: true,
   collection: 'analyses'

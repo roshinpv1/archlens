@@ -1,4 +1,4 @@
-# CloudArch - Detailed Architecture Diagram
+# CloudArc - Detailed Architecture Diagram
 ## Frontend & Backend Separation
 
 ---

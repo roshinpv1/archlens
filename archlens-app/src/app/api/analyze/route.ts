@@ -5,6 +5,7 @@ import { getChecklistItems } from '../../../services/checklistService';
 import { ArchitectureAnalysis } from '../../../types/architecture';
 import { LLMResponseData } from '../../../types/llm';
 import { smartOptimizeImage } from '../../../services/imageOptimizer';
+import { getSimilarityService } from '../../../services/similarityService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -841,9 +842,50 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     // Save to database
     const savedAnalysis = await saveAnalysis(analysis);
 
+    // Find similar blueprints for the analysis
+    let similarBlueprints: Array<{
+      id: string;
+      score: number;
+      blueprint: {
+        id: string;
+        name: string;
+        type: string;
+        category: string;
+        cloudProvider: string;
+        complexity: string;
+        tags: string[];
+      };
+    }> = [];
+    try {
+      const similarityService = getSimilarityService();
+      const similarityResult = await similarityService.findSimilarBlueprintsForAnalysis({
+        components: finalComponents,
+        connections: finalConnections,
+        description: analysis.summary,
+        metadata: {
+          architectureType: analysis.architectureDescription,
+          cloudProviders: analysis.metadata?.cloudProviders || [],
+          estimatedComplexity: 'Unknown',
+          primaryPurpose: analysis.summary,
+          environmentType: environment || 'Unknown'
+        }
+      });
+
+      if (similarityResult.success && similarityResult.similarBlueprints) {
+        similarBlueprints = similarityResult.similarBlueprints;
+        console.log(`✅ Found ${similarBlueprints.length} similar blueprints for analysis`);
+      } else {
+        console.warn(`⚠️ No similar blueprints found: ${similarityResult.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to find similar blueprints:', error);
+      // Don't fail the analysis if similarity search fails
+    }
+
     return NextResponse.json({
       ...analysis,
-      _id: savedAnalysis._id
+      _id: savedAnalysis._id,
+      similarBlueprints
     });
 
   } catch (error) {

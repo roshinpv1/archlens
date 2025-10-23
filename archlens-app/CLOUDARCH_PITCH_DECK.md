@@ -1,11 +1,11 @@
-# CloudArch - Cloud Architecture Review System
+# CloudArc - Cloud Architecture Review System
 ## Comprehensive Pitch Deck
 
 ---
 
 ## 🎯 Executive Summary
 
-**CloudArch** is an enterprise-grade cloud architecture analysis platform that leverages Large Language Models (LLMs) to automatically review, analyze, and optimize cloud infrastructure designs. Our platform transforms complex architecture diagrams and Infrastructure as Code (IaC) files into actionable insights, compliance assessments, and optimization recommendations.
+**CloudArc** is an enterprise-grade cloud architecture analysis platform that leverages Large Language Models (LLMs) to automatically review, analyze, and optimize cloud infrastructure designs. Our platform transforms complex architecture diagrams and Infrastructure as Code (IaC) files into actionable insights, compliance assessments, and optimization recommendations.
 
 ### Key Value Propositions
 - **Automated Architecture Analysis**: AI-powered review of cloud designs in minutes, not days
@@ -22,7 +22,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                CloudArch Platform                               │
+│                                CloudArc Platform                               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐            │
@@ -294,7 +294,7 @@ Result: 30% cost reduction, improved efficiency
 
 ### Competitive Landscape
 
-| Feature | CloudArch | AWS Well-Architected | Azure Advisor | GCP Recommender |
+| Feature | CloudArc | AWS Well-Architected | Azure Advisor | GCP Recommender |
 |---------|-----------|---------------------|---------------|-----------------|
 | Multi-Cloud Support | ✅ | ❌ | ❌ | ❌ |
 | Architecture Diagram Analysis | ✅ | ❌ | ❌ | ❌ |
@@ -564,10 +564,10 @@ api/
 - **Strategic Partners**: Enterprise software companies, security vendors
 
 ### Contact Information
-- **Email**: contact@cloudarch.ai
-- **Website**: https://cloudarch.ai
-- **LinkedIn**: https://linkedin.com/company/cloudarch
-- **Demo**: https://demo.cloudarch.ai
+- **Email**: contact@CloudArc.ai
+- **Website**: https://CloudArc.ai
+- **LinkedIn**: https://linkedin.com/company/CloudArc
+- **Demo**: https://demo.CloudArc.ai
 
 ---
 
@@ -586,7 +586,7 @@ api/
 - **ISO 27001**: Information security management
 
 ### Customer Testimonials
-> "CloudArch reduced our architecture review time from weeks to hours, while improving accuracy and compliance coverage." - CTO, Fortune 500 Financial Services
+> "CloudArc reduced our architecture review time from weeks to hours, while improving accuracy and compliance coverage." - CTO, Fortune 500 Financial Services
 
 > "The multi-cloud analysis capabilities helped us optimize our hybrid cloud strategy and reduce costs by 35%." - Cloud Architect, Global Technology Company
 
@@ -594,4 +594,4 @@ api/
 
 ---
 
-*This pitch deck represents the current state and future vision of CloudArch. For the most up-to-date information and technical specifications, please contact our team.*
+*This pitch deck represents the current state and future vision of CloudArc. For the most up-to-date information and technical specifications, please contact our team.*

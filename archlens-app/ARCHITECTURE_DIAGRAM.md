@@ -1,10 +1,10 @@
-# CloudArch System Architecture
+# CloudArc System Architecture
 
 ## High-Level System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                CloudArch Platform                               │
+│                                CloudArc Platform                               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐            │
@@ -312,4 +312,4 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-This architecture diagram provides a comprehensive view of the CloudArch system, showing all major components, data flows, and integration points. The system is designed for scalability, security, and enterprise-grade performance.
+This architecture diagram provides a comprehensive view of the CloudArc system, showing all major components, data flows, and integration points. The system is designed for scalability, security, and enterprise-grade performance.

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Upload, FileText, Image, Tag, AlertCircle, CheckCircle } from 'lucide-react';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
+import { formatDate } from '@/utils/dateUtils';
 
 interface BlueprintEditModalProps {
   blueprint: Blueprint;
@@ -416,7 +417,7 @@ export function BlueprintEditModal({ blueprint, isOpen, onClose, onSave }: Bluep
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-border">
           <div className="text-sm text-foreground-muted">
-            Last updated: {blueprint.updatedAt.toLocaleDateString()}
+            Last updated: {formatDate(blueprint.updatedAt)}
           </div>
           <div className="flex gap-2">
             <button

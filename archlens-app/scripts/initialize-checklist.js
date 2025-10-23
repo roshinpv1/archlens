@@ -254,7 +254,7 @@ const defaultChecklistItems = [
 async function initializeChecklist() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cloudarch';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/CloudArc';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 

@@ -1,4 +1,4 @@
-# CloudArch Project Architecture Diagram
+# CloudArc Project Architecture Diagram
 # AI-Powered Cloud Architecture Analysis Platform
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐

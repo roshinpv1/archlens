@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { Blueprint } from '@/types/blueprint';
+import { formatDate } from '@/utils/dateUtils';
 
 interface BlueprintVersion {
   id: string;
@@ -295,7 +296,7 @@ export function BlueprintVersionManager({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                     <div className="flex items-center gap-2 text-sm text-foreground-muted">
                       <Calendar className="w-4 h-4" />
-                      {version.createdAt.toLocaleDateString()}
+                      {formatDate(version.createdAt)}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-foreground-muted">
                       <User className="w-4 h-4" />

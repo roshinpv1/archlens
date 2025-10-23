@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/services/analysisService';
+import { getEmbeddingService } from '@/services/embeddingService';
 
 // Mock data - in production, this would fetch from MongoDB
 const mockBlueprints = [
@@ -91,13 +92,30 @@ export async function PUT(
     }
     
     // Update blueprint
-    mockBlueprints[blueprintIndex] = {
+    const updatedBlueprint = {
       ...mockBlueprints[blueprintIndex],
       ...updates,
       updatedAt: new Date()
     };
+    mockBlueprints[blueprintIndex] = updatedBlueprint;
+
+    // Update embedding if blueprint content changed
+    try {
+      const embeddingService = getEmbeddingService();
+      if (embeddingService.isAvailable()) {
+        const embeddingResult = await embeddingService.updateBlueprintEmbedding(updatedBlueprint);
+        if (embeddingResult.success) {
+          console.log(`✅ Blueprint embedding updated: ${embeddingResult.vectorId}`);
+        } else {
+          console.warn(`⚠️ Failed to update blueprint embedding: ${embeddingResult.error}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update blueprint embedding:', error);
+      // Don't fail the update if embedding update fails
+    }
     
-    return NextResponse.json(mockBlueprints[blueprintIndex]);
+    return NextResponse.json(updatedBlueprint);
   } catch (error) {
     console.error('Error updating blueprint:', error);
     return NextResponse.json(
@@ -128,7 +146,24 @@ export async function DELETE(
     }
     
     // Remove blueprint
+    const deletedBlueprint = mockBlueprints[blueprintIndex];
     mockBlueprints.splice(blueprintIndex, 1);
+
+    // Delete embedding
+    try {
+      const embeddingService = getEmbeddingService();
+      if (embeddingService.isAvailable()) {
+        const embeddingResult = await embeddingService.deleteBlueprintEmbedding(blueprintId);
+        if (embeddingResult.success) {
+          console.log(`✅ Blueprint embedding deleted: ${embeddingResult.vectorId}`);
+        } else {
+          console.warn(`⚠️ Failed to delete blueprint embedding: ${embeddingResult.error}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete blueprint embedding:', error);
+      // Don't fail the deletion if embedding deletion fails
+    }
     
     return NextResponse.json({ message: 'Blueprint deleted successfully' });
   } catch (error) {

@@ -1,4 +1,4 @@
-# 🚀 CloudArch Image Optimization Setup
+# 🚀 CloudArc Image Optimization Setup
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ node test-image-optimization.js large-diagram.png --quality=50
 ```
 
 ### API Integration (Automatic)
-The optimization runs automatically when you upload images through the CloudArch interface.
+The optimization runs automatically when you upload images through the CloudArc interface.
 
 ### Programmatic Usage
 ```typescript
@@ -185,4 +185,4 @@ Optimization metadata is stored with analysis results:
 }
 ```
 
-This setup ensures CloudArch can handle any size architecture diagram while maintaining optimal performance and accuracy! 🎯
+This setup ensures CloudArc can handle any size architecture diagram while maintaining optimal performance and accuracy! 🎯

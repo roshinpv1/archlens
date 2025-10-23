@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/services/analysisService';
 import { BlueprintType, BlueprintComplexity, BlueprintCategory } from '@/types/blueprint';
 import { BlueprintQuery, BlueprintResponse } from '@/types/blueprint';
+import { getEmbeddingService } from '@/services/embeddingService';
+import Blueprint from '@/models/Blueprint';
 
 // Mock data for demonstration - in production, this would use MongoDB
 const mockBlueprints = [
@@ -219,12 +221,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production, you would:
     // 1. Save the file to cloud storage (AWS S3, Azure Blob, etc.)
-    // 2. Generate a thumbnail for images
+    // For now, we'll simulate file storage
+    const fileUrl = `/uploads/blueprints/${Date.now()}-${file.name}`;
+    
+    // 2. Generate a thumbnail for images (if needed)
+    // This would be handled by a separate service
+    
     // 3. Store metadata in MongoDB
-    // 4. Handle file validation and security
-
     const newBlueprint = {
       id: Date.now().toString(),
       name,
@@ -235,6 +239,7 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
+      fileUrl, // Store the file URL
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: 'Current User', // This would come from auth context
@@ -252,8 +257,63 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Add to mock data (in production, save to database)
-    mockBlueprints.unshift(newBlueprint);
+    // Store metadata in MongoDB
+    try {
+      const savedBlueprint = await Blueprint.create(newBlueprint);
+      console.log(`✅ Blueprint metadata stored in MongoDB: ${savedBlueprint._id}`);
+    } catch (dbError) {
+      console.error('Failed to store blueprint in MongoDB:', dbError);
+      // Fallback to mock data if MongoDB fails
+      mockBlueprints.unshift(newBlueprint);
+      console.warn('⚠️ Using mock storage as fallback');
+    }
+
+    // 4. Generate and store embedding in Qdrant
+    console.log(`🔄 Starting embedding generation process for blueprint: ${newBlueprint.name}`);
+    try {
+      const embeddingService = getEmbeddingService();
+      console.log(`📊 Embedding service available: ${embeddingService.isAvailable()}`);
+      
+      if (embeddingService.isAvailable()) {
+        console.log(`🔄 Generating embedding for blueprint: ${newBlueprint.name}`);
+        console.log(`📝 Blueprint content for embedding:`, {
+          name: newBlueprint.name,
+          description: newBlueprint.description,
+          type: newBlueprint.type,
+          category: newBlueprint.category,
+          tags: newBlueprint.tags,
+          cloudProviders: newBlueprint.cloudProviders
+        });
+        
+        const embeddingResult = await embeddingService.processBlueprintEmbedding(newBlueprint);
+        console.log(`📊 Embedding result:`, embeddingResult);
+        
+        if (embeddingResult.success) {
+          console.log(`✅ Blueprint embedding generated and stored in Qdrant: ${embeddingResult.vectorId}`);
+          
+          // Update the blueprint with embedding info
+          newBlueprint.embeddingId = embeddingResult.vectorId;
+          newBlueprint.hasEmbedding = true;
+          newBlueprint.embeddingGeneratedAt = new Date();
+        } else {
+          console.warn(`⚠️ Failed to generate blueprint embedding: ${embeddingResult.error}`);
+          newBlueprint.hasEmbedding = false;
+        }
+      } else {
+        console.warn('⚠️ Embedding service not available - blueprint uploaded without embedding');
+        console.log('🔧 Embedding service configuration:', {
+          provider: process.env.EMBEDDINGS_PROVIDER,
+          baseUrl: process.env.EMBEDDINGS_BASE_URL,
+          model: process.env.EMBEDDINGS_MODEL
+        });
+        newBlueprint.hasEmbedding = false;
+      }
+    } catch (error) {
+      console.error('❌ Failed to process blueprint embedding:', error);
+      console.error('Error details:', error);
+      newBlueprint.hasEmbedding = false;
+      // Don't fail the upload if embedding generation fails
+    }
 
     return NextResponse.json(newBlueprint, { status: 201 });
   } catch (error) {

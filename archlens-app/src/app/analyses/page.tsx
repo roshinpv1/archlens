@@ -98,7 +98,7 @@ export default function AnalysesPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cloudarch-analyses-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `CloudArc-analyses-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
