@@ -3,7 +3,7 @@
  * Supports multiple providers: OpenAI, Anthropic, Gemini, Ollama, Local, Enterprise, Apigee
  */
 
-import { LLMConfig, LLMProvider, LLMResponse, LLMError, LLMCallOptions } from './llm-types';
+import { LLMConfig, LLMProvider, LLMResponse, LLMError, LLMCallOptions } from '../types/llm-types';
 import { ApigeeTokenManager, EnterpriseTokenManager } from './token-managers';
 
 export class LLMClient {

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { X, Upload, FileText, Image, Tag, Info, AlertCircle } from 'lucide-react';
-import { Blueprint as BlueprintType } from '@/types/blueprint';
+import { Blueprint as BlueprintType, BlueprintCategory } from '@/types/blueprint';
 
 interface Blueprint extends BlueprintType {
   updatedAt: Date;
@@ -48,7 +48,7 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cloudProviderOptions = ['AWS', 'Azure', 'GCP', 'Kubernetes', 'Multi-Cloud', 'On-Premises'];
-  const categoryOptions = ['E-commerce', 'DevOps', 'Web Development', 'Data Analytics', 'IoT', 'Mobile', 'AI/ML', 'Security', 'Other'];
+  const categoryOptions = Object.values(BlueprintCategory);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

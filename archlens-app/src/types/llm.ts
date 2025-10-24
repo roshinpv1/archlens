@@ -2,7 +2,7 @@
  * Additional LLM types for the application
  */
 
-import { LLMClient } from "../../llm-client";
+import { LLMClient } from "../lib/llm-client";
 import { 
   ArchitectureComponent, 
   ComponentConnection, 

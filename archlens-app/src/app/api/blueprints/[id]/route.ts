@@ -1,37 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/services/analysisService';
 import { getEmbeddingService } from '@/services/embeddingService';
+import Blueprint from '@/models/Blueprint';
 
-// Mock data - in production, this would fetch from MongoDB
-const mockBlueprints = [
-  {
-    id: '1',
-    name: 'E-commerce Microservices Architecture',
-    description: 'Complete e-commerce platform with microservices architecture on AWS',
-    type: 'architecture',
-    category: 'E-commerce',
-    tags: ['microservices', 'aws', 'e-commerce', 'scalable'],
-    fileName: 'ecommerce-architecture.png',
-    fileSize: 2048576,
-    fileType: 'image/png',
-    fileData: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', // Placeholder
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    createdBy: 'John Doe',
-    isPublic: true,
-    downloadCount: 45,
-    rating: 4.8,
-    version: '1.2.0',
-    cloudProviders: ['AWS'],
-    complexity: 'high',
-    metadata: {
-      components: 12,
-      connections: 18,
-      estimatedCost: 2500,
-      deploymentTime: '2-3 weeks'
-    }
-  }
-];
+// No mock data - all data comes from MongoDB
 
 export async function GET(
   request: NextRequest,
@@ -48,7 +20,20 @@ export async function GET(
       return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
     }
     
-    const blueprint = mockBlueprints.find(b => b.id === blueprintId);
+    // Fetch from MongoDB only
+    let blueprint;
+    try {
+      blueprint = await Blueprint.findOne({ id: blueprintId }).lean();
+    } catch (dbError) {
+      console.error('Failed to fetch blueprint from MongoDB:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch blueprint from database',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
     
     if (!blueprint) {
       return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
@@ -85,19 +70,28 @@ export async function PUT(
       return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
     }
     
-    const blueprintIndex = mockBlueprints.findIndex(b => b.id === blueprintId);
-    
-    if (blueprintIndex === -1) {
-      return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
+    // Update in MongoDB only
+    let updatedBlueprint;
+    try {
+      updatedBlueprint = await Blueprint.findOneAndUpdate(
+        { id: blueprintId },
+        { ...updates, updatedAt: new Date() },
+        { new: true, lean: true }
+      );
+      
+      if (!updatedBlueprint) {
+        return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
+      }
+    } catch (dbError) {
+      console.error('Failed to update blueprint in MongoDB:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to update blueprint in database',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
     }
-    
-    // Update blueprint
-    const updatedBlueprint = {
-      ...mockBlueprints[blueprintIndex],
-      ...updates,
-      updatedAt: new Date()
-    };
-    mockBlueprints[blueprintIndex] = updatedBlueprint;
 
     // Update embedding if blueprint content changed
     try {
@@ -139,15 +133,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
     }
     
-    const blueprintIndex = mockBlueprints.findIndex(b => b.id === blueprintId);
-    
-    if (blueprintIndex === -1) {
-      return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
+    // Delete from MongoDB only
+    let deletedBlueprint;
+    try {
+      deletedBlueprint = await Blueprint.findOneAndDelete({ id: blueprintId }).lean();
+      
+      if (!deletedBlueprint) {
+        return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
+      }
+    } catch (dbError) {
+      console.error('Failed to delete blueprint from MongoDB:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to delete blueprint from database',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
     }
-    
-    // Remove blueprint
-    const deletedBlueprint = mockBlueprints[blueprintIndex];
-    mockBlueprints.splice(blueprintIndex, 1);
 
     // Delete embedding
     try {

@@ -2,7 +2,7 @@
  * Similarity Service for blueprint similarity search and matching
  */
 
-import { getQdrantClient, SimilarBlueprint } from '../../qdrant-client';
+import { getQdrantClient, SimilarBlueprint } from '../lib/qdrant-client';
 import { getEmbeddingService } from './embeddingService';
 import { Blueprint } from '../types/blueprint';
 

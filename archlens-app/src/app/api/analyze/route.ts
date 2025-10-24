@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createLLMClientFromEnv } from '../../../../llm-factory';
+import { createLLMClientFromEnv } from '../../../lib/llm-factory';
 import { saveAnalysis } from '../../../services/analysisService';
 import { getChecklistItems } from '../../../services/checklistService';
 import { ArchitectureAnalysis } from '../../../types/architecture';

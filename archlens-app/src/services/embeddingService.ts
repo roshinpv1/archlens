@@ -2,8 +2,8 @@
  * Embedding Service for blueprint vector generation and management
  */
 
-import { createEmbeddingsClientFromEnv, EmbeddingsClient } from '../../embeddings-client';
-import { getQdrantClient, BlueprintVector } from '../../qdrant-client';
+import { createEmbeddingsClientFromEnv, EmbeddingsClient } from '../lib/embeddings-client';
+import { getQdrantClient, BlueprintVector } from '../lib/qdrant-client';
 import { Blueprint } from '../types/blueprint';
 
 export interface EmbeddingResult {

@@ -44,7 +44,7 @@ const BlueprintSchema = new Schema<IBlueprint>({
   category: { 
     type: String, 
     required: true, 
-    enum: ['e-commerce', 'devops', 'web-development', 'data-science', 'mobile', 'ai-ml', 'security', 'infrastructure'] 
+    enum: ['E-commerce', 'DevOps', 'Web Development', 'Data Analytics', 'IoT', 'Mobile', 'AI/ML', 'Security', 'Other'] 
   },
   tags: [{ type: String }],
   fileName: { type: String, required: true },

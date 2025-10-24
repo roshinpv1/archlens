@@ -5,87 +5,7 @@ import { BlueprintQuery, BlueprintResponse } from '@/types/blueprint';
 import { getEmbeddingService } from '@/services/embeddingService';
 import Blueprint from '@/models/Blueprint';
 
-// Mock data for demonstration - in production, this would use MongoDB
-const mockBlueprints = [
-  {
-    id: '1',
-    name: 'E-commerce Microservices Architecture',
-    description: 'Complete e-commerce platform with microservices architecture on AWS',
-    type: BlueprintType.ARCHITECTURE,
-    category: BlueprintCategory.E_COMMERCE,
-    tags: ['microservices', 'aws', 'e-commerce', 'scalable'],
-    fileName: 'ecommerce-architecture.png',
-    fileSize: 2048576,
-    fileType: 'image/png',
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    createdBy: 'John Doe',
-    isPublic: true,
-    downloadCount: 45,
-    rating: 4.8,
-    version: '1.2.0',
-    cloudProviders: ['AWS'],
-    complexity: BlueprintComplexity.HIGH,
-    metadata: {
-      components: 12,
-      connections: 18,
-      estimatedCost: 2500,
-      deploymentTime: '2-3 weeks'
-    }
-  },
-  {
-    id: '2',
-    name: 'Kubernetes Production Setup',
-    description: 'Production-ready Kubernetes cluster with monitoring and logging',
-    type: BlueprintType.IAC,
-    category: BlueprintCategory.DEVOPS,
-    tags: ['kubernetes', 'terraform', 'monitoring', 'production'],
-    fileName: 'k8s-production.tf',
-    fileSize: 153600,
-    fileType: 'text/plain',
-    createdAt: new Date('2024-01-10'),
-    updatedAt: new Date('2024-01-12'),
-    createdBy: 'Jane Smith',
-    isPublic: true,
-    downloadCount: 32,
-    rating: 4.6,
-    version: '2.1.0',
-    cloudProviders: ['AWS', 'Azure'],
-    complexity: BlueprintComplexity.HIGH,
-    metadata: {
-      components: 8,
-      connections: 15,
-      estimatedCost: 1800,
-      deploymentTime: '1-2 weeks'
-    }
-  },
-  {
-    id: '3',
-    name: 'Simple Web Application',
-    description: 'Basic web application with database and CDN',
-    type: BlueprintType.TEMPLATE,
-    category: BlueprintCategory.WEB_DEVELOPMENT,
-    tags: ['web', 'simple', 'database', 'cdn'],
-    fileName: 'simple-web-app.yaml',
-    fileSize: 8192,
-    fileType: 'text/yaml',
-    createdAt: new Date('2024-01-08'),
-    updatedAt: new Date('2024-01-08'),
-    createdBy: 'Mike Johnson',
-    isPublic: true,
-    downloadCount: 67,
-    rating: 4.2,
-    version: '1.0.0',
-    cloudProviders: ['AWS'],
-    complexity: BlueprintComplexity.LOW,
-    metadata: {
-      components: 4,
-      connections: 6,
-      estimatedCost: 500,
-      deploymentTime: '2-3 days'
-    }
-  }
-];
+// No mock data - all data comes from MongoDB
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,8 +27,22 @@ export async function GET(request: NextRequest) {
       sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
     };
 
-    // Filter blueprints based on query
-    let filteredBlueprints = [...mockBlueprints];
+    // Fetch blueprints from MongoDB only
+    let filteredBlueprints;
+    try {
+      const dbBlueprints = await Blueprint.find({}).lean();
+      console.log(`📊 Found ${dbBlueprints.length} blueprints in MongoDB`);
+      filteredBlueprints = dbBlueprints;
+    } catch (dbError) {
+      console.error('Failed to fetch blueprints from MongoDB:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch blueprints from database',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
+    }
 
     if (query.search) {
       const searchLower = query.search.toLowerCase();
@@ -258,14 +192,22 @@ export async function POST(request: NextRequest) {
     };
 
     // Store metadata in MongoDB
+    let savedBlueprint;
     try {
-      const savedBlueprint = await Blueprint.create(newBlueprint);
+      savedBlueprint = await Blueprint.create(newBlueprint);
       console.log(`✅ Blueprint metadata stored in MongoDB: ${savedBlueprint._id}`);
+      // Update the blueprint with the MongoDB _id for consistency
+      newBlueprint._id = savedBlueprint._id;
     } catch (dbError) {
       console.error('Failed to store blueprint in MongoDB:', dbError);
-      // Fallback to mock data if MongoDB fails
-      mockBlueprints.unshift(newBlueprint);
-      console.warn('⚠️ Using mock storage as fallback');
+      console.error('DB Error details:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to save blueprint to database',
+          details: dbError instanceof Error ? dbError.message : 'Unknown error'
+        },
+        { status: 500 }
+      );
     }
 
     // 4. Generate and store embedding in Qdrant

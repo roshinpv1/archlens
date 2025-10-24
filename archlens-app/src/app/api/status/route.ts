@@ -4,8 +4,8 @@ import {
   isProviderAvailable, 
   getGlobalClientInfo, 
   createLLMClientFromEnv 
-} from '../../../../llm-factory';
-import { LLMProvider } from '../../../../llm-types';
+} from '../../../lib/llm-factory';
+import { LLMProvider } from '../../../types/llm-types';
 
 export async function GET() {
   try {

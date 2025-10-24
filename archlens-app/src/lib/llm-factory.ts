@@ -4,7 +4,7 @@
  */
 
 import { LLMClient } from './llm-client';
-import { LLMConfig, LLMProvider, LLMError } from './llm-types';
+import { LLMConfig, LLMProvider, LLMError } from '../types/llm-types';
 
 export function createLLMClientFromEnv(): LLMClient | null {
   // Check providers in priority order
