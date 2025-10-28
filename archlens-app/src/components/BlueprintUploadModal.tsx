@@ -45,6 +45,12 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
   });
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    step: '',
+    percentage: 0,
+    message: ''
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cloudProviderOptions = ['AWS', 'Azure', 'GCP', 'Kubernetes', 'Multi-Cloud', 'On-Premises'];
@@ -134,6 +140,13 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
   const handleSubmit = async () => {
     if (validateStep(2)) {
       try {
+        setIsUploading(true);
+        setUploadProgress({
+          step: 'uploading',
+          percentage: 10,
+          message: 'Uploading blueprint file...'
+        });
+        
         console.log('📤 Uploading blueprint:', blueprintData.name);
         
         // Create FormData for file upload
@@ -150,17 +163,49 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
         formData.append('estimatedCost', blueprintData.estimatedCost);
         formData.append('deploymentTime', blueprintData.deploymentTime);
         
+        setUploadProgress({
+          step: 'processing',
+          percentage: 30,
+          message: 'Processing blueprint metadata...'
+        });
+        
         const response = await fetch('/api/blueprints', {
           method: 'POST',
           body: formData,
         });
 
         if (response.ok) {
+          setUploadProgress({
+            step: 'analyzing',
+            percentage: 60,
+            message: 'Analyzing blueprint architecture...'
+          });
+          
           const newBlueprint = await response.json();
+          
+          setUploadProgress({
+            step: 'embedding',
+            percentage: 80,
+            message: 'Generating embeddings for similarity search...'
+          });
+          
+          // Simulate additional processing time for analysis and embeddings
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          setUploadProgress({
+            step: 'complete',
+            percentage: 100,
+            message: 'Blueprint uploaded and analyzed successfully!'
+          });
+          
           console.log('✅ Blueprint uploaded successfully:', newBlueprint.name);
           onUpload(newBlueprint);
-          onClose();
-          resetForm();
+          
+          // Close modal after a brief delay to show completion
+          setTimeout(() => {
+            onClose();
+            resetForm();
+          }, 1500);
         } else {
           console.error('❌ Failed to upload blueprint:', response.statusText);
           alert('Failed to upload blueprint. Please try again.');
@@ -168,6 +213,8 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
       } catch (error) {
         console.error('❌ Error uploading blueprint:', error);
         alert('Error uploading blueprint. Please try again.');
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -600,11 +647,34 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
           )}
         </div>
 
+        {/* Upload Progress Indicator */}
+        {isUploading && (
+          <div className="px-6 py-4 border-t border-border">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-blue-800 font-medium">{uploadProgress.message}</span>
+              </div>
+              <div className="w-full bg-blue-100 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${uploadProgress.percentage}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-blue-600 mt-2">
+                <span>Step: {uploadProgress.step}</span>
+                <span>{uploadProgress.percentage}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-border">
           <button
             onClick={step === 1 ? handleClose : handlePrevious}
-            className="px-4 py-2 text-foreground-muted hover:text-foreground transition-colors"
+            disabled={isUploading}
+            className="px-4 py-2 text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
           >
             {step === 1 ? 'Cancel' : 'Previous'}
           </button>
@@ -613,16 +683,18 @@ export function BlueprintUploadModal({ isOpen, onClose, onUpload }: BlueprintUpl
             {step < 3 ? (
               <button
                 onClick={handleNext}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                disabled={isUploading}
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
               >
                 Next
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                disabled={isUploading}
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
               >
-                Upload Blueprint
+                {isUploading ? 'Processing...' : 'Upload Blueprint'}
               </button>
             )}
           </div>

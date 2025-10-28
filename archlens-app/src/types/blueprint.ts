@@ -58,6 +58,25 @@ export interface Blueprint {
   cloudProviders: string[];
   complexity: BlueprintComplexity;
   metadata: BlueprintMetadata;
+  // Embedding-related fields
+  embeddingId?: string;
+  hasEmbedding: boolean;
+  embeddingGeneratedAt?: Date;
+  // Analysis-related fields
+  hasAnalysis: boolean;
+  lastAnalysisId?: string;
+  lastAnalysisDate?: Date;
+  analysisScores?: {
+    security: number;
+    resiliency: number;
+    costEfficiency: number;
+    compliance: number;
+    scalability: number;
+    maintainability: number;
+  };
+  componentCount?: number;
+  architecturePatterns?: string[];
+  technologyStack?: string[];
 }
 
 export interface BlueprintUploadRequest {

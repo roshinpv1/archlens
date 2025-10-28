@@ -23,8 +23,17 @@ import { BlueprintEditModal } from './BlueprintEditModal';
 import { BlueprintVersionManager } from './BlueprintVersionManager';
 import { BlueprintSearch } from './BlueprintSearch';
 import { BlueprintAnalytics } from './BlueprintAnalytics';
+import { BlueprintAnalysisResults } from './BlueprintAnalysisResults';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
+import { ComponentAnalysis } from '@/types/componentAnalysis';
 import { formatDate } from '@/utils/dateUtils';
+
+interface ComponentRelationship {
+  source: string;
+  target: string;
+  relationship: 'depends_on' | 'communicates_with' | 'scales_with' | 'integrates_with';
+  strength?: number;
+}
 
 interface SearchFilters {
   search: string;
@@ -73,6 +82,42 @@ export function BlueprintManager() {
       end: ''
     }
   });
+  const [isAnalysisResultsOpen, setIsAnalysisResultsOpen] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState<{
+    blueprintId: string;
+    analysisId: string;
+    components: ComponentAnalysis[];
+    componentRelationships: ComponentRelationship[];
+    architecturePatterns: string[];
+    technologyStack: string[];
+    componentComplexity: {
+      totalComponents: number;
+      criticalComponents: number;
+      highCouplingComponents: number;
+      scalabilityBottlenecks: string[];
+      integrationPoints: number;
+    };
+    scores: {
+      security: number;
+      resiliency: number;
+      costEfficiency: number;
+      compliance: number;
+      scalability: number;
+      maintainability: number;
+    };
+    recommendations: {
+      component?: string;
+      issue: string;
+      recommendation: string;
+      priority: 'high' | 'medium' | 'low';
+      confidence?: number;
+    }[];
+    insights: string[];
+    bestPractices: string[];
+    industryStandards: string[];
+    createdAt: string;
+    updatedAt: string;
+  } | null>(null);
 
   // Fetch blueprints from API
   useEffect(() => {
@@ -294,6 +339,37 @@ export function BlueprintManager() {
   const handleVersionManager = (blueprint: Blueprint) => {
     setSelectedBlueprint(blueprint);
     setShowVersionManager(true);
+  };
+
+  const handleAnalyze = async (blueprint: Blueprint) => {
+    try {
+      console.log(`🔄 Starting analysis for blueprint: ${blueprint.name}`);
+      
+      const response = await fetch(`/api/blueprints/${blueprint.id}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log('📊 Analysis response:', responseData);
+        
+        // Extract the actual analysis data from the response
+        const analysis = responseData.analysis || responseData;
+        setCurrentAnalysis(analysis);
+        setIsAnalysisResultsOpen(true);
+        console.log(`✅ Analysis complete for: ${blueprint.name}`);
+      } else {
+        const error = await response.text();
+        console.error('❌ Analysis failed:', error);
+        alert('Failed to analyze blueprint. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error analyzing blueprint:', error);
+      alert('Failed to analyze blueprint. Please try again.');
+    }
   };
 
 
@@ -567,6 +643,7 @@ export function BlueprintManager() {
           onDelete={handleDelete}
           onDownload={handleDownload}
           onRate={handleRate}
+          onAnalyze={handleAnalyze}
         />
       )}
 
@@ -614,6 +691,18 @@ export function BlueprintManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Blueprint Analysis Results Modal */}
+      {currentAnalysis && (
+        <BlueprintAnalysisResults
+          analysis={currentAnalysis}
+          isOpen={isAnalysisResultsOpen}
+          onClose={() => {
+            setIsAnalysisResultsOpen(false);
+            setCurrentAnalysis(null);
+          }}
+        />
       )}
     </div>
   );

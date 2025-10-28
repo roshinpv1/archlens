@@ -161,7 +161,18 @@ export class QdrantClient {
         vector: queryVector,
         limit,
         score_threshold: scoreThreshold,
-        with_payload: true
+        with_payload: true,
+        // Filter to only blueprint embeddings (not analysis embeddings)
+        filter: {
+          must: [
+            {
+              key: 'type',
+              match: {
+                value: 'blueprint'
+              }
+            }
+          ]
+        }
       });
 
       return searchResult.map((point: any) => ({
@@ -170,7 +181,7 @@ export class QdrantClient {
         blueprint: {
           id: point.payload.blueprintId,
           name: point.payload.name,
-          type: point.payload.type,
+          type: point.payload.blueprintType || point.payload.type, // Use blueprintType if available
           category: point.payload.category,
           cloudProvider: point.payload.cloudProvider,
           complexity: point.payload.complexity,
@@ -179,6 +190,48 @@ export class QdrantClient {
       }));
     } catch (error) {
       throw new QdrantError('Failed to search similar blueprints', undefined, error);
+    }
+  }
+
+  async searchSimilarAnalysis(
+    queryVector: number[],
+    limit: number = 2,
+    scoreThreshold: number = 0.7
+  ): Promise<SimilarBlueprint[]> {
+    try {
+      const searchResult = await this.client.search(this.collectionName, {
+        vector: queryVector,
+        limit,
+        score_threshold: scoreThreshold,
+        with_payload: true,
+        // Filter to only analysis embeddings
+        filter: {
+          must: [
+            {
+              key: 'type',
+              match: {
+                value: 'blueprint_analysis'
+              }
+            }
+          ]
+        }
+      });
+
+      return searchResult.map((point: any) => ({
+        id: point.id,
+        score: point.score,
+        blueprint: {
+          id: point.payload.blueprintId,
+          name: point.payload.blueprintName,
+          type: 'analysis', // Mark as analysis result
+          category: point.payload.architecturePatterns?.[0] || 'Unknown',
+          cloudProvider: point.payload.technologyStack?.[0] || 'Unknown',
+          complexity: point.payload.componentCount > 10 ? 'high' : point.payload.componentCount > 5 ? 'medium' : 'low',
+          tags: point.payload.architecturePatterns || []
+        }
+      }));
+    } catch (error) {
+      throw new QdrantError('Failed to search similar analysis', undefined, error);
     }
   }
 

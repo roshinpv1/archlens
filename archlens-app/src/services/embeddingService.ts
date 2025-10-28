@@ -112,7 +112,8 @@ export class EmbeddingService {
         payload: {
           blueprintId: blueprint.id,
           name: blueprint.name,
-          type: blueprint.type,
+          type: 'blueprint', // Mark as blueprint embedding
+          blueprintType: blueprint.type, // Original blueprint type
           category: blueprint.category,
           cloudProvider: blueprint.cloudProviders.join(', '),
           complexity: blueprint.complexity,
@@ -189,7 +190,8 @@ export class EmbeddingService {
         payload: {
           blueprintId: blueprint.id,
           name: blueprint.name,
-          type: blueprint.type,
+          type: 'blueprint', // Mark as blueprint embedding
+          blueprintType: blueprint.type, // Original blueprint type
           category: blueprint.category,
           cloudProvider: blueprint.cloudProviders.join(', '),
           complexity: blueprint.complexity,

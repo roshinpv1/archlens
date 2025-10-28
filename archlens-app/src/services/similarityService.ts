@@ -51,15 +51,50 @@ export class SimilarityService {
 
       // Search for similar blueprints
       const qdrantClient = await getQdrantClient();
-      const similarBlueprints = await qdrantClient.searchSimilarBlueprints(
+      
+      // Search blueprint embeddings
+      const blueprintSearchResult = await qdrantClient.searchSimilarBlueprints(
         embeddingResult.embedding,
         2, // Top 2 closest matches
         0.7 // 70% similarity threshold
       );
 
+      // Search analysis embeddings
+      const analysisSearchResult = await qdrantClient.searchSimilarAnalysis(
+        embeddingResult.embedding,
+        2, // Top 2 closest matches
+        0.7 // 70% similarity threshold
+      );
+
+      // Combine and deduplicate results
+      const allSimilarBlueprints = [
+        ...blueprintSearchResult,
+        ...analysisSearchResult
+      ];
+
+      // Remove duplicates based on blueprintId
+      const uniqueBlueprints = allSimilarBlueprints.reduce((acc, current) => {
+        const existing = acc.find(item => item.blueprint.id === current.blueprint.id);
+        if (!existing) {
+          acc.push(current);
+        } else if (current.score > existing.score) {
+          // Keep the one with higher similarity score
+          const index = acc.indexOf(existing);
+          acc[index] = current;
+        }
+        return acc;
+      }, [] as SimilarBlueprint[]);
+
+      // Sort by similarity score and limit to top 3
+      const topSimilarBlueprints = uniqueBlueprints
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      console.log(`🔍 Found ${topSimilarBlueprints.length} similar blueprints (${blueprintSearchResult.length} from blueprints, ${analysisSearchResult.length} from analyses)`);
+
       return {
         success: true,
-        similarBlueprints
+        similarBlueprints: topSimilarBlueprints
       };
     } catch (error) {
       console.error('Failed to find similar blueprints for analysis:', error);

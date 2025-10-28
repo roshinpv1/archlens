@@ -198,6 +198,26 @@ export interface ArchitectureAnalysis {
   processingTime: number;
   llmProvider: string;
   llmModel: string;
+  
+  // Blueprint Insights (optional)
+  similarBlueprints?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    category: string;
+    cloudProvider: string;
+    complexity: string;
+    tags: string[];
+    score: number;
+  }>;
+  
+  blueprintInsights?: Array<{
+    blueprintId: string;
+    blueprintName: string;
+    similarityScore: number;
+    insights: string[];
+    recommendations: string[];
+  }>;
 }
 
 export interface AnalysisRequest {

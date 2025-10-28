@@ -14,6 +14,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
+import BlueprintInsights from "./BlueprintInsights";
 
 interface AnalysisResultsProps {
   results: ArchitectureAnalysis;
@@ -471,6 +472,11 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
           </div>
         )}
       </div>
+
+      {/* Blueprint Insights */}
+      {results.blueprintInsights && results.blueprintInsights.length > 0 && (
+        <BlueprintInsights insights={results.blueprintInsights} />
+      )}
     </div>
   );
 }

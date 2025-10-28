@@ -16,7 +16,9 @@ import {
   EyeOff,
   ChevronLeft,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  BarChart3,
+  Brain
 } from 'lucide-react';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
 import { formatDate } from '@/utils/dateUtils';
@@ -29,6 +31,7 @@ interface BlueprintViewerProps {
   onDelete?: (blueprint: Blueprint) => void;
   onDownload?: (blueprint: Blueprint) => void;
   onRate?: (blueprint: Blueprint, rating: number) => void;
+  onAnalyze?: (blueprint: Blueprint) => void;
 }
 
 export function BlueprintViewer({ 
@@ -37,8 +40,9 @@ export function BlueprintViewer({
   onClose, 
   onEdit, 
   onDelete, 
-  onDownload,
-  onRate 
+  onDownload, 
+  onRate,
+  onAnalyze
 }: BlueprintViewerProps) {
   const [currentRating, setCurrentRating] = useState(blueprint.rating);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -422,6 +426,15 @@ export function BlueprintViewer({
             </div>
           </div>
           <div className="flex gap-2">
+            {onAnalyze && (
+              <button
+                onClick={() => onAnalyze(blueprint)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <Brain className="w-4 h-4" />
+                Analyze
+              </button>
+            )}
             <button
               onClick={() => onDownload?.(blueprint)}
               className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"

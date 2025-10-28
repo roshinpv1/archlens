@@ -3,7 +3,9 @@ import { connectToDatabase } from '@/services/analysisService';
 import { BlueprintType, BlueprintComplexity, BlueprintCategory } from '@/types/blueprint';
 import { BlueprintQuery, BlueprintResponse } from '@/types/blueprint';
 import { getEmbeddingService } from '@/services/embeddingService';
+import { blueprintAnalysisService } from '@/services/blueprintAnalysisService';
 import Blueprint from '@/models/Blueprint';
+import BlueprintAnalysis from '@/models/BlueprintAnalysis';
 
 // No mock data - all data comes from MongoDB
 
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
     const paginatedBlueprints = filteredBlueprints.slice(skip, skip + query.limit!);
 
     const response: BlueprintResponse = {
-      blueprints: paginatedBlueprints,
+      blueprints: paginatedBlueprints as Blueprint[],
       pagination: {
         page: query.page!,
         limit: query.limit!,
@@ -188,7 +190,26 @@ export async function POST(request: NextRequest) {
         connections: 0,
         estimatedCost: estimatedCost || 0,
         deploymentTime: deploymentTime || 'Unknown'
-      }
+      },
+      // Embedding-related fields
+      embeddingId: undefined as string | undefined,
+      hasEmbedding: false,
+      embeddingGeneratedAt: undefined as Date | undefined,
+      // Analysis-related fields
+      hasAnalysis: false,
+      lastAnalysisId: undefined as string | undefined,
+      lastAnalysisDate: undefined as Date | undefined,
+      analysisScores: undefined as {
+        security: number;
+        resiliency: number;
+        costEfficiency: number;
+        compliance: number;
+        scalability: number;
+        maintainability: number;
+      } | undefined,
+      componentCount: undefined as number | undefined,
+      architecturePatterns: undefined as string[] | undefined,
+      technologyStack: undefined as string[] | undefined
     };
 
     // Store metadata in MongoDB
@@ -197,7 +218,7 @@ export async function POST(request: NextRequest) {
       savedBlueprint = await Blueprint.create(newBlueprint);
       console.log(`✅ Blueprint metadata stored in MongoDB: ${savedBlueprint._id}`);
       // Update the blueprint with the MongoDB _id for consistency
-      newBlueprint._id = savedBlueprint._id;
+      (newBlueprint as any)._id = savedBlueprint._id;
     } catch (dbError) {
       console.error('Failed to store blueprint in MongoDB:', dbError);
       console.error('DB Error details:', dbError);
@@ -255,6 +276,46 @@ export async function POST(request: NextRequest) {
       console.error('Error details:', error);
       newBlueprint.hasEmbedding = false;
       // Don't fail the upload if embedding generation fails
+    }
+
+    // 5. Perform automatic blueprint analysis
+    console.log(`🔄 Starting automatic blueprint analysis for: ${newBlueprint.name}`);
+    try {
+      const analysisResult = await blueprintAnalysisService.analyzeBlueprint(newBlueprint);
+      console.log(`✅ Blueprint analysis completed for: ${newBlueprint.name}`);
+      console.log(`📊 Analysis scores:`, {
+        security: analysisResult.scores.security,
+        resiliency: analysisResult.scores.resiliency,
+        costEfficiency: analysisResult.scores.costEfficiency,
+        compliance: analysisResult.scores.compliance,
+        scalability: analysisResult.scores.scalability,
+        maintainability: analysisResult.scores.maintainability
+      });
+      
+      // Save analysis to database
+      const savedAnalysis = await BlueprintAnalysis.create(analysisResult);
+      console.log(`✅ Blueprint analysis saved to database: ${savedAnalysis.analysisId}`);
+      
+      // Update blueprint with analysis metadata
+      await Blueprint.findOneAndUpdate(
+        { id: newBlueprint.id },
+        {
+          hasAnalysis: true,
+          lastAnalysisId: analysisResult.analysisId,
+          lastAnalysisDate: new Date(),
+          analysisScores: analysisResult.scores,
+          componentCount: analysisResult.components.length,
+          architecturePatterns: analysisResult.architecturePatterns,
+          technologyStack: analysisResult.technologyStack
+        }
+      );
+      
+      console.log(`✅ Blueprint analysis metadata updated in MongoDB`);
+    } catch (analysisError) {
+      console.error('❌ Failed to perform automatic blueprint analysis:', analysisError);
+      console.error('Analysis error details:', analysisError);
+      // Don't fail the upload if analysis fails
+      newBlueprint.hasAnalysis = false;
     }
 
     return NextResponse.json(newBlueprint, { status: 201 });

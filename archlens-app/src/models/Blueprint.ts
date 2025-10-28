@@ -30,6 +30,21 @@ export interface IBlueprint extends Document {
   embeddingId?: string;
   hasEmbedding: boolean;
   embeddingGeneratedAt?: Date;
+  // Analysis-related fields
+  hasAnalysis: boolean;
+  lastAnalysisId?: string;
+  lastAnalysisDate?: Date;
+  analysisScores?: {
+    security: number;
+    resiliency: number;
+    costEfficiency: number;
+    compliance: number;
+    scalability: number;
+    maintainability: number;
+  };
+  componentCount?: number;
+  architecturePatterns?: string[];
+  technologyStack?: string[];
 }
 
 const BlueprintSchema = new Schema<IBlueprint>({
@@ -73,7 +88,22 @@ const BlueprintSchema = new Schema<IBlueprint>({
   // Embedding-related fields
   embeddingId: { type: String },
   hasEmbedding: { type: Boolean, default: false },
-  embeddingGeneratedAt: { type: Date }
+  embeddingGeneratedAt: { type: Date },
+  // Analysis-related fields
+  hasAnalysis: { type: Boolean, default: false },
+  lastAnalysisId: { type: String },
+  lastAnalysisDate: { type: Date },
+  analysisScores: {
+    security: { type: Number, default: 0 },
+    resiliency: { type: Number, default: 0 },
+    costEfficiency: { type: Number, default: 0 },
+    compliance: { type: Number, default: 0 },
+    scalability: { type: Number, default: 0 },
+    maintainability: { type: Number, default: 0 }
+  },
+  componentCount: { type: Number, default: 0 },
+  architecturePatterns: [{ type: String }],
+  technologyStack: [{ type: String }]
 }, {
   timestamps: true,
   collection: 'blueprints'
@@ -89,6 +119,10 @@ BlueprintSchema.index({ createdAt: -1 });
 BlueprintSchema.index({ downloadCount: -1 });
 BlueprintSchema.index({ rating: -1 });
 BlueprintSchema.index({ hasEmbedding: 1 });
+BlueprintSchema.index({ hasAnalysis: 1 });
+BlueprintSchema.index({ 'analysisScores.security': -1 });
+BlueprintSchema.index({ 'analysisScores.resiliency': -1 });
+BlueprintSchema.index({ componentCount: -1 });
 
 let Blueprint: Model<IBlueprint>;
 

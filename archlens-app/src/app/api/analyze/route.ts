@@ -6,6 +6,7 @@ import { ArchitectureAnalysis } from '../../../types/architecture';
 import { LLMResponseData } from '../../../types/llm';
 import { smartOptimizeImage } from '../../../services/imageOptimizer';
 import { getSimilarityService } from '../../../services/similarityService';
+import { blueprintAnalysisService } from '../../../services/blueprintAnalysisService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -882,10 +883,86 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       // Don't fail the analysis if similarity search fails
     }
 
+    // Add blueprint insights to the analysis
+    let blueprintInsights: any[] = [];
+    try {
+      if (similarBlueprints.length > 0) {
+        console.log('🔍 Generating blueprint insights for architecture analysis');
+        
+        // Generate insights from similar blueprints
+        blueprintInsights = await Promise.all(
+          similarBlueprints.slice(0, 3).map(async (similarBlueprint) => {
+            try {
+              // Get blueprint analysis if available
+              const blueprintAnalysis = await blueprintAnalysisService.findSimilarBlueprints(
+                {
+                  blueprintId: similarBlueprint.blueprint.id,
+                  analysisId: `temp_${Date.now()}`,
+                  components: [],
+                  componentRelationships: [],
+                  architecturePatterns: [],
+                  technologyStack: [],
+                  componentComplexity: {
+                    totalComponents: 0,
+                    criticalComponents: 0,
+                    highCouplingComponents: 0,
+                    scalabilityBottlenecks: [],
+                    integrationPoints: 0
+                  },
+                  scores: {
+                    security: 0,
+                    resiliency: 0,
+                    costEfficiency: 0,
+                    compliance: 0,
+                    scalability: 0,
+                    maintainability: 0
+                  },
+                  recommendations: [],
+                  insights: [],
+                  bestPractices: [],
+                  industryStandards: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                },
+                0.5 // Lower threshold for insights
+              );
+              
+              return {
+                blueprintId: similarBlueprint.blueprint.id,
+                blueprintName: similarBlueprint.blueprint.name,
+                similarityScore: similarBlueprint.score,
+                insights: [
+                  `Similar architecture pattern: ${similarBlueprint.blueprint.type}`,
+                  `Proven technology stack: ${similarBlueprint.blueprint.cloudProvider}`,
+                  `Complexity level: ${similarBlueprint.blueprint.complexity}`
+                ],
+                recommendations: [
+                  `Consider ${similarBlueprint.blueprint.category} patterns from this blueprint`,
+                  `Technology stack alignment: ${similarBlueprint.blueprint.cloudProvider}`,
+                  `Architecture complexity: ${similarBlueprint.blueprint.complexity}`
+                ]
+              };
+            } catch (error) {
+              console.error('Failed to generate blueprint insights:', error);
+              return null;
+            }
+          })
+        );
+        
+        // Filter out null results
+        blueprintInsights = blueprintInsights.filter(insight => insight !== null);
+        console.log(`✅ Generated ${blueprintInsights.length} blueprint insights`);
+      }
+    } catch (error) {
+      console.error('Failed to generate blueprint insights:', error);
+      // Don't fail the analysis if blueprint insights generation fails
+    }
+
     return NextResponse.json({
       ...analysis,
       _id: savedAnalysis._id,
-      similarBlueprints
+      similarBlueprints,
+      blueprintInsights
     });
 
   } catch (error) {
