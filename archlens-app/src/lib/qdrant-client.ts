@@ -12,6 +12,7 @@ export interface BlueprintVector {
     blueprintId: string;
     name: string;
     type: string;
+    blueprintType?: string; // Original blueprint type (when type is 'blueprint' or 'blueprint_analysis')
     category: string;
     cloudProvider: string;
     complexity: string;
@@ -81,6 +82,26 @@ export class QdrantClient {
 
       if (!collectionExists) {
         await this.createCollection();
+      } else {
+        // Verify collection dimensions match configuration
+        const collectionInfo = await this.client.getCollection(this.collectionName);
+        const actualVectorSize = collectionInfo.config?.params?.vectors?.size;
+        
+        if (actualVectorSize && actualVectorSize !== this.config.vectorSize) {
+          console.warn(`⚠️ Collection dimension mismatch: collection has ${actualVectorSize}, config expects ${this.config.vectorSize}`);
+          
+          // Auto-fix if enabled via environment variable
+          const autoFix = process.env.QDRANT_AUTO_FIX_DIMENSIONS === 'true';
+          if (autoFix) {
+            console.log(`🔄 Auto-fixing: Deleting and recreating collection with correct dimensions...`);
+            await this.deleteCollection();
+            await this.createCollection();
+            console.log(`✅ Collection recreated with ${this.config.vectorSize} dimensions`);
+          } else {
+            console.warn(`⚠️ This will cause errors. To auto-fix, set QDRANT_AUTO_FIX_DIMENSIONS=true in your environment variables.`);
+            console.warn(`⚠️ Or manually delete the collection: curl -X DELETE http://localhost:6333/collections/${this.collectionName}`);
+          }
+        }
       }
 
       console.log(`✅ Qdrant collection '${this.collectionName}' is ready`);
@@ -104,11 +125,21 @@ export class QdrantClient {
     }
   }
 
-  private generatePointId(blueprintId: string): string {
-    // Convert string ID to a valid Qdrant point ID (UUID format)
-    // Use a simple hash-based approach to generate consistent UUIDs
+  private async deleteCollection(): Promise<void> {
+    try {
+      await this.client.deleteCollection(this.collectionName);
+      console.log(`🗑️ Deleted Qdrant collection '${this.collectionName}'`);
+    } catch (error) {
+      throw new QdrantError('Failed to delete Qdrant collection', undefined, error);
+    }
+  }
+
+  private generatePointId(blueprintId: string): number {
+    // Convert string ID to a valid Qdrant point ID (integer format)
+    // Use a simple hash-based approach to generate consistent integer IDs
     const hash = this.simpleHash(blueprintId);
-    return `${hash.toString(16).padStart(8, '0')}-0000-4000-8000-${hash.toString(16).padStart(12, '0')}`;
+    // Ensure positive integer (Qdrant requires positive integers)
+    return Math.abs(hash);
   }
 
   private simpleHash(str: string): number {
@@ -118,24 +149,131 @@ export class QdrantClient {
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    return Math.abs(hash);
+    return hash;
   }
 
   async upsertBlueprint(blueprintVector: BlueprintVector): Promise<void> {
     try {
+      const pointId = this.generatePointId(blueprintVector.id);
+      const vectorDimensions = blueprintVector.vector.length;
+      
+      console.log(`🔄 Upserting blueprint vector: ${blueprintVector.id} -> ${pointId}`);
+      console.log(`📊 Vector dimensions: ${vectorDimensions}`);
+      console.log(`📋 Payload keys: ${Object.keys(blueprintVector.payload).join(', ')}`);
+      
+      // Check for dimension mismatch before attempting upsert
+      const collectionInfo = await this.client.getCollection(this.collectionName);
+      const expectedDimensions = collectionInfo.config?.params?.vectors?.size;
+      
+      if (expectedDimensions && vectorDimensions !== expectedDimensions) {
+        const errorMsg = `Vector dimension mismatch: collection expects ${expectedDimensions} dimensions, but got ${vectorDimensions}. ` +
+          `Please update QDRANT_VECTOR_SIZE environment variable to ${vectorDimensions} or delete the collection to recreate it.`;
+        console.error(`❌ ${errorMsg}`);
+        throw new QdrantError(errorMsg, 400);
+      }
+      
       await this.client.upsert(this.collectionName, {
         wait: true,
         points: [
           {
-            id: this.generatePointId(blueprintVector.id),
+            id: pointId,
             vector: blueprintVector.vector,
             payload: blueprintVector.payload
           }
         ]
       });
       console.log(`✅ Upserted blueprint vector: ${blueprintVector.id}`);
-    } catch (error) {
+    } catch (error: any) {
+      if (error instanceof QdrantError) {
+        throw error; // Re-throw our custom errors
+      }
+      
+      console.error('❌ Qdrant upsert error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        data: error?.data,
+        response: error?.response?.data
+      });
+      
+      // Check if it's a dimension error
+      const errorData = error?.data?.status?.error || error?.response?.data?.status?.error || '';
+      if (errorData.includes('dimension')) {
+        const dimensionMatch = errorData.match(/expected dim: (\d+), got (\d+)/);
+        if (dimensionMatch) {
+          const expected = dimensionMatch[1];
+          const got = dimensionMatch[2];
+          const errorMsg = `Vector dimension mismatch: Qdrant collection expects ${expected} dimensions, but embedding model produces ${got} dimensions. ` +
+            `Please set QDRANT_VECTOR_SIZE=${got} in your environment variables and restart the service, or delete the Qdrant collection to recreate it with the correct dimensions.`;
+          throw new QdrantError(errorMsg, 400, error);
+        }
+      }
+      
       throw new QdrantError('Failed to upsert blueprint vector', undefined, error);
+    }
+  }
+
+  /**
+   * Store any embedding in Qdrant (generic method for analysis embeddings, etc.)
+   */
+  async storeEmbedding(pointId: string | number, embedding: number[], payload: Record<string, any>): Promise<void> {
+    try {
+      const numericPointId = typeof pointId === 'string' ? this.generatePointId(pointId) : pointId;
+      const vectorDimensions = embedding.length;
+      
+      console.log(`🔄 Storing embedding: ${pointId} -> ${numericPointId}`);
+      console.log(`📊 Vector dimensions: ${vectorDimensions}`);
+      
+      // Check for dimension mismatch before attempting upsert
+      const collectionInfo = await this.client.getCollection(this.collectionName);
+      const expectedDimensions = collectionInfo.config?.params?.vectors?.size;
+      
+      if (expectedDimensions && vectorDimensions !== expectedDimensions) {
+        const errorMsg = `Vector dimension mismatch: collection expects ${expectedDimensions} dimensions, but got ${vectorDimensions}. ` +
+          `Please update QDRANT_VECTOR_SIZE environment variable to ${vectorDimensions} or delete the collection to recreate it.`;
+        console.error(`❌ ${errorMsg}`);
+        throw new QdrantError(errorMsg, 400);
+      }
+      
+      await this.client.upsert(this.collectionName, {
+        wait: true,
+        points: [
+          {
+            id: numericPointId,
+            vector: embedding,
+            payload
+          }
+        ]
+      });
+      
+      console.log(`✅ Stored embedding: ${pointId}`);
+    } catch (error: any) {
+      if (error instanceof QdrantError) {
+        throw error; // Re-throw our custom errors
+      }
+      
+      console.error('❌ Qdrant store embedding error details:', {
+        message: error?.message,
+        status: error?.status,
+        statusText: error?.statusText,
+        data: error?.data,
+        response: error?.response?.data
+      });
+      
+      // Check if it's a dimension error
+      const errorData = error?.data?.status?.error || error?.response?.data?.status?.error || '';
+      if (errorData.includes('dimension')) {
+        const dimensionMatch = errorData.match(/expected dim: (\d+), got (\d+)/);
+        if (dimensionMatch) {
+          const expected = dimensionMatch[1];
+          const got = dimensionMatch[2];
+          const errorMsg = `Vector dimension mismatch: Qdrant collection expects ${expected} dimensions, but embedding model produces ${got} dimensions. ` +
+            `Please set QDRANT_VECTOR_SIZE=${got} in your environment variables and restart the service, or delete the Qdrant collection to recreate it with the correct dimensions.`;
+          throw new QdrantError(errorMsg, 400, error);
+        }
+      }
+      
+      throw new QdrantError('Failed to store embedding', undefined, error);
     }
   }
 
@@ -285,7 +423,7 @@ export class QdrantClient {
       return {
         name: this.collectionName,
         vectorsCount: collection.vectors_count || 0,
-        vectorSize: 768, // Default vector size
+        vectorSize: 384, // Default vector size
         distance: 'Cosine' // Default distance metric
       };
     } catch (error) {
@@ -324,7 +462,7 @@ export function createQdrantClientFromEnv(): QdrantClient | null {
     url: process.env.QDRANT_URL || 'http://localhost:6333',
     apiKey: process.env.QDRANT_API_KEY,
     collectionName: process.env.QDRANT_COLLECTION_NAME || 'blueprints',
-    vectorSize: parseInt(process.env.QDRANT_VECTOR_SIZE || '768'),
+    vectorSize: parseInt(process.env.QDRANT_VECTOR_SIZE || '384'),
     distance: (process.env.QDRANT_DISTANCE as 'Cosine' | 'Euclid' | 'Dot') || 'Cosine'
   };
 

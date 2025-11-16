@@ -39,6 +39,21 @@ export enum DeploymentModel {
   EDGE_COMPUTING = "edge-computing"
 }
 
+export enum TerraformCategory {
+  FOUNDATIONAL_LANDING_ZONES = "Foundational Services / Landing Zones",
+  FOUNDATIONAL_NETWORKING = "Foundational Services / Networking",
+  FOUNDATIONAL_STORAGE = "Foundational Services / Storage",
+  IDENTITY_ACCESS_MANAGEMENT = "Identity & Access Management",
+  POLICY = "Policy",
+  OBSERVABILITY = "Observability",
+  DATA_PROTECTION = "Data Protection",
+  PLATFORM_COMPUTE = "Platform Services / Compute",
+  PLATFORM_MIDDLEWARE = "Platform Services / Middleware Integration",
+  PLATFORM_DATABASE = "Platform Services / Database",
+  PLATFORM_ANALYTICS = "Platform Services / Analytics AI-ML",
+  PLATFORM_MISCELLANEOUS = "Platform Services / Miscellaneous"
+}
+
 export enum ConnectionType {
   QUERY = "query",
   FILE_UPLOAD = "file_upload",
@@ -70,6 +85,7 @@ export interface ArchitectureComponent {
   id: string;
   name: string;
   type: ComponentType;
+  terraformCategory?: TerraformCategory | string; // Standard Terraform category classification
   cloudService?: string;
   cloudProvider?: CloudProvider;
   cloudRegion?: string;

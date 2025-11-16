@@ -349,6 +349,19 @@ export class SimilarityService {
       };
     }
   }
+
+  /**
+   * Store embedding in Qdrant (for analysis embeddings)
+   */
+  async storeEmbedding(pointId: string, embedding: number[], metadata: Record<string, any>): Promise<void> {
+    try {
+      const qdrantClient = await getQdrantClient();
+      await qdrantClient.storeEmbedding(pointId, embedding, metadata);
+    } catch (error) {
+      console.error('❌ Failed to store embedding:', error);
+      throw error;
+    }
+  }
 }
 
 // Global similarity service instance

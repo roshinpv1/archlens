@@ -22,7 +22,11 @@ export class BlueprintAnalysisService {
   /**
    * Analyze a blueprint with component focus
    */
-  async analyzeBlueprint(blueprint: Blueprint): Promise<BlueprintComponentAnalysis> {
+  async analyzeBlueprint(
+    blueprint: Blueprint, 
+    extractedComponents?: any[], 
+    extractedConnections?: any[]
+  ): Promise<BlueprintComponentAnalysis> {
     try {
       console.log(`🔍 Starting blueprint analysis for: ${blueprint.name}`);
       
@@ -30,8 +34,8 @@ export class BlueprintAnalysisService {
         throw new Error('LLM Client is not initialized');
       }
       
-      // Generate analysis prompt with component focus
-      const analysisPrompt = this.generateBlueprintAnalysisPrompt(blueprint);
+      // Generate analysis prompt with component focus (include extracted data if available)
+      const analysisPrompt = this.generateBlueprintAnalysisPrompt(blueprint, extractedComponents, extractedConnections);
       
       // Call LLM for analysis
       const analysisResult = await this.llmClient.callLLM(analysisPrompt, {
@@ -68,7 +72,13 @@ export class BlueprintAnalysisService {
       const analysisContent = this.createAnalysisContentForEmbedding(analysis, blueprint);
       
       // Generate embedding
-      const embedding = await embeddingService.generateEmbedding(analysisContent);
+      const embeddingResult = await embeddingService.generateEmbeddingFromText(analysisContent);
+      
+      if (!embeddingResult.success || !embeddingResult.embedding) {
+        throw new Error(embeddingResult.error || 'Failed to generate embedding');
+      }
+      
+      const embedding = embeddingResult.embedding;
       
       // Store in Qdrant with analysis-specific metadata
       const analysisPointId = `analysis_${analysis.analysisId}`;
@@ -250,7 +260,20 @@ Scalability ${analysis.scores.scalability}, Maintainability ${analysis.scores.ma
   /**
    * Generate blueprint analysis prompt with component focus
    */
-  private generateBlueprintAnalysisPrompt(blueprint: Blueprint): string {
+  private generateBlueprintAnalysisPrompt(
+    blueprint: Blueprint, 
+    extractedComponents?: any[], 
+    extractedConnections?: any[]
+  ): string {
+    // Format extracted components if available
+    const extractedComponentsText = extractedComponents && extractedComponents.length > 0
+      ? `\n**EXTRACTED COMPONENTS FROM BLUEPRINT FILE:**\n${JSON.stringify(extractedComponents, null, 2)}\n`
+      : '';
+    
+    const extractedConnectionsText = extractedConnections && extractedConnections.length > 0
+      ? `\n**EXTRACTED CONNECTIONS FROM BLUEPRINT FILE:**\n${JSON.stringify(extractedConnections, null, 2)}\n`
+      : '';
+
     return `
 Analyze this blueprint architecture and provide a comprehensive assessment focusing on components and their relationships.
 
@@ -262,6 +285,8 @@ Analyze this blueprint architecture and provide a comprehensive assessment focus
 - Complexity: ${blueprint.complexity}
 - Cloud Providers: ${blueprint.cloudProviders.join(', ')}
 - Tags: ${blueprint.tags.join(', ')}
+${extractedComponentsText}
+${extractedConnectionsText}
 
 **COMPONENT ANALYSIS REQUIRED:**
 
@@ -310,6 +335,29 @@ Analyze this blueprint architecture and provide a comprehensive assessment focus
 **IMPORTANT: You MUST respond with ONLY valid JSON. Do not include any explanatory text, markdown formatting, or additional commentary. Return ONLY the JSON object as specified below.**
 
 **CRITICAL VALUES: Use ONLY these exact values:
+
+TERRAFORM CATEGORIES (MUST classify each component into one of these):
+1. "Foundational Services / Landing Zones" - Landing zones, account structures, organizational units
+2. "Foundational Services / Networking" - VPCs, subnets, load balancers, CDN, DNS, VPN, peering, gateways
+3. "Foundational Services / Storage" - Object storage, file storage, block storage, backup storage
+4. "Identity & Access Management" - IAM roles, policies, users, groups, authentication, authorization, SSO
+5. "Policy" - Resource policies, compliance policies, governance, guardrails, service control policies
+6. "Observability" - Monitoring, logging, alerting, dashboards, metrics, tracing, APM tools
+7. "Data Protection" - Encryption, key management, secrets management, backup, disaster recovery, data loss prevention
+8. "Platform Services / Compute" - Virtual machines, containers, serverless functions, auto-scaling, compute instances
+9. "Platform Services / Middleware Integration" - Message queues, event buses, API gateways, service mesh, integration platforms
+10. "Platform Services / Database" - Relational databases, NoSQL databases, data warehouses, in-memory databases
+11. "Platform Services / Analytics AI-ML" - Data analytics, machine learning, AI services, data processing, BI tools
+12. "Platform Services / Miscellaneous" - Other platform services not fitting above categories
+
+COMPONENT TYPES (use one of these):
+"database", "api", "service", "storage", "network", "security", "monitoring", "cache", "queue", "gateway", 
+"compute", "user", "backup", "load-balancer", "cdn", "firewall", "vpn", "dns", "identity", 
+"authentication", "authorization", "logging", "analytics", "messaging", "event-bus", "workflow", 
+"scheduler", "container", "orchestration", "registry", "build", "deployment", "testing", 
+"documentation", "utility", "other"
+
+OTHER VALUES:
 - criticality: "high", "medium", or "low"
 - scalability: "horizontal", "vertical", or "both"  
 - securityLevel: "high", "medium", or "low"
@@ -324,7 +372,8 @@ Analyze this blueprint architecture and provide a comprehensive assessment focus
   "components": [
     {
       "name": "component_name",
-      "type": "database|api|service|storage|network|security|monitoring|cache|queue|gateway",
+      "type": "database|api|service|storage|network|security|monitoring|cache|queue|gateway|compute|user|backup|load-balancer|cdn|firewall|vpn|dns|identity|authentication|authorization|logging|analytics|messaging|event-bus|workflow|scheduler|container|orchestration|registry|build|deployment|testing|documentation|utility|other",
+      "terraformCategory": "Foundational Services / Landing Zones|Foundational Services / Networking|Foundational Services / Storage|Identity & Access Management|Policy|Observability|Data Protection|Platform Services / Compute|Platform Services / Middleware Integration|Platform Services / Database|Platform Services / Analytics AI-ML|Platform Services / Miscellaneous",
       "technology": "specific_tech_stack",
       "criticality": "high|medium|low",
       "dependencies": ["component1", "component2"],

@@ -11,7 +11,8 @@ import {
   FileText,
   BarChart3,
   Target,
-  TrendingUp
+  TrendingUp,
+  Code
 } from "lucide-react";
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
 import BlueprintInsights from "./BlueprintInsights";
@@ -22,7 +23,7 @@ interface AnalysisResultsProps {
 }
 
 export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'risks' | 'recommendations' | 'json'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'risks' | 'recommendations' | 'json' | 'terraform'>('overview');
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(results, null, 2);
@@ -31,6 +32,264 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
     const link = document.createElement('a');
     link.href = url;
     link.download = `architecture-analysis-${results.id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateTerraformCode = (): string => {
+    const lines: string[] = [];
+    
+    // Determine primary cloud provider
+    const primaryProvider = results.metadata?.primaryCloudProvider || 
+                           (results.components?.[0]?.cloudProvider) || 
+                           'aws';
+    
+    // Add provider configuration
+    lines.push(`# Terraform configuration for ${results.componentName || 'Architecture'}`);
+    lines.push(`# Generated from ArchLens analysis: ${results.id}`);
+    lines.push(`# Primary Cloud Provider: ${primaryProvider}`);
+    lines.push('');
+    
+    // Add provider blocks
+    if (primaryProvider === 'aws' || primaryProvider === 'AWS') {
+      lines.push('terraform {');
+      lines.push('  required_version = ">= 1.0"');
+      lines.push('  required_providers {');
+      lines.push('    aws = {');
+      lines.push('      source  = "hashicorp/aws"');
+      lines.push('      version = "~> 5.0"');
+      lines.push('    }');
+      lines.push('  }');
+      lines.push('}');
+      lines.push('');
+      lines.push('provider "aws" {');
+      lines.push(`  region = "${results.components?.[0]?.cloudRegion || 'us-east-1'}"`);
+      lines.push('}');
+      lines.push('');
+    } else if (primaryProvider === 'azure' || primaryProvider === 'Azure') {
+      lines.push('terraform {');
+      lines.push('  required_version = ">= 1.0"');
+      lines.push('  required_providers {');
+      lines.push('    azurerm = {');
+      lines.push('      source  = "hashicorp/azurerm"');
+      lines.push('      version = "~> 3.0"');
+      lines.push('    }');
+      lines.push('  }');
+      lines.push('}');
+      lines.push('');
+      lines.push('provider "azurerm" {');
+      lines.push('  features {}');
+      lines.push('}');
+      lines.push('');
+    } else if (primaryProvider === 'gcp' || primaryProvider === 'GCP') {
+      lines.push('terraform {');
+      lines.push('  required_version = ">= 1.0"');
+      lines.push('  required_providers {');
+      lines.push('    google = {');
+      lines.push('      source  = "hashicorp/google"');
+      lines.push('      version = "~> 5.0"');
+      lines.push('    }');
+      lines.push('  }');
+      lines.push('}');
+      lines.push('');
+      lines.push('provider "google" {');
+      lines.push(`  project = "your-project-id"`);
+      lines.push(`  region  = "${results.components?.[0]?.cloudRegion || 'us-central1'}"`);
+      lines.push('}');
+      lines.push('');
+    }
+
+    // Group components by Terraform category
+    const componentsByCategory = (results.components || []).reduce((acc: Record<string, any[]>, comp: any) => {
+      const category = comp.terraformCategory || 'Uncategorized';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(comp);
+      return acc;
+    }, {});
+
+    // Generate resources by category
+    Object.entries(componentsByCategory).forEach(([category, components]) => {
+      lines.push(`# ${category}`);
+      lines.push('');
+      
+      components.forEach((comp: any, idx: number) => {
+        const resourceName = comp.name?.toLowerCase().replace(/[^a-z0-9]/g, '_') || `resource_${idx}`;
+        const provider = comp.cloudProvider?.toLowerCase() || primaryProvider.toLowerCase();
+        
+        // Generate resource based on component type and provider
+        if (provider === 'aws') {
+          lines.push(`# ${comp.name || 'Component'} - ${comp.type || 'unknown'}`);
+          if (comp.type === 'compute' || comp.type === 'service') {
+            lines.push(`resource "aws_instance" "${resourceName}" {`);
+            lines.push(`  ami           = "ami-12345678"  # Update with appropriate AMI`);
+            lines.push(`  instance_type = "${comp.configuration?.instanceType || 't3.micro'}"`);
+            if (comp.cloudRegion) {
+              lines.push(`  availability_zone = "${comp.cloudRegion}"`);
+            }
+            lines.push(`  tags = {`);
+            lines.push(`    Name        = "${comp.name || resourceName}"`);
+            lines.push(`    Component   = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category    = "${category}"`);
+            if (comp.description) {
+              lines.push(`    Description = "${comp.description}"`);
+            }
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'database') {
+            lines.push(`resource "aws_db_instance" "${resourceName}" {`);
+            lines.push(`  identifier     = "${resourceName}"`);
+            lines.push(`  engine         = "postgres"  # Update based on actual database type`);
+            lines.push(`  instance_class = "db.t3.micro"`);
+            lines.push(`  allocated_storage = 20`);
+            lines.push(`  tags = {`);
+            lines.push(`    Name        = "${comp.name || resourceName}"`);
+            lines.push(`    Component   = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category    = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'storage') {
+            lines.push(`resource "aws_s3_bucket" "${resourceName}" {`);
+            lines.push(`  bucket = "${resourceName}-${Date.now()}"`);
+            lines.push(`  tags = {`);
+            lines.push(`    Name        = "${comp.name || resourceName}"`);
+            lines.push(`    Component   = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category    = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'network' || comp.type === 'gateway') {
+            lines.push(`resource "aws_vpc" "${resourceName}" {`);
+            lines.push(`  cidr_block = "10.0.0.0/16"`);
+            lines.push(`  tags = {`);
+            lines.push(`    Name        = "${comp.name || resourceName}"`);
+            lines.push(`    Component   = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category    = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else {
+            // Generic resource
+            lines.push(`# TODO: Add Terraform resource for ${comp.type}`);
+            lines.push(`# Component: ${comp.name || resourceName}`);
+            lines.push(`# Type: ${comp.type || 'unknown'}`);
+            lines.push(`# Category: ${category}`);
+            if (comp.cloudService) {
+              lines.push(`# Cloud Service: ${comp.cloudService}`);
+            }
+            lines.push('');
+          }
+        } else if (provider === 'azure') {
+          lines.push(`# ${comp.name || 'Component'} - ${comp.type || 'unknown'}`);
+          if (comp.type === 'compute' || comp.type === 'service') {
+            lines.push(`resource "azurerm_linux_virtual_machine" "${resourceName}" {`);
+            lines.push(`  name                = "${resourceName}"`);
+            lines.push(`  resource_group_name = azurerm_resource_group.main.name`);
+            lines.push(`  location            = "${comp.cloudRegion || 'eastus'}"`);
+            lines.push(`  size                = "${comp.configuration?.instanceType || 'Standard_B1s'}"`);
+            lines.push(`  tags = {`);
+            lines.push(`    Component = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category  = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'database') {
+            lines.push(`resource "azurerm_postgresql_server" "${resourceName}" {`);
+            lines.push(`  name                = "${resourceName}"`);
+            lines.push(`  resource_group_name = azurerm_resource_group.main.name`);
+            lines.push(`  location            = "${comp.cloudRegion || 'eastus'}"`);
+            lines.push(`  sku_name            = "B_Gen5_2"`);
+            lines.push(`  tags = {`);
+            lines.push(`    Component = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category  = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'storage') {
+            lines.push(`resource "azurerm_storage_account" "${resourceName}" {`);
+            lines.push(`  name                     = "${resourceName.replace(/_/g, '')}"`);
+            lines.push(`  resource_group_name      = azurerm_resource_group.main.name`);
+            lines.push(`  location                 = "${comp.cloudRegion || 'eastus'}"`);
+            lines.push(`  account_tier             = "Standard"`);
+            lines.push(`  account_replication_type = "LRS"`);
+            lines.push(`  tags = {`);
+            lines.push(`    Component = "${comp.type || 'unknown'}"`);
+            lines.push(`    Category  = "${category}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else {
+            lines.push(`# TODO: Add Terraform resource for ${comp.type}`);
+            lines.push(`# Component: ${comp.name || resourceName}`);
+            lines.push(`# Type: ${comp.type || 'unknown'}`);
+            lines.push(`# Category: ${category}`);
+            lines.push('');
+          }
+        } else if (provider === 'gcp') {
+          lines.push(`# ${comp.name || 'Component'} - ${comp.type || 'unknown'}`);
+          if (comp.type === 'compute' || comp.type === 'service') {
+            lines.push(`resource "google_compute_instance" "${resourceName}" {`);
+            lines.push(`  name         = "${resourceName}"`);
+            lines.push(`  machine_type = "${comp.configuration?.instanceType || 'e2-micro'}"`);
+            lines.push(`  zone         = "${comp.cloudRegion || 'us-central1-a'}"`);
+            lines.push(`  labels = {`);
+            lines.push(`    component = "${comp.type || 'unknown'}"`);
+            lines.push(`    category  = "${category.replace(/\s+/g, '-').toLowerCase()}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'database') {
+            lines.push(`resource "google_sql_database_instance" "${resourceName}" {`);
+            lines.push(`  name             = "${resourceName}"`);
+            lines.push(`  database_version = "POSTGRES_14"`);
+            lines.push(`  region           = "${comp.cloudRegion || 'us-central1'}"`);
+            lines.push(`  settings {`);
+            lines.push(`    tier = "db-f1-micro"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else if (comp.type === 'storage') {
+            lines.push(`resource "google_storage_bucket" "${resourceName}" {`);
+            lines.push(`  name     = "${resourceName}-${Date.now()}"`);
+            lines.push(`  location = "${comp.cloudRegion || 'US'}"`);
+            lines.push(`  labels = {`);
+            lines.push(`    component = "${comp.type || 'unknown'}"`);
+            lines.push(`    category  = "${category.replace(/\s+/g, '-').toLowerCase()}"`);
+            lines.push(`  }`);
+            lines.push(`}`);
+          } else {
+            lines.push(`# TODO: Add Terraform resource for ${comp.type}`);
+            lines.push(`# Component: ${comp.name || resourceName}`);
+            lines.push(`# Type: ${comp.type || 'unknown'}`);
+            lines.push(`# Category: ${category}`);
+            lines.push('');
+          }
+        } else {
+          lines.push(`# TODO: Add Terraform resource for ${comp.type}`);
+          lines.push(`# Component: ${comp.name || resourceName}`);
+          lines.push(`# Type: ${comp.type || 'unknown'}`);
+          lines.push(`# Provider: ${provider}`);
+          lines.push(`# Category: ${category}`);
+          lines.push('');
+        }
+        lines.push('');
+      });
+    });
+
+    // Add outputs section
+    lines.push('# Outputs');
+    lines.push('output "architecture_id" {');
+    lines.push(`  value = "${results.id}"`);
+    lines.push('  description = "ArchLens analysis ID"');
+    lines.push('}');
+    lines.push('');
+    lines.push('output "component_count" {');
+    lines.push(`  value = ${results.components?.length || 0}`);
+    lines.push('  description = "Number of components in the architecture"');
+    lines.push('}');
+
+    return lines.join('\n');
+  };
+
+  const downloadTerraform = () => {
+    const terraformCode = generateTerraformCode();
+    const dataBlob = new Blob([terraformCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `architecture-${results.id}.tf`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -58,6 +317,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
     { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle },
     { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
     { id: 'json', label: 'JSON Export', icon: FileText },
+    { id: 'terraform', label: 'Terraform Export', icon: Code },
   ];
 
   return (
@@ -469,6 +729,44 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
             <pre className="bg-muted rounded-lg p-4 overflow-auto text-sm text-foreground">
               {JSON.stringify(results, null, 2)}
             </pre>
+          </div>
+        )}
+
+        {activeTab === 'terraform' && (
+          <div className="bg-secondary rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Terraform Export</h3>
+                <p className="text-sm text-foreground-muted mt-1">
+                  Terraform configuration generated from architecture analysis. Components are organized by Terraform category.
+                </p>
+              </div>
+              <button
+                onClick={downloadTerraform}
+                className="flex items-center space-x-2 px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download</span>
+              </button>
+            </div>
+            <div className="bg-muted rounded-lg p-4 overflow-auto max-h-[600px]">
+              <pre className="text-sm text-foreground font-mono whitespace-pre-wrap">
+                {generateTerraformCode()}
+              </pre>
+            </div>
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This is a generated Terraform configuration based on the architecture analysis. 
+                You may need to:
+              </p>
+              <ul className="text-sm text-blue-800 mt-2 list-disc list-inside space-y-1">
+                <li>Update provider configurations (regions, credentials, project IDs)</li>
+                <li>Adjust resource configurations to match your requirements</li>
+                <li>Add missing dependencies and relationships between resources</li>
+                <li>Review and update instance types, AMIs, and other specific settings</li>
+                <li>Add variables and modules for better organization</li>
+              </ul>
+            </div>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ export interface IBlueprintAnalysis extends Document {
   components: Array<{
     name: string;
     type: string;
+    terraformCategory?: string;
     technology: string;
     criticality: string;
     dependencies: string[];
@@ -67,7 +68,31 @@ const ComponentSchema = new Schema({
   type: { 
     type: String, 
     required: true,
-    enum: ['database', 'api', 'service', 'storage', 'network', 'security', 'monitoring', 'cache', 'queue', 'gateway']
+    enum: [
+      'database', 'api', 'service', 'storage', 'network', 'security', 'monitoring', 
+      'cache', 'queue', 'gateway', 'compute', 'user', 'backup', 'load-balancer', 
+      'cdn', 'firewall', 'vpn', 'dns', 'identity', 'authentication', 'authorization',
+      'logging', 'analytics', 'messaging', 'event-bus', 'workflow', 'scheduler',
+      'container', 'orchestration', 'registry', 'build', 'deployment', 'testing',
+      'documentation', 'utility', 'other'
+    ]
+  },
+  terraformCategory: {
+    type: String,
+    enum: [
+      'Foundational Services / Landing Zones',
+      'Foundational Services / Networking',
+      'Foundational Services / Storage',
+      'Identity & Access Management',
+      'Policy',
+      'Observability',
+      'Data Protection',
+      'Platform Services / Compute',
+      'Platform Services / Middleware Integration',
+      'Platform Services / Database',
+      'Platform Services / Analytics AI-ML',
+      'Platform Services / Miscellaneous'
+    ]
   },
   technology: { type: String, required: true },
   criticality: { 

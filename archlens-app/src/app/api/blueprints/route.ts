@@ -4,6 +4,8 @@ import { BlueprintType, BlueprintComplexity, BlueprintCategory } from '@/types/b
 import { BlueprintQuery, BlueprintResponse } from '@/types/blueprint';
 import { getEmbeddingService } from '@/services/embeddingService';
 import { blueprintAnalysisService } from '@/services/blueprintAnalysisService';
+import { createLLMClientFromEnv } from '@/lib/llm-factory';
+import { smartOptimizeImage } from '@/services/imageOptimizer';
 import Blueprint from '@/models/Blueprint';
 import BlueprintAnalysis from '@/models/BlueprintAnalysis';
 
@@ -134,6 +136,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   try {
     await connectToDatabase();
     
@@ -157,18 +160,238 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Save the file to cloud storage (AWS S3, Azure Blob, etc.)
+    // Create LLM client for component extraction
+    const llmClient = createLLMClientFromEnv();
+    if (!llmClient) {
+      return NextResponse.json({ error: 'No LLM provider configured' }, { status: 500 });
+    }
+
+    // STEP 1: Extract components and detect providers from blueprint file
+    console.log('📋 Step 1: Extracting components and detecting providers from blueprint file...');
+    
+    let fileContent: string;
+    let fileType: 'image' | 'iac' | 'text';
+    let optimizationInfo: {
+      original_size_kb: number;
+      optimized_size_kb: number;
+      compression_ratio: number;
+      dimensions?: [number, number];
+      fallback_used?: boolean;
+    } | null = null;
+    
+    if (file.type.startsWith('image/')) {
+      const fileBuffer = await file.arrayBuffer();
+      const originalBase64 = Buffer.from(fileBuffer).toString('base64');
+      const originalSizeKB = Math.round(fileBuffer.byteLength / 1024);
+      
+      console.log(`🖼️ Original image size: ${originalSizeKB}KB`);
+      
+      const optimizationResult = await smartOptimizeImage(originalBase64, {
+        quality: originalSizeKB > 1000 ? 50 : 70,
+        maxWidth: 512,
+        maxHeight: 512
+      });
+      
+      if (optimizationResult.success && optimizationResult.optimized_base64) {
+        fileContent = `Base64 Image Data: ${optimizationResult.optimized_base64}`;
+        optimizationInfo = {
+          original_size_kb: originalSizeKB,
+          optimized_size_kb: Math.round((optimizationResult.optimized_size_bytes || 0) / 1024),
+          compression_ratio: optimizationResult.compression_ratio_percent || 0,
+          dimensions: optimizationResult.optimized_dimensions
+        };
+        console.log(`✅ Image optimized: ${optimizationInfo.compression_ratio}% compression`);
+      } else {
+        console.warn('⚠️ Image optimization failed, using original');
+        fileContent = `Base64 Image Data: ${originalBase64}`;
+        optimizationInfo = {
+          original_size_kb: originalSizeKB,
+          optimized_size_kb: originalSizeKB,
+          compression_ratio: 0,
+          fallback_used: true
+        };
+      }
+      fileType = 'image';
+    } else {
+      fileContent = await file.text();
+      fileType = fileContent.includes('resource') || fileContent.includes('provider') || 
+                 fileContent.includes('apiVersion') || fileContent.includes('kind') ? 'iac' : 'text';
+    }
+
+    // Extract components and detect providers using LLM
+    const extractionPrompt = `You are an expert cloud architect. Analyze this ${fileType === 'image' ? 'blueprint architecture diagram' : 'infrastructure code blueprint'} and extract ALL architectural components, connections, and metadata with 100% accuracy.
+
+${fileType === 'image' ? 
+  'This is a base64-encoded architecture blueprint diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. Look for cloud provider logos, service names, and architectural patterns.' :
+  'This is infrastructure code blueprint. Parse all resources, services, and their configurations to understand the complete architecture. Identify cloud providers from resource types, service names, and provider configurations.'
+}
+
+CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
+
+ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators:
+
+AWS Services & Patterns:
+- Compute: EC2, Lambda, ECS, EKS, Fargate, Batch, Lightsail, Auto Scaling
+- Storage: S3, EBS, EFS, FSx, Glacier, Storage Gateway
+- Database: RDS, DynamoDB, ElastiCache, Redshift, Neptune, DocumentDB, Timestream
+- Networking: VPC, CloudFront, Route53, API Gateway, ELB, ALB, NLB, Direct Connect, Transit Gateway
+- Security: IAM, KMS, Secrets Manager, Certificate Manager, WAF, Shield, GuardDuty
+- Patterns: aws-*, amazon-*, *.amazonaws.com, arn:aws:*
+
+Azure Services & Patterns:
+- Compute: Virtual Machines, App Service, Functions, Container Instances, AKS, Batch, Service Fabric
+- Storage: Blob Storage, File Storage, Queue Storage, Table Storage, Disk Storage, Archive Storage
+- Database: SQL Database, Cosmos DB, Database for MySQL/PostgreSQL, Redis Cache, Synapse Analytics
+- Networking: Virtual Network, Load Balancer, Application Gateway, CDN, DNS, ExpressRoute, VPN Gateway
+- Security: Azure AD, Key Vault, Security Center, Sentinel, DDoS Protection, WAF
+- Patterns: azure-*, microsoft-*, *.azure.com, *.windows.net, /subscriptions/
+
+GCP Services & Patterns:
+- Compute: Compute Engine, App Engine, Cloud Functions, GKE, Cloud Run, Batch, Preemptible VMs
+- Storage: Cloud Storage, Persistent Disk, Filestore, Cloud SQL, Spanner, Firestore, Bigtable
+- Networking: VPC, Cloud Load Balancing, Cloud CDN, Cloud DNS, Cloud Interconnect, Cloud NAT
+- Security: Cloud IAM, Secret Manager, Security Command Center, Cloud Armor, Identity Platform
+- Patterns: gcp-*, google-*, *.googleapis.com, *.gcp.com, projects/
+
+Kubernetes & Container Platforms:
+- Managed Services: EKS (AWS), AKS (Azure), GKE (GCP), OpenShift, Rancher
+- Resources: Pods, Services, Deployments, ConfigMaps, Secrets, Ingress, PersistentVolumes
+- Patterns: apiVersion: v1, kind: Pod/Service/Deployment, kubernetes.io/, k8s.io/
+
+TERRAFORM CATEGORY CLASSIFICATION:
+Each component MUST be classified into one of these standard Terraform categories:
+
+1. "Foundational Services / Landing Zones" - Landing zones, account structures, organizational units
+2. "Foundational Services / Networking" - VPCs, subnets, load balancers, CDN, DNS, VPN, peering, gateways
+3. "Foundational Services / Storage" - Object storage, file storage, block storage, backup storage
+4. "Identity & Access Management" - IAM roles, policies, users, groups, authentication, authorization, SSO
+5. "Policy" - Resource policies, compliance policies, governance, guardrails, service control policies
+6. "Observability" - Monitoring, logging, alerting, dashboards, metrics, tracing, APM tools
+7. "Data Protection" - Encryption, key management, secrets management, backup, disaster recovery, data loss prevention
+8. "Platform Services / Compute" - Virtual machines, containers, serverless functions, auto-scaling, compute instances
+9. "Platform Services / Middleware Integration" - Message queues, event buses, API gateways, service mesh, integration platforms
+10. "Platform Services / Database" - Relational databases, NoSQL databases, data warehouses, in-memory databases
+11. "Platform Services / Analytics AI-ML" - Data analytics, machine learning, AI services, data processing, BI tools
+12. "Platform Services / Miscellaneous" - Other platform services not fitting above categories
+
+Return ONLY valid JSON without any prefix or suffix:
+
+{
+  "metadata": {
+    "architectureType": "microservices|monolith|serverless|hybrid|multi-cloud",
+    "cloudProviders": ["aws", "azure", "gcp", "on-premises", "kubernetes"],
+    "hybridCloudModel": "single-cloud|multi-cloud|hybrid-cloud|on-premises-only",
+    "primaryCloudProvider": "aws|azure|gcp|on-premises|multi-cloud",
+    "estimatedComplexity": "low|medium|high",
+    "primaryPurpose": "web application|api|data processing|ml-ai|iot|other",
+    "environmentType": "development|staging|production",
+    "deploymentModel": "public-cloud|private-cloud|hybrid-cloud|multi-cloud|edge-computing"
+  },
+  "components": [
+    {
+      "id": "component1",
+      "name": "Web Application",
+      "type": "compute",
+      "terraformCategory": "Platform Services / Compute",
+      "cloudProvider": "azure",
+      "cloudService": "Azure App Service",
+      "cloudRegion": "East US",
+      "description": "Hosts the main web application"
+    }
+  ],
+  "connections": [
+    {
+      "id": "connection1",
+      "source": "component1",
+      "target": "component2",
+      "type": "api_call",
+      "protocol": "http",
+      "port": 80,
+      "description": "API calls from web application to API Gateway"
+    }
+  ],
+  "summary": "Comprehensive description of the complete blueprint architecture"
+}
+
+IMPORTANT: 
+- components must be an array of objects, not a string
+- connections must be an array of objects, not a string  
+- Use proper JSON format with double quotes
+- Do not include newlines or escaped characters in JSON values
+
+File: ${file.name}
+Content: ${fileContent}`;
+
+    console.log('🔍 Extracting components from blueprint file...');
+    const extractionResponse = await llmClient.callLLM(extractionPrompt);
+    
+    // Parse extraction response
+    const extractionMatch = extractionResponse.match(/\{[\s\S]*\}/);
+    if (!extractionMatch) {
+      console.warn('⚠️ Failed to extract components from blueprint, using defaults');
+    }
+    
+    let extractedData: {
+      metadata?: {
+        architectureType?: string;
+        cloudProviders?: string[];
+        hybridCloudModel?: string;
+        primaryCloudProvider?: string;
+        estimatedComplexity?: string;
+        primaryPurpose?: string;
+        environmentType?: string;
+        deploymentModel?: string;
+      };
+      components?: any[];
+      connections?: any[];
+      summary?: string;
+    } = {
+      metadata: {},
+      components: [],
+      connections: [],
+      summary: description
+    };
+
+    if (extractionMatch) {
+      try {
+        const rawExtractedData = JSON.parse(extractionMatch[0]);
+        extractedData = {
+          metadata: rawExtractedData.metadata || {},
+          components: Array.isArray(rawExtractedData.components) ? rawExtractedData.components : [],
+          connections: Array.isArray(rawExtractedData.connections) ? rawExtractedData.connections : [],
+          summary: rawExtractedData.summary || description
+        };
+        console.log(`✅ Extracted ${extractedData.components?.length || 0} components and ${extractedData.connections?.length || 0} connections`);
+      } catch (parseError) {
+        console.warn('⚠️ Failed to parse extraction response, using defaults:', parseError);
+      }
+    }
+
+    // Detect cloud providers from extracted data
+    const detectedProviders = new Set<string>(cloudProviders || []);
+    if (extractedData.metadata?.cloudProviders) {
+      extractedData.metadata.cloudProviders.forEach((p: string) => detectedProviders.add(p));
+    }
+    extractedData.components?.forEach((component: any) => {
+      if (component.cloudProvider) {
+        detectedProviders.add(component.cloudProvider.toLowerCase());
+      }
+    });
+
+    const finalCloudProviders = Array.from(detectedProviders);
+    if (finalCloudProviders.length > 0) {
+      console.log(`✅ Detected cloud providers: ${finalCloudProviders.join(', ')}`);
+    }
+
+    // Save the file to cloud storage (AWS S3, Azure Blob, etc.)
     // For now, we'll simulate file storage
     const fileUrl = `/uploads/blueprints/${Date.now()}-${file.name}`;
     
-    // 2. Generate a thumbnail for images (if needed)
-    // This would be handled by a separate service
-    
-    // 3. Store metadata in MongoDB
+    // Store metadata in MongoDB with extracted data
     const newBlueprint = {
       id: Date.now().toString(),
       name,
-      description,
+      description: extractedData.summary || description,
       type,
       category,
       tags,
@@ -183,13 +406,24 @@ export async function POST(request: NextRequest) {
       downloadCount: 0,
       rating: 0,
       version: '1.0.0',
-      cloudProviders,
-      complexity,
+      cloudProviders: finalCloudProviders.length > 0 ? finalCloudProviders : cloudProviders,
+      complexity: extractedData.metadata?.estimatedComplexity || complexity,
       metadata: {
-        components: 0, // Default values - would be calculated in production
-        connections: 0,
+        components: extractedData.components?.length || 0,
+        connections: extractedData.connections?.length || 0,
         estimatedCost: estimatedCost || 0,
-        deploymentTime: deploymentTime || 'Unknown'
+        deploymentTime: deploymentTime || 'Unknown',
+        architectureType: extractedData.metadata?.architectureType,
+        hybridCloudModel: extractedData.metadata?.hybridCloudModel,
+        primaryCloudProvider: extractedData.metadata?.primaryCloudProvider,
+        primaryPurpose: extractedData.metadata?.primaryPurpose,
+        environmentType: extractedData.metadata?.environmentType,
+        deploymentModel: extractedData.metadata?.deploymentModel,
+        // Store extracted components and connections for reference
+        extractedComponents: extractedData.components || [],
+        extractedConnections: extractedData.connections || [],
+        // Image optimization info if applicable
+        ...(optimizationInfo && { imageOptimization: optimizationInfo })
       },
       // Embedding-related fields
       embeddingId: undefined as string | undefined,
@@ -207,7 +441,7 @@ export async function POST(request: NextRequest) {
         scalability: number;
         maintainability: number;
       } | undefined,
-      componentCount: undefined as number | undefined,
+      componentCount: extractedData.components?.length || 0,
       architecturePatterns: undefined as string[] | undefined,
       technologyStack: undefined as string[] | undefined
     };
@@ -231,24 +465,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Generate and store embedding in Qdrant
-    console.log(`🔄 Starting embedding generation process for blueprint: ${newBlueprint.name}`);
+    // STEP 2: Generate and store blueprint embedding in Qdrant
+    console.log(`📊 Step 2: Generating blueprint embedding from extracted content...`);
     try {
       const embeddingService = getEmbeddingService();
       console.log(`📊 Embedding service available: ${embeddingService.isAvailable()}`);
       
       if (embeddingService.isAvailable()) {
         console.log(`🔄 Generating embedding for blueprint: ${newBlueprint.name}`);
-        console.log(`📝 Blueprint content for embedding:`, {
-          name: newBlueprint.name,
-          description: newBlueprint.description,
-          type: newBlueprint.type,
-          category: newBlueprint.category,
-          tags: newBlueprint.tags,
-          cloudProviders: newBlueprint.cloudProviders
-        });
+        console.log(`📝 Blueprint content includes: ${extractedData.components?.length || 0} components, ${extractedData.connections?.length || 0} connections`);
         
-        const embeddingResult = await embeddingService.processBlueprintEmbedding(newBlueprint);
+        // Create enriched blueprint content for embedding (includes extracted components)
+        const enrichedBlueprint = {
+          ...newBlueprint,
+          extractedComponents: extractedData.components || [],
+          extractedConnections: extractedData.connections || []
+        };
+        
+        const embeddingResult = await embeddingService.processBlueprintEmbedding(enrichedBlueprint);
         console.log(`📊 Embedding result:`, embeddingResult);
         
         if (embeddingResult.success) {
@@ -258,30 +492,38 @@ export async function POST(request: NextRequest) {
           newBlueprint.embeddingId = embeddingResult.vectorId;
           newBlueprint.hasEmbedding = true;
           newBlueprint.embeddingGeneratedAt = new Date();
+          
+          // Update in MongoDB
+          await Blueprint.findOneAndUpdate(
+            { id: newBlueprint.id },
+            {
+              embeddingId: embeddingResult.vectorId,
+              hasEmbedding: true,
+              embeddingGeneratedAt: new Date()
+            }
+          );
         } else {
           console.warn(`⚠️ Failed to generate blueprint embedding: ${embeddingResult.error}`);
           newBlueprint.hasEmbedding = false;
         }
       } else {
         console.warn('⚠️ Embedding service not available - blueprint uploaded without embedding');
-        console.log('🔧 Embedding service configuration:', {
-          provider: process.env.EMBEDDINGS_PROVIDER,
-          baseUrl: process.env.EMBEDDINGS_BASE_URL,
-          model: process.env.EMBEDDINGS_MODEL
-        });
         newBlueprint.hasEmbedding = false;
       }
     } catch (error) {
       console.error('❌ Failed to process blueprint embedding:', error);
-      console.error('Error details:', error);
       newBlueprint.hasEmbedding = false;
       // Don't fail the upload if embedding generation fails
     }
 
-    // 5. Perform automatic blueprint analysis
-    console.log(`🔄 Starting automatic blueprint analysis for: ${newBlueprint.name}`);
+    // STEP 3: Perform automatic blueprint analysis with extracted components
+    console.log(`📊 Step 3: Performing blueprint analysis with extracted components...`);
     try {
-      const analysisResult = await blueprintAnalysisService.analyzeBlueprint(newBlueprint);
+      const analysisResult = await blueprintAnalysisService.analyzeBlueprint(
+        newBlueprint,
+        extractedData.components,
+        extractedData.connections
+      );
       console.log(`✅ Blueprint analysis completed for: ${newBlueprint.name}`);
       console.log(`📊 Analysis scores:`, {
         security: analysisResult.scores.security,
@@ -318,7 +560,22 @@ export async function POST(request: NextRequest) {
       newBlueprint.hasAnalysis = false;
     }
 
-    return NextResponse.json(newBlueprint, { status: 201 });
+    // Calculate processing time
+    const processingTime = Math.round((Date.now() - startTime) / 1000 * 100) / 100;
+
+    // Return comprehensive response
+    return NextResponse.json({
+      ...newBlueprint,
+      _id: savedBlueprint._id,
+      extractedData: {
+        components: extractedData.components || [],
+        connections: extractedData.connections || [],
+        metadata: extractedData.metadata || {}
+      },
+      processingTime,
+      hasEmbedding: newBlueprint.hasEmbedding,
+      hasAnalysis: newBlueprint.hasAnalysis
+    }, { status: 201 });
   } catch (error) {
     console.error('Blueprint upload error:', error);
     return NextResponse.json(

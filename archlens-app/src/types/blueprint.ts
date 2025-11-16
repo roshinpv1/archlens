@@ -34,6 +34,24 @@ export interface BlueprintMetadata {
   deploymentTime?: string;
   cloudProviders?: string[];
   tags?: string[];
+  // Extracted architecture data
+  architectureType?: string;
+  hybridCloudModel?: string;
+  primaryCloudProvider?: string;
+  primaryPurpose?: string;
+  environmentType?: string;
+  deploymentModel?: string;
+  // Extracted components and connections (full objects)
+  extractedComponents?: any[];
+  extractedConnections?: any[];
+  // Image optimization info
+  imageOptimization?: {
+    original_size_kb: number;
+    optimized_size_kb: number;
+    compression_ratio: number;
+    dimensions?: [number, number];
+    fallback_used?: boolean;
+  };
 }
 
 export interface Blueprint {

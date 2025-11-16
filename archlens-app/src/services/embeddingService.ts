@@ -243,32 +243,57 @@ export class EmbeddingService {
   /**
    * Extract comprehensive content from blueprint for embedding
    */
-  private extractBlueprintContent(blueprint: Blueprint): string {
-    const components = Array.isArray(blueprint.metadata?.components) 
-      ? blueprint.metadata.components.map(c => 
-          typeof c === 'string' ? c : (c as any).name || (c as any).type || 'component'
-        ).join(', ')
+  private extractBlueprintContent(blueprint: Blueprint & { extractedComponents?: any[]; extractedConnections?: any[] }): string {
+    // Check for extracted components first, then fall back to metadata
+    const componentsArray = (blueprint as any).extractedComponents || 
+                           blueprint.metadata?.extractedComponents || 
+                           blueprint.metadata?.components || 
+                           [];
+    
+    const connectionsArray = (blueprint as any).extractedConnections || 
+                             blueprint.metadata?.extractedConnections || 
+                             blueprint.metadata?.connections || 
+                             [];
+    
+    const components = Array.isArray(componentsArray)
+      ? componentsArray.map(c => {
+          if (typeof c === 'string') return c;
+          const comp = c as any;
+          return `${comp.name || comp.id || 'component'} (${comp.type || 'unknown'})${comp.cloudProvider ? ` - ${comp.cloudProvider}` : ''}${comp.cloudService ? ` - ${comp.cloudService}` : ''}`;
+        }).join('; ')
       : '';
     
-    const connections = Array.isArray(blueprint.metadata?.connections)
-      ? blueprint.metadata.connections.map(c => 
-          typeof c === 'string' ? c : (c as any).type || 'connection'
-        ).join(', ')
+    const connections = Array.isArray(connectionsArray)
+      ? connectionsArray.map(c => {
+          if (typeof c === 'string') return c;
+          const conn = c as any;
+          return `${conn.source || 'unknown'} → ${conn.target || 'unknown'} (${conn.type || conn.protocol || 'connection'})`;
+        }).join('; ')
       : '';
+
+    // Include metadata information
+    const metadataInfo = blueprint.metadata ? `
+Architecture Type: ${blueprint.metadata.architectureType || 'Unknown'}
+Hybrid Cloud Model: ${blueprint.metadata.hybridCloudModel || 'Unknown'}
+Primary Cloud Provider: ${blueprint.metadata.primaryCloudProvider || 'Unknown'}
+Primary Purpose: ${blueprint.metadata.primaryPurpose || 'Unknown'}
+Environment Type: ${blueprint.metadata.environmentType || 'Unknown'}
+Deployment Model: ${blueprint.metadata.deploymentModel || 'Unknown'}
+` : '';
 
     return `
 Name: ${blueprint.name}
 Description: ${blueprint.description}
 Type: ${blueprint.type}
 Category: ${blueprint.category}
-Cloud Provider: ${blueprint.cloudProvider}
+Cloud Providers: ${blueprint.cloudProviders.join(', ')}
 Complexity: ${blueprint.complexity}
 Tags: ${blueprint.tags.join(', ')}
-Components: ${components}
-Connections: ${connections}
-Purpose: ${blueprint.metadata?.primaryPurpose || 'Architecture blueprint'}
-Environment: ${blueprint.metadata?.environmentType || 'Production'}
-Deployment: ${blueprint.metadata?.deploymentModel || 'Cloud'}
+${metadataInfo}
+Components (${componentsArray.length}): ${components}
+Connections (${connectionsArray.length}): ${connections}
+Estimated Cost: ${blueprint.metadata?.estimatedCost || 'Unknown'}
+Deployment Time: ${blueprint.metadata?.deploymentTime || 'Unknown'}
 `.trim();
   }
 
@@ -306,6 +331,32 @@ Deployment: ${blueprint.metadata?.deploymentModel || 'Cloud'}
   }
 
   /**
+   * Generate embedding from text string (simple method for direct text input)
+   */
+  async generateEmbeddingFromText(text: string): Promise<EmbeddingResult> {
+    if (!this.isAvailable()) {
+      return {
+        success: false,
+        error: 'Embedding service not available'
+      };
+    }
+
+    try {
+      const embedding = await this.embeddingsClient!.generateEmbedding(text);
+      return {
+        success: true,
+        embedding
+      };
+    } catch (error) {
+      console.error('Failed to generate embedding from text:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
    * Extract content from analysis for embedding
    */
   private extractAnalysisContent(analysisContent: {
@@ -314,20 +365,28 @@ Deployment: ${blueprint.metadata?.deploymentModel || 'Cloud'}
     description?: string;
     metadata?: Record<string, unknown>;
   }): string {
-    const components = analysisContent.components.map(c => 
-      typeof c === 'string' ? c : `${c.name || 'component'} (${c.type || 'unknown'})`
-    ).join(', ');
+    const components = analysisContent.components.map(c => {
+      if (typeof c === 'string') return c;
+      const comp = c as Record<string, unknown>;
+      return `${comp.name || 'component'} (${comp.type || 'unknown'})`;
+    }).join(', ');
     
-    const connections = analysisContent.connections.map(c => 
-      typeof c === 'string' ? c : `${c.type || 'connection'}`
-    ).join(', ');
+    const connections = analysisContent.connections.map(c => {
+      if (typeof c === 'string') return c;
+      const conn = c as Record<string, unknown>;
+      return `${conn.type || 'connection'}`;
+    }).join(', ');
+
+    const cloudProviders = Array.isArray(analysisContent.metadata?.cloudProviders)
+      ? (analysisContent.metadata.cloudProviders as string[]).join(', ')
+      : 'Unknown';
 
     return `
 Description: ${analysisContent.description || 'Architecture analysis'}
 Components: ${components}
 Connections: ${connections}
 Architecture Type: ${analysisContent.metadata?.architectureType || 'Unknown'}
-Cloud Providers: ${analysisContent.metadata?.cloudProviders?.join(', ') || 'Unknown'}
+Cloud Providers: ${cloudProviders}
 Complexity: ${analysisContent.metadata?.estimatedComplexity || 'Unknown'}
 Purpose: ${analysisContent.metadata?.primaryPurpose || 'Architecture analysis'}
 Environment: ${analysisContent.metadata?.environmentType || 'Unknown'}

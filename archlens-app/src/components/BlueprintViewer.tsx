@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
   Download, 
@@ -18,7 +18,18 @@ import {
   ChevronRight,
   ExternalLink,
   BarChart3,
-  Brain
+  Brain,
+  Search,
+  Loader2,
+  Shield,
+  CheckCircle,
+  DollarSign,
+  TrendingUp,
+  Wrench,
+  Network,
+  Server,
+  Database,
+  MessageSquare
 } from 'lucide-react';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
 import { formatDate } from '@/utils/dateUtils';
@@ -46,7 +57,60 @@ export function BlueprintViewer({
 }: BlueprintViewerProps) {
   const [currentRating, setCurrentRating] = useState(blueprint.rating);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'preview' | 'versions'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'analysis' | 'search' | 'preview' | 'versions'>('details');
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchAnswer, setSearchAnswer] = useState('');
+  const [searching, setSearching] = useState(false);
+
+  // Fetch analysis when component opens
+  useEffect(() => {
+    if (isOpen && blueprint.hasAnalysis && blueprint.lastAnalysisId) {
+      fetchAnalysis();
+    }
+  }, [isOpen, blueprint.id]);
+
+  const fetchAnalysis = async () => {
+    setLoadingAnalysis(true);
+    try {
+      const response = await fetch(`/api/blueprints/${blueprint.id}/analyze`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysis(data.analysis);
+      }
+    } catch (error) {
+      console.error('Failed to fetch analysis:', error);
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSearching(true);
+    setSearchAnswer('');
+    try {
+      const response = await fetch(`/api/blueprints/${blueprint.id}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchAnswer(data.answer);
+      } else {
+        setSearchAnswer('Failed to process query. Please try again.');
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchAnswer('An error occurred while processing your query.');
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const getFileIcon = (type: BlueprintType) => {
     switch (type) {
@@ -133,10 +197,10 @@ export function BlueprintViewer({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border overflow-x-auto">
           <button
             onClick={() => setActiveTab('details')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'details'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-foreground-muted hover:text-foreground'
@@ -144,9 +208,34 @@ export function BlueprintViewer({
           >
             Details
           </button>
+          {blueprint.hasAnalysis && (
+            <button
+              onClick={() => setActiveTab('analysis')}
+              className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'analysis'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-foreground-muted hover:text-foreground'
+              }`}
+            >
+              Analysis
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'search'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-foreground-muted hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              AI Search
+            </div>
+          </button>
           <button
             onClick={() => setActiveTab('preview')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'preview'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-foreground-muted hover:text-foreground'
@@ -156,7 +245,7 @@ export function BlueprintViewer({
           </button>
           <button
             onClick={() => setActiveTab('versions')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'versions'
                 ? 'text-primary border-b-2 border-primary'
                 : 'text-foreground-muted hover:text-foreground'
@@ -297,6 +386,106 @@ export function BlueprintViewer({
                         <div className="text-2xl font-bold text-foreground">{blueprint.metadata.deploymentTime}</div>
                       </div>
                     )}
+                    {blueprint.metadata.architectureType && (
+                      <div className="bg-muted rounded-lg p-4">
+                        <div className="text-sm text-foreground-muted">Architecture Type</div>
+                        <div className="text-lg font-semibold text-foreground capitalize">{blueprint.metadata.architectureType}</div>
+                      </div>
+                    )}
+                    {blueprint.metadata.primaryCloudProvider && (
+                      <div className="bg-muted rounded-lg p-4">
+                        <div className="text-sm text-foreground-muted">Primary Cloud Provider</div>
+                        <div className="text-lg font-semibold text-foreground capitalize">{blueprint.metadata.primaryCloudProvider}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Extracted Components */}
+              {blueprint.metadata?.extractedComponents && blueprint.metadata.extractedComponents.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Server className="w-5 h-5" />
+                    Extracted Components ({blueprint.metadata.extractedComponents.length})
+                  </h3>
+                  
+                  {/* Group components by Terraform category */}
+                  {(() => {
+                    const componentsByCategory = blueprint.metadata.extractedComponents.reduce((acc: Record<string, any[]>, comp: any) => {
+                      const category = comp.terraformCategory || 'Uncategorized';
+                      if (!acc[category]) acc[category] = [];
+                      acc[category].push(comp);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <div className="space-y-4">
+                        {Object.entries(componentsByCategory).map(([category, components]) => (
+                          <div key={category} className="bg-muted rounded-lg p-4">
+                            <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                              <Tag className="w-4 h-4" />
+                              {category} ({components.length})
+                            </h4>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {components.map((comp: any, idx: number) => (
+                                <div key={idx} className="bg-surface rounded-lg p-3 border border-border">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-foreground">{comp.name || comp.id || `Component ${idx + 1}`}</div>
+                                      <div className="text-sm text-foreground-muted mt-1">
+                                        Type: <span className="capitalize">{comp.type || 'unknown'}</span>
+                                        {comp.cloudProvider && ` • Provider: ${comp.cloudProvider}`}
+                                        {comp.cloudService && ` • Service: ${comp.cloudService}`}
+                                      </div>
+                                      {comp.description && (
+                                        <div className="text-sm text-foreground-muted mt-1">{comp.description}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Extracted Connections */}
+              {blueprint.metadata?.extractedConnections && blueprint.metadata.extractedConnections.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Network className="w-5 h-5" />
+                    Extracted Connections ({blueprint.metadata.extractedConnections.length})
+                  </h3>
+                  <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <div className="space-y-2">
+                      {blueprint.metadata.extractedConnections.map((conn: any, idx: number) => (
+                        <div key={idx} className="bg-surface rounded-lg p-3 border border-border">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium text-foreground">{conn.source || 'Unknown'}</span>
+                            <span className="text-foreground-muted">→</span>
+                            <span className="font-medium text-foreground">{conn.target || 'Unknown'}</span>
+                            {conn.type && (
+                              <span className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                                {conn.type}
+                              </span>
+                            )}
+                            {conn.protocol && (
+                              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                {conn.protocol}
+                              </span>
+                            )}
+                          </div>
+                          {conn.description && (
+                            <div className="text-sm text-foreground-muted mt-1">{conn.description}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -352,6 +541,304 @@ export function BlueprintViewer({
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analysis' && (
+            <div className="space-y-6">
+              {loadingAnalysis ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <span className="ml-3 text-foreground-muted">Loading analysis...</span>
+                </div>
+              ) : analysis ? (
+                <>
+                  {/* Analysis Scores */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Analysis Scores</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {[
+                        { label: 'Security', score: analysis.scores?.security || 0, icon: Shield },
+                        { label: 'Resiliency', score: analysis.scores?.resiliency || 0, icon: CheckCircle },
+                        { label: 'Cost Efficiency', score: analysis.scores?.costEfficiency || 0, icon: DollarSign },
+                        { label: 'Compliance', score: analysis.scores?.compliance || 0, icon: CheckCircle },
+                        { label: 'Scalability', score: analysis.scores?.scalability || 0, icon: TrendingUp },
+                        { label: 'Maintainability', score: analysis.scores?.maintainability || 0, icon: Wrench }
+                      ].map(({ label, score, icon: Icon }) => (
+                        <div key={label} className="bg-muted rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Icon className="w-4 h-4 text-foreground-muted" />
+                            <span className="text-sm text-foreground-muted">{label}</span>
+                          </div>
+                          <div className="text-2xl font-bold text-foreground">{score}/100</div>
+                          <div className="w-full bg-surface rounded-full h-2 mt-2">
+                            <div 
+                              className="bg-primary rounded-full h-2 transition-all"
+                              style={{ width: `${score}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Architecture Patterns & Technology Stack */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {analysis.architecturePatterns && analysis.architecturePatterns.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Architecture Patterns</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {analysis.architecturePatterns.map((pattern: string, idx: number) => (
+                            <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                              {pattern}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {analysis.technologyStack && analysis.technologyStack.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Technology Stack</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {analysis.technologyStack.map((tech: string, idx: number) => (
+                            <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Component Complexity */}
+                  {analysis.componentComplexity && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">Component Complexity</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-sm text-foreground-muted">Total Components</div>
+                          <div className="text-2xl font-bold text-foreground">{analysis.componentComplexity.totalComponents || 0}</div>
+                        </div>
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-sm text-foreground-muted">Critical Components</div>
+                          <div className="text-2xl font-bold text-foreground">{analysis.componentComplexity.criticalComponents || 0}</div>
+                        </div>
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-sm text-foreground-muted">High Coupling</div>
+                          <div className="text-2xl font-bold text-foreground">{analysis.componentComplexity.highCouplingComponents || 0}</div>
+                        </div>
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-sm text-foreground-muted">Integration Points</div>
+                          <div className="text-2xl font-bold text-foreground">{analysis.componentComplexity.integrationPoints || 0}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Analyzed Components */}
+                  {analysis.components && analysis.components.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Server className="w-5 h-5" />
+                        Analyzed Components ({analysis.components.length})
+                      </h3>
+                      
+                      {/* Group components by Terraform category */}
+                      {(() => {
+                        const componentsByCategory = analysis.components.reduce((acc: Record<string, any[]>, comp: any) => {
+                          const category = comp.terraformCategory || 'Uncategorized';
+                          if (!acc[category]) acc[category] = [];
+                          acc[category].push(comp);
+                          return acc;
+                        }, {});
+
+                        return (
+                          <div className="space-y-4">
+                            {Object.entries(componentsByCategory).map(([category, comps]) => {
+                              const components = comps as any[];
+                              return (
+                              <div key={category} className="bg-muted rounded-lg p-4">
+                                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                                  <Tag className="w-4 h-4" />
+                                  {category} ({components.length})
+                                </h4>
+                                <div className="space-y-3 max-h-96 overflow-y-auto">
+                                  {components.map((comp: any, idx: number) => (
+                                    <div key={idx} className="bg-surface rounded-lg p-4 border border-border">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1">
+                                          <div className="font-medium text-foreground">{comp.name}</div>
+                                          <div className="text-sm text-foreground-muted mt-1">
+                                            Type: <span className="capitalize">{comp.type}</span> • Technology: {comp.technology}
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <span className={`px-2 py-1 rounded text-xs ${comp.criticality === 'high' ? 'bg-red-100 text-red-800' : comp.criticality === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                            {comp.criticality}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {comp.description && (
+                                        <div className="text-sm text-foreground-muted mt-2">{comp.description}</div>
+                                      )}
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        <span className="text-xs text-foreground-muted">Scalability: {comp.scalability}</span>
+                                        <span className="text-xs text-foreground-muted">Security: {comp.securityLevel}</span>
+                                        <span className="text-xs text-foreground-muted">Cost: {comp.costImpact}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  {analysis.recommendations && analysis.recommendations.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">Recommendations</h3>
+                      <div className="space-y-3">
+                        {analysis.recommendations.map((rec: any, idx: number) => (
+                          <div key={idx} className="bg-muted rounded-lg p-4 border-l-4 border-primary">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="font-medium text-foreground">{rec.component || 'General'}</div>
+                                <div className="text-sm text-foreground-muted mt-1">{rec.issue}</div>
+                              </div>
+                              <span className={`px-2 py-1 rounded text-xs ${rec.priority === 'high' ? 'bg-red-100 text-red-800' : rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                {rec.priority}
+                              </span>
+                            </div>
+                            <div className="text-sm text-foreground mt-2">{rec.recommendation}</div>
+                            <div className="flex gap-4 mt-2 text-xs text-foreground-muted">
+                              <span>Impact: {rec.impact}</span>
+                              <span>Effort: {rec.effort}</span>
+                              <span>Confidence: {(rec.confidence * 100).toFixed(0)}%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Insights */}
+                  {analysis.insights && analysis.insights.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">Key Insights</h3>
+                      <div className="space-y-2">
+                        {analysis.insights.map((insight: string, idx: number) => (
+                          <div key={idx} className="bg-muted rounded-lg p-4 flex items-start gap-3">
+                            <MessageSquare className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                            <p className="text-foreground">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Brain className="w-16 h-16 text-foreground-muted mx-auto mb-4" />
+                  <p className="text-foreground-muted">No analysis available for this blueprint.</p>
+                  {onAnalyze && (
+                    <button
+                      onClick={() => onAnalyze(blueprint)}
+                      className="mt-4 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                    >
+                      Run Analysis
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Brain className="w-5 h-5" />
+                  AI-Powered Blueprint Search
+                </h3>
+                <p className="text-sm text-foreground-muted mb-4">
+                  Ask questions about this blueprint and get intelligent answers based on its components, analysis, and metadata.
+                </p>
+                
+                {/* Search Input */}
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="e.g., What are the security recommendations? What components are critical? What is the architecture pattern?"
+                    className="flex-1 px-4 py-2 bg-surface border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    onClick={handleSearch}
+                    disabled={searching || !searchQuery.trim()}
+                    className="px-6 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {searching ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4" />
+                        Search
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Search Results */}
+                {searchAnswer && (
+                  <div className="bg-muted rounded-lg p-6 border border-border">
+                    <div className="flex items-start gap-3 mb-4">
+                      <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground mb-2">Answer</h4>
+                        <div className="text-foreground whitespace-pre-wrap">{searchAnswer}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Example Questions */}
+                {!searchAnswer && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Example Questions:</h4>
+                    <div className="space-y-2">
+                      {[
+                        "What are the security recommendations for this blueprint?",
+                        "Which components are critical and why?",
+                        "What architecture patterns are used?",
+                        "What is the scalability score and what are the bottlenecks?",
+                        "What technologies are used in this blueprint?",
+                        "What are the cost optimization recommendations?"
+                      ].map((question, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setSearchQuery(question);
+                            handleSearch();
+                          }}
+                          className="w-full text-left px-3 py-2 bg-surface hover:bg-muted rounded-lg text-sm text-foreground transition-colors"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

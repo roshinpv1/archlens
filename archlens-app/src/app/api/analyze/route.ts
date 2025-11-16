@@ -162,6 +162,22 @@ CRITICAL DETECTION RULES:
 7. Identify networking and security service providers
 8. Look for provider-specific monitoring and management tools
 
+TERRAFORM CATEGORY CLASSIFICATION:
+Each component MUST be classified into one of these standard Terraform categories:
+
+1. "Foundational Services / Landing Zones" - Landing zones, account structures, organizational units
+2. "Foundational Services / Networking" - VPCs, subnets, load balancers, CDN, DNS, VPN, peering, gateways
+3. "Foundational Services / Storage" - Object storage, file storage, block storage, backup storage
+4. "Identity & Access Management" - IAM roles, policies, users, groups, authentication, authorization, SSO
+5. "Policy" - Resource policies, compliance policies, governance, guardrails, service control policies
+6. "Observability" - Monitoring, logging, alerting, dashboards, metrics, tracing, APM tools
+7. "Data Protection" - Encryption, key management, secrets management, backup, disaster recovery, data loss prevention
+8. "Platform Services / Compute" - Virtual machines, containers, serverless functions, auto-scaling, compute instances
+9. "Platform Services / Middleware Integration" - Message queues, event buses, API gateways, service mesh, integration platforms
+10. "Platform Services / Database" - Relational databases, NoSQL databases, data warehouses, in-memory databases
+11. "Platform Services / Analytics AI-ML" - Data analytics, machine learning, AI services, data processing, BI tools
+12. "Platform Services / Miscellaneous" - Other platform services not fitting above categories
+
 Return ONLY valid JSON without any prefix or suffix:
 
 {
@@ -180,6 +196,7 @@ Return ONLY valid JSON without any prefix or suffix:
       "id": "component1",
       "name": "Web Application",
       "type": "compute",
+      "terraformCategory": "Platform Services / Compute",
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
       "cloudRegion": "East US",
