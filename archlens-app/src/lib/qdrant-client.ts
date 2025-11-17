@@ -346,13 +346,19 @@ export class QdrantClient {
         limit,
         score_threshold: scoreThreshold,
         with_payload: true,
-        // Filter to only analysis embeddings
+        // Filter to both blueprint_analysis and architecture_analysis
         filter: {
-          must: [
+          should: [
             {
               key: 'type',
               match: {
                 value: 'blueprint_analysis'
+              }
+            },
+            {
+              key: 'type',
+              match: {
+                value: 'architecture_analysis'
               }
             }
           ]
@@ -363,11 +369,11 @@ export class QdrantClient {
         id: point.id,
         score: point.score,
         blueprint: {
-          id: point.payload.blueprintId,
-          name: point.payload.blueprintName,
-          type: 'analysis', // Mark as analysis result
-          category: point.payload.architecturePatterns?.[0] || 'Unknown',
-          cloudProvider: point.payload.technologyStack?.[0] || 'Unknown',
+          id: point.payload.blueprintId || point.payload.analysisId || 'unknown',
+          name: point.payload.blueprintName || point.payload.analysisName || 'Unknown',
+          type: point.payload.type === 'architecture_analysis' ? 'architecture_analysis' : 'analysis',
+          category: point.payload.architecturePatterns?.[0] || point.payload.architectureType || 'Unknown',
+          cloudProvider: point.payload.technologyStack?.[0] || point.payload.cloudProviders?.[0] || 'Unknown',
           complexity: point.payload.componentCount > 10 ? 'high' : point.payload.componentCount > 5 ? 'medium' : 'low',
           tags: point.payload.architecturePatterns || []
         }

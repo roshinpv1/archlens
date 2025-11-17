@@ -3,7 +3,8 @@
  */
 
 import { createEmbeddingsClientFromEnv, EmbeddingsClient } from '../lib/embeddings-client';
-import { getQdrantClient, BlueprintVector } from '../lib/qdrant-client';
+import { getVectorStore } from '../lib/vector-store';
+import { BlueprintVector } from '../lib/qdrant-client';
 import { Blueprint } from '../types/blueprint';
 
 export interface EmbeddingResult {
@@ -103,7 +104,7 @@ export class EmbeddingService {
     embedding: number[]
   ): Promise<EmbeddingResult> {
     try {
-      const qdrantClient = await getQdrantClient();
+      const vectorStore = await getVectorStore();
       const vectorId = `blueprint_${blueprint.id}`;
       
       const blueprintVector: BlueprintVector = {
@@ -124,7 +125,7 @@ export class EmbeddingService {
         }
       };
 
-      await qdrantClient.upsertBlueprint(blueprintVector);
+      await vectorStore.upsertBlueprint(blueprintVector);
       
       return {
         success: true,
@@ -180,8 +181,8 @@ export class EmbeddingService {
         return embeddingResult;
       }
 
-      // Update in Qdrant
-      const qdrantClient = await getQdrantClient();
+      // Update in vector store
+      const vectorStore = await getVectorStore();
       const vectorId = `blueprint_${blueprint.id}`;
       
       const blueprintVector: BlueprintVector = {
@@ -202,7 +203,7 @@ export class EmbeddingService {
         }
       };
 
-      await qdrantClient.upsertBlueprint(blueprintVector);
+      await vectorStore.upsertBlueprint(blueprintVector);
       
       return {
         success: true,
@@ -222,10 +223,10 @@ export class EmbeddingService {
    */
   async deleteBlueprintEmbedding(blueprintId: string): Promise<EmbeddingResult> {
     try {
-      const qdrantClient = await getQdrantClient();
+      const vectorStore = await getVectorStore();
       const vectorId = `blueprint_${blueprintId}`;
       
-      await qdrantClient.deleteBlueprint(vectorId);
+      await vectorStore.deleteBlueprint(vectorId);
       
       return {
         success: true,

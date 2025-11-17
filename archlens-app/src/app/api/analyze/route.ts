@@ -6,6 +6,7 @@ import { ArchitectureAnalysis } from '../../../types/architecture';
 import { LLMResponseData } from '../../../types/llm';
 import { smartOptimizeImage } from '../../../services/imageOptimizer';
 import { getSimilarityService } from '../../../services/similarityService';
+import { getEmbeddingService } from '../../../services/embeddingService';
 import { blueprintAnalysisService } from '../../../services/blueprintAnalysisService';
 
 export async function POST(request: NextRequest) {
@@ -859,6 +860,63 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
 
     // Save to database
     const savedAnalysis = await saveAnalysis(analysis);
+
+    // Store architecture analysis embedding in vector store for future similarity searches
+    try {
+      const embeddingService = getEmbeddingService();
+      const similarityService = getSimilarityService();
+      
+      if (embeddingService.isAvailable()) {
+        console.log('🔄 Generating and storing architecture analysis embedding...');
+        
+        // Generate embedding for the architecture analysis
+        const embeddingResult = await embeddingService.generateAnalysisEmbedding({
+          components: finalComponents,
+          connections: finalConnections,
+          description: analysis.summary,
+          metadata: {
+            architectureType: analysis.architectureDescription,
+            cloudProviders: analysis.metadata?.cloudProviders || [],
+            estimatedComplexity: 'Unknown',
+            primaryPurpose: analysis.summary,
+            environmentType: environment || 'Unknown'
+          }
+        });
+
+        if (embeddingResult.success && embeddingResult.embedding) {
+          // Store embedding with architecture analysis metadata
+          const analysisPointId = `architecture_analysis_${savedAnalysis._id}`;
+          const metadata = {
+            analysisId: savedAnalysis._id.toString(),
+            analysisName: analysis.componentName,
+            type: 'architecture_analysis', // Distinguish from blueprint_analysis
+            componentCount: finalComponents.length,
+            connectionCount: finalConnections.length,
+            architectureType: analysis.architectureDescription,
+            cloudProviders: analysis.metadata?.cloudProviders || [],
+            scores: {
+              security: analysis.securityScore,
+              resiliency: analysis.resiliencyScore,
+              costEfficiency: analysis.costEfficiencyScore,
+              compliance: analysis.complianceScore
+            },
+            architecturePatterns: (analysis.metadata as any)?.architecturePatterns || [],
+            technologyStack: (analysis.metadata as any)?.technologyStack || [],
+            createdAt: new Date().toISOString(),
+            appId: analysis.appId,
+            environment: analysis.environment
+          };
+
+          await similarityService.storeEmbedding(analysisPointId, embeddingResult.embedding, metadata);
+          console.log(`✅ Architecture analysis embedding stored: ${analysisPointId}`);
+        } else {
+          console.warn(`⚠️ Failed to generate architecture analysis embedding: ${embeddingResult.error}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to store architecture analysis embedding:', error);
+      // Don't fail the analysis if embedding storage fails
+    }
 
     // Find similar blueprints for the analysis
     let similarBlueprints: Array<{

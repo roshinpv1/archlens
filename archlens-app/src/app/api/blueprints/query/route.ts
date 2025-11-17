@@ -3,12 +3,13 @@ import { connectToDatabase } from '@/services/analysisService';
 import { getEmbeddingService } from '@/services/embeddingService';
 import { getSimilarityService } from '@/services/similarityService';
 import { createLLMClientFromEnv } from '@/lib/llm-factory';
+import { getVectorStore } from '@/lib/vector-store';
 import Blueprint from '@/models/Blueprint';
 import BlueprintAnalysis from '@/models/BlueprintAnalysis';
 
 /**
  * Query blueprints using natural language
- * Uses Qdrant for similarity search and LLM for intelligent responses
+ * Uses vector store (Qdrant or FAISS) for similarity search and LLM for intelligent responses
  */
 export async function POST(request: NextRequest) {
   try {
@@ -45,19 +46,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: Search Qdrant for similar blueprints
-    console.log('🔍 Searching Qdrant for similar blueprints...');
+    // Step 2: Search vector store for similar blueprints
+    console.log('🔍 Searching vector store for similar blueprints...');
     const similarityService = getSimilarityService();
-    const qdrantClient = await (await import('@/lib/qdrant-client')).getQdrantClient();
+    const vectorStore = await getVectorStore();
     
     // Search both blueprint embeddings and analysis embeddings
-    const blueprintSearchResult = await qdrantClient.searchSimilarBlueprints(
+    const blueprintSearchResult = await vectorStore.searchSimilarBlueprints(
       queryEmbeddingResult.embedding,
       limit,
       threshold
     );
 
-    const analysisSearchResult = await qdrantClient.searchSimilarAnalysis(
+    const analysisSearchResult = await vectorStore.searchSimilarAnalysis(
       queryEmbeddingResult.embedding,
       limit,
       threshold

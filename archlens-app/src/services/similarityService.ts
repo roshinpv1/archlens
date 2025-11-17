@@ -2,9 +2,9 @@
  * Similarity Service for blueprint similarity search and matching
  */
 
-import { getQdrantClient, SimilarBlueprint } from '../lib/qdrant-client';
+import { getVectorStore } from '../lib/vector-store';
+import { SimilarBlueprint } from '../lib/qdrant-client';
 import { getEmbeddingService } from './embeddingService';
-import { Blueprint } from '../types/blueprint';
 
 export interface SimilaritySearchResult {
   success: boolean;
@@ -50,17 +50,17 @@ export class SimilarityService {
       }
 
       // Search for similar blueprints
-      const qdrantClient = await getQdrantClient();
+      const vectorStore = await getVectorStore();
       
       // Search blueprint embeddings
-      const blueprintSearchResult = await qdrantClient.searchSimilarBlueprints(
+      const blueprintSearchResult = await vectorStore.searchSimilarBlueprints(
         embeddingResult.embedding,
         2, // Top 2 closest matches
         0.7 // 70% similarity threshold
       );
 
       // Search analysis embeddings
-      const analysisSearchResult = await qdrantClient.searchSimilarAnalysis(
+      const analysisSearchResult = await vectorStore.searchSimilarAnalysis(
         embeddingResult.embedding,
         2, // Top 2 closest matches
         0.7 // 70% similarity threshold
@@ -110,20 +110,20 @@ export class SimilarityService {
    */
   async findSimilarBlueprintsForBlueprint(blueprintId: string): Promise<BlueprintSimilarityResult> {
     try {
-      // Get the blueprint's embedding from Qdrant
-      const qdrantClient = await getQdrantClient();
-      const vectorId = `blueprint_${blueprintId}`;
-      const blueprintVector = await qdrantClient.getBlueprint(vectorId);
+            // Get the blueprint's embedding from vector store
+            const vectorStore = await getVectorStore();
+            const vectorId = `blueprint_${blueprintId}`;
+            const blueprintVector = await vectorStore.getBlueprint(vectorId);
 
-      if (!blueprintVector) {
-        return {
-          success: false,
-          error: 'Blueprint embedding not found'
-        };
-      }
+            if (!blueprintVector) {
+              return {
+                success: false,
+                error: 'Blueprint embedding not found'
+              };
+            }
 
-      // Search for similar blueprints (excluding the current one)
-      const similarBlueprints = await qdrantClient.searchSimilarBlueprints(
+            // Search for similar blueprints (excluding the current one)
+            const similarBlueprints = await vectorStore.searchSimilarBlueprints(
         blueprintVector.vector,
         3, // Top 3 matches (excluding self)
         0.7 // 70% similarity threshold
@@ -154,23 +154,7 @@ export class SimilarityService {
   async findSimilarBlueprintsByContent(content: string): Promise<SimilaritySearchResult> {
     try {
       // Generate embedding for the content
-      const embeddingResult = await this.embeddingService.generateBlueprintEmbedding({
-        id: 'temp',
-        name: 'Search Query',
-        description: content,
-        type: 'search',
-        category: 'search',
-        cloudProvider: 'unknown',
-        complexity: 'unknown',
-        tags: [],
-        isPublic: false,
-        createdBy: 'system',
-        createdAt: new Date(),
-        downloadCount: 0,
-        rating: 0,
-        version: '1.0.0',
-        metadata: {}
-      } as Blueprint);
+      const embeddingResult = await this.embeddingService.generateEmbeddingFromText(content);
 
       if (!embeddingResult.success || !embeddingResult.embedding) {
         return {
@@ -180,8 +164,8 @@ export class SimilarityService {
       }
 
       // Search for similar blueprints
-      const qdrantClient = await getQdrantClient();
-      const similarBlueprints = await qdrantClient.searchSimilarBlueprints(
+      const vectorStore = await getVectorStore();
+      const similarBlueprints = await vectorStore.searchSimilarBlueprints(
         embeddingResult.embedding,
         5, // Top 5 matches
         0.6 // 60% similarity threshold for content search
@@ -212,11 +196,11 @@ export class SimilarityService {
     error?: string;
   }> {
     try {
-      const qdrantClient = await getQdrantClient();
+      const vectorStore = await getVectorStore();
       
       // Get both blueprint vectors
-      const vector1 = await qdrantClient.getBlueprint(`blueprint_${blueprintId1}`);
-      const vector2 = await qdrantClient.getBlueprint(`blueprint_${blueprintId2}`);
+      const vector1 = await vectorStore.getBlueprint(`blueprint_${blueprintId1}`);
+      const vector2 = await vectorStore.getBlueprint(`blueprint_${blueprintId2}`);
 
       if (!vector1 || !vector2) {
         return {
@@ -260,7 +244,10 @@ export class SimilarityService {
       const result = await this.findSimilarBlueprintsForBlueprint(blueprintId);
       
       if (!result.success || !result.similarBlueprints) {
-        return result;
+        return {
+          success: false,
+          error: result.error || 'Failed to find similar blueprints'
+        };
       }
 
       // Enhance results with additional information
@@ -351,12 +338,12 @@ export class SimilarityService {
   }
 
   /**
-   * Store embedding in Qdrant (for analysis embeddings)
+   * Store embedding in vector store (for analysis embeddings)
    */
   async storeEmbedding(pointId: string, embedding: number[], metadata: Record<string, any>): Promise<void> {
     try {
-      const qdrantClient = await getQdrantClient();
-      await qdrantClient.storeEmbedding(pointId, embedding, metadata);
+      const vectorStore = await getVectorStore();
+      await vectorStore.storeEmbedding(pointId, embedding, metadata);
     } catch (error) {
       console.error('❌ Failed to store embedding:', error);
       throw error;
