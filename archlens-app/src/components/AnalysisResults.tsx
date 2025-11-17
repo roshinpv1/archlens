@@ -12,7 +12,10 @@ import {
   BarChart3,
   Target,
   TrendingUp,
-  Code
+  Code,
+  Search,
+  Brain,
+  Loader2
 } from "lucide-react";
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
 import BlueprintInsights from "./BlueprintInsights";
@@ -23,7 +26,10 @@ interface AnalysisResultsProps {
 }
 
 export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'risks' | 'recommendations' | 'json' | 'terraform'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'risks' | 'recommendations' | 'json' | 'terraform' | 'search'>('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchAnswer, setSearchAnswer] = useState('');
+  const [searching, setSearching] = useState(false);
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(results, null, 2);
@@ -294,6 +300,32 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
     URL.revokeObjectURL(url);
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSearching(true);
+    setSearchAnswer('');
+    try {
+      const response = await fetch(`/api/analysis/${results.id}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchAnswer(data.answer);
+      } else {
+        setSearchAnswer('Failed to process query. Please try again.');
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchAnswer('An error occurred while processing your query.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const getRiskLevelColor = (level: RiskLevel | string) => {
     const levelStr = typeof level === 'string' ? level.toLowerCase() : level;
     switch (levelStr) {
@@ -318,6 +350,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
     { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
     { id: 'json', label: 'JSON Export', icon: FileText },
     { id: 'terraform', label: 'Terraform Export', icon: Code },
+    { id: 'search', label: 'AI Search', icon: Brain },
   ];
 
   return (
@@ -767,6 +800,92 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                 <li>Add variables and modules for better organization</li>
               </ul>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'search' && (
+          <div className="bg-secondary rounded-lg p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                AI-Powered Architecture Search
+              </h3>
+              <p className="text-sm text-foreground-muted">
+                Ask questions about this architecture analysis and get intelligent answers based on components, risks, recommendations, and scores.
+              </p>
+            </div>
+            
+            {/* Search Input */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="e.g., What are the security risks? What components are critical? What are the cost optimization recommendations?"
+                className="flex-1 px-4 py-2 bg-surface border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={searching || !searchQuery.trim()}
+                className="px-6 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {searching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Search
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Search Results */}
+            {searchAnswer && (
+              <div className="bg-muted rounded-lg p-6 border border-border">
+                <div className="flex items-start gap-3 mb-4">
+                  <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-2">Answer</h4>
+                    <div className="text-foreground whitespace-pre-wrap">{searchAnswer}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Example Questions */}
+            {!searchAnswer && (
+              <div className="bg-muted rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-foreground mb-3">Example Questions:</h4>
+                <div className="space-y-2">
+                  {[
+                    "What are the security risks in this architecture?",
+                    "Which components are most critical?",
+                    "What are the cost optimization recommendations?",
+                    "What compliance gaps exist?",
+                    "What is the security score and what are the main concerns?",
+                    "What are the top recommendations for improving this architecture?",
+                    "Which components are in the networking category?",
+                    "What are the resiliency concerns?"
+                  ].map((question, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSearchQuery(question);
+                        handleSearch();
+                      }}
+                      className="w-full text-left px-3 py-2 bg-surface hover:bg-muted rounded-lg text-sm text-foreground transition-colors"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

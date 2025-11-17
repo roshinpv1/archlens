@@ -1,6 +1,10 @@
 /**
  * Qdrant Client for vector database operations
- * Supports embedded Qdrant for local development and production
+ * Supports both embedded Qdrant (in-process) and remote Qdrant server
+ * 
+ * Mode selection:
+ * - Embedded: Set QDRANT_EMBEDDED=true (uses @qdrant/qdrant-js)
+ * - Server: Set QDRANT_URL or use default localhost:6333 (uses @qdrant/js-client-rest)
  */
 
 import { QdrantClient as QdrantSDK } from '@qdrant/js-client-rest';
