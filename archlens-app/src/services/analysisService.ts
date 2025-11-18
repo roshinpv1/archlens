@@ -105,32 +105,11 @@ export async function getAnalysisById(id: string): Promise<IAnalysis | null> {
   await connectToDatabase();
   
   try {
-    let analysis = null;
-    
-    // First, try to find by MongoDB ObjectId (if it's a valid ObjectId)
-    if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      analysis = await Analysis.findById(id);
-    }
-    
-    // If not found or not a valid ObjectId, try to find by custom 'id' field
-    if (!analysis) {
-      analysis = await Analysis.findOne({ id: id });
-    }
-    
-    // If still not found, try to find by _id as string
-    if (!analysis) {
-      analysis = await Analysis.findOne({ _id: id });
-    }
-    
+    const analysis = await Analysis.findById(id);
     return analysis;
   } catch (error) {
     console.error('Error fetching analysis:', error);
-    // Try alternative query as fallback
-    try {
-      return await Analysis.findOne({ id: id });
-    } catch (fallbackError) {
-      throw new Error('Failed to fetch analysis from database');
-    }
+    throw new Error('Failed to fetch analysis from database');
   }
 }
 
