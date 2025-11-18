@@ -36,8 +36,29 @@ export async function POST(
 
     console.log(`🔍 Processing query for analysis ${analysisId}: "${query}"`);
 
-    // Fetch analysis
-    const analysis = await Analysis.findById(analysisId).lean();
+    // Fetch analysis - handle both MongoDB ObjectId and custom string ID
+    let analysis;
+    try {
+      // First, try to find by MongoDB ObjectId (if it's a valid ObjectId)
+      if (analysisId.match(/^[0-9a-fA-F]{24}$/)) {
+        analysis = await Analysis.findById(analysisId).lean();
+      }
+      
+      // If not found or not a valid ObjectId, try to find by custom 'id' field
+      if (!analysis) {
+        analysis = await Analysis.findOne({ id: analysisId }).lean();
+      }
+      
+      // If still not found, try to find by _id as string
+      if (!analysis) {
+        analysis = await Analysis.findOne({ _id: analysisId }).lean();
+      }
+    } catch (error) {
+      console.error('Error fetching analysis:', error);
+      // Try alternative query
+      analysis = await Analysis.findOne({ id: analysisId }).lean();
+    }
+    
     if (!analysis) {
       return NextResponse.json(
         { error: 'Analysis not found' },
