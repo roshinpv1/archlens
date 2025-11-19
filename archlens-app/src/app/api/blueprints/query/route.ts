@@ -6,6 +6,7 @@ import { createLLMClientFromEnv } from '@/lib/llm-factory';
 import { getVectorStore } from '@/lib/vector-store';
 import Blueprint from '@/models/Blueprint';
 import BlueprintAnalysis from '@/models/BlueprintAnalysis';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 /**
  * Query blueprints using natural language
@@ -176,11 +177,14 @@ Provide a comprehensive, helpful answer based on the blueprint context provided.
       maxTokens: 2000
     });
 
+    // Clean markdown from LLM response
+    const cleanAnswer = cleanMarkdown(llmResponse);
+
     // Step 6: Return response
     return NextResponse.json({
       success: true,
       query,
-      answer: llmResponse,
+      answer: cleanAnswer,
       relevantBlueprints: contextBlueprints.map(item => ({
         blueprint: {
           id: item.blueprint!.id,

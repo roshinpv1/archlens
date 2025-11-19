@@ -4,6 +4,7 @@ import { getEmbeddingService } from '@/services/embeddingService';
 import { createLLMClientFromEnv } from '@/lib/llm-factory';
 import Blueprint from '@/models/Blueprint';
 import BlueprintAnalysis from '@/models/BlueprintAnalysis';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 /**
  * Query a specific blueprint using natural language
@@ -78,23 +79,25 @@ export async function POST(
 
     // Metadata
     if (blueprint.metadata) {
+      const metadata = blueprint.metadata as any;
       contextParts.push(`
 **METADATA:**
-- Components Count: ${blueprint.metadata.components || 0}
-- Connections Count: ${blueprint.metadata.connections || 0}
-- Estimated Cost: $${blueprint.metadata.estimatedCost || 0}/month
-- Deployment Time: ${blueprint.metadata.deploymentTime || 'Unknown'}
-- Architecture Type: ${blueprint.metadata.architectureType || 'Unknown'}
-- Hybrid Cloud Model: ${blueprint.metadata.hybridCloudModel || 'Unknown'}
-- Primary Cloud Provider: ${blueprint.metadata.primaryCloudProvider || 'Unknown'}
-- Primary Purpose: ${blueprint.metadata.primaryPurpose || 'Unknown'}
-- Environment Type: ${blueprint.metadata.environmentType || 'Unknown'}
-- Deployment Model: ${blueprint.metadata.deploymentModel || 'Unknown'}
+- Components Count: ${metadata.components || 0}
+- Connections Count: ${metadata.connections || 0}
+- Estimated Cost: $${metadata.estimatedCost || 0}/month
+- Deployment Time: ${metadata.deploymentTime || 'Unknown'}
+- Architecture Type: ${metadata.architectureType || 'Unknown'}
+- Hybrid Cloud Model: ${metadata.hybridCloudModel || 'Unknown'}
+- Primary Cloud Provider: ${metadata.primaryCloudProvider || 'Unknown'}
+- Primary Purpose: ${metadata.primaryPurpose || 'Unknown'}
+- Environment Type: ${metadata.environmentType || 'Unknown'}
+- Deployment Model: ${metadata.deploymentModel || 'Unknown'}
 `);
     }
 
     // Extracted components
-    const extractedComponents = blueprint.metadata?.extractedComponents || [];
+    const metadata = blueprint.metadata as any;
+    const extractedComponents = metadata?.extractedComponents || [];
     if (extractedComponents.length > 0) {
       contextParts.push(`
 **EXTRACTED COMPONENTS (${extractedComponents.length}):**
@@ -105,7 +108,7 @@ ${extractedComponents.map((comp: any, idx: number) =>
     }
 
     // Extracted connections
-    const extractedConnections = blueprint.metadata?.extractedConnections || [];
+    const extractedConnections = metadata?.extractedConnections || [];
     if (extractedConnections.length > 0) {
       contextParts.push(`
 **EXTRACTED CONNECTIONS (${extractedConnections.length}):**
@@ -231,10 +234,13 @@ Provide a helpful, accurate answer based on the blueprint information provided.`
       maxTokens: 2000
     });
 
+    // Clean markdown from LLM response
+    const cleanAnswer = cleanMarkdown(llmResponse);
+
     return NextResponse.json({
       success: true,
       query,
-      answer: llmResponse,
+      answer: cleanAnswer,
       blueprintId,
       blueprintName: blueprint.name,
       hasAnalysis: !!analysis,

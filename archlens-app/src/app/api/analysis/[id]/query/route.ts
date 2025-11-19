@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/services/analysisService';
 import { createLLMClientFromEnv } from '@/lib/llm-factory';
 import Analysis from '@/models/Analysis';
+import { cleanMarkdown } from '@/utils/cleanMarkdown';
 
 /**
  * Query a specific architecture analysis using natural language
@@ -239,10 +240,13 @@ Provide a helpful, accurate answer based on the architecture analysis informatio
       maxTokens: 2000
     });
 
+    // Clean markdown from LLM response
+    const cleanAnswer = cleanMarkdown(llmResponse);
+
     return NextResponse.json({
       success: true,
       query,
-      answer: llmResponse,
+      answer: cleanAnswer,
       analysisId: analysisIdStr,
       componentName: analysis.componentName,
       timestamp: new Date().toISOString()

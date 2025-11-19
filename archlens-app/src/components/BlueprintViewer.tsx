@@ -806,7 +806,10 @@ export function BlueprintViewer({
                       <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground mb-2">Answer</h4>
-                        <div className="text-foreground whitespace-pre-wrap">{searchAnswer}</div>
+                        <div 
+                          className="text-foreground markdown-content prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: searchAnswer }}
+                        />
                       </div>
                     </div>
                   </div>
