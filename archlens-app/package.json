@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "init-checklist": "node scripts/initialize-checklist.js",
+    "generate-api-spec-html": "node scripts/generate-api-spec-html.js",
     "setup-embeddings": "./scripts/setup-embeddings.sh",
     "start-services": "echo 'Starting embeddings services...' && ollama serve & docker run -d --name qdrant-archlens -p 6333:6333 -p 6334:6334 qdrant/qdrant && echo 'Services started! Run npm run dev to start the app.'",
     "stop-services": "echo 'Stopping embeddings services...' && pkill -f ollama && docker stop qdrant-archlens && docker rm qdrant-archlens && echo 'Services stopped!'"

@@ -8,6 +8,33 @@ http://localhost:3000/api
 ## Authentication
 Currently, the API does not require authentication. Future versions may implement JWT or OAuth2.
 
+## Key Features
+
+### 🎯 Deterministic Scoring
+- **Temperature: 0** for all analysis calls
+- **100% Consistent**: Same architecture → Same scores
+- **Reproducible Results**: No variance between runs
+
+### 💾 Result Caching
+- **24-Hour TTL**: Cached results for identical inputs
+- **Instant Responses**: Cached analyses return immediately
+- **Cost Savings**: Reduces LLM API calls
+
+### 🔍 Vector Search
+- **Dual Vector Store**: Qdrant (server) or FAISS (in-memory)
+- **Three Embedding Types**: Blueprints, Blueprint Analyses, Architecture Analyses
+- **Unified Collection**: Single collection with type-based filtering
+
+### 🤖 AI-Powered Analysis
+- **Two-Stage Process**: Component extraction → Detailed analysis
+- **Natural Language Queries**: AI search for blueprints and analyses
+- **Similarity Matching**: Finds similar architectures automatically
+
+### 📊 Comprehensive Scoring
+- **Four Dimensions**: Security, Resiliency, Cost Efficiency, Compliance
+- **Checklist-Driven**: Evaluates against active checklist items
+- **Cloud Provider-Aware**: Considers AWS/Azure/GCP/Kubernetes best practices
+
 ---
 
 ## Table of Contents
@@ -28,6 +55,13 @@ Currently, the API does not require authentication. Future versions may implemen
 ### POST `/api/analyze`
 
 Analyze an architecture diagram or IAC file and generate comprehensive analysis.
+
+**Features:**
+- **Deterministic Scoring**: Uses `temperature: 0` for consistent, reproducible scores
+- **Result Caching**: Identical inputs return cached results instantly (24-hour TTL)
+- **Two-Stage Analysis**: Component extraction → Detailed analysis with scoring
+- **Automatic Embedding**: Architecture analysis embeddings generated and stored in vector store
+- **Similarity Matching**: Finds similar blueprints and previous analyses using vector search
 
 **Request:**
 - **Method**: `POST`
@@ -62,10 +96,10 @@ Analyze an architecture diagram or IAC file and generate comprehensive analysis.
   complianceGaps: ComplianceGap[],
   costIssues: CostIssue[],
   recommendations: Recommendation[],
-  resiliencyScore: number,        // 0-100
-  securityScore: number,          // 0-100
-  costEfficiencyScore: number,    // 0-100
-  complianceScore: number,        // 0-100
+  resiliencyScore: number,        // 0-100 (deterministic)
+  securityScore: number,          // 0-100 (deterministic)
+  costEfficiencyScore: number,    // 0-100 (deterministic)
+  complianceScore: number,        // 0-100 (deterministic)
   summary: string,
   architectureDescription: string,
   processingTime: number,         // Seconds
@@ -73,7 +107,9 @@ Analyze an architecture diagram or IAC file and generate comprehensive analysis.
   llmModel: string,
   similarBlueprints: SimilarBlueprint[],
   blueprintInsights: BlueprintInsight[],
-  _id: string                     // MongoDB ID
+  _id: string,                    // MongoDB ID
+  cached?: boolean,               // true if result was from cache
+  cacheHash?: string              // First 16 chars of cache hash (for debugging)
 }
 ```
 
@@ -81,6 +117,17 @@ Analyze an architecture diagram or IAC file and generate comprehensive analysis.
 - `200`: Analysis completed successfully
 - `400`: Invalid request (missing file, etc.)
 - `500`: Analysis failed
+
+**Caching Behavior:**
+- **Cache Key**: SHA-256 hash of (file content + appId + componentName + environment + version)
+- **Cache TTL**: 24 hours
+- **Cache Hit**: Returns instantly with `cached: true`
+- **Cache Miss**: Runs full analysis, caches result, returns with `cached: false`
+
+**Consistency:**
+- **Temperature: 0**: Ensures deterministic LLM responses
+- **Same Input**: Always produces identical scores
+- **Cached Results**: 100% consistent with original analysis
 
 ---
 
@@ -91,7 +138,7 @@ Get a specific architecture analysis by ID.
 **Request:**
 - **Method**: `GET`
 - **Path Parameters**:
-  - `id`: Analysis ID (MongoDB ObjectId)
+  - `id`: Analysis ID (MongoDB ObjectId or custom string ID like `analysis-1763456951096`)
 
 **Response:**
 ```typescript
@@ -161,7 +208,7 @@ Query an architecture analysis using natural language.
 **Request:**
 - **Method**: `POST`
 - **Path Parameters**:
-  - `id`: Analysis ID
+  - `id`: Analysis ID (MongoDB ObjectId or custom string ID like `analysis-1763456951096`)
 - **Body**:
   ```typescript
   {
@@ -306,11 +353,18 @@ Upload a new blueprint (diagram or IAC file).
 - `400`: Invalid request
 - `500`: Upload failed
 
-**Note**: This endpoint automatically:
-1. Extracts components and connections from the blueprint
-2. Generates embeddings and stores in vector database
-3. Performs blueprint analysis
-4. Stores analysis results in MongoDB
+**Automatic Processing:**
+This endpoint automatically performs:
+1. **Component Extraction**: Extracts components and connections from the blueprint
+2. **Embedding Generation**: Generates vector embeddings using configured embedding model
+3. **Vector Storage**: Stores embeddings in vector store (Qdrant or FAISS based on `VECTOR_STORE_TYPE`)
+4. **Blueprint Analysis**: Performs comprehensive analysis with scoring
+5. **Analysis Embedding**: Generates and stores analysis embeddings for similarity matching
+6. **MongoDB Storage**: Stores blueprint metadata and analysis results in MongoDB
+
+**Vector Store Types:**
+- **Qdrant**: Server-based, persistent storage (default)
+- **FAISS**: In-memory, no server required (set `VECTOR_STORE_TYPE=faiss`)
 
 ---
 
@@ -422,9 +476,12 @@ Delete a blueprint and its associated data.
 - `404`: Blueprint not found
 - `500`: Deletion failed
 
-**Note**: This also deletes:
-- Blueprint embedding from vector store
-- Blueprint analysis from MongoDB
+**Automatic Cleanup:**
+This endpoint automatically deletes:
+- **Blueprint Embedding**: Removed from vector store (Qdrant/FAISS)
+- **Blueprint Analysis Embedding**: Removed from vector store
+- **Blueprint Analysis**: Removed from MongoDB
+- **Blueprint Metadata**: Removed from MongoDB
 
 ---
 
@@ -540,7 +597,13 @@ Analyze a specific blueprint.
 - `404`: Blueprint not found
 - `500`: Analysis failed
 
-**Note**: If analysis already exists, returns existing analysis.
+**Automatic Processing:**
+- **Analysis Generation**: Comprehensive blueprint analysis with scoring
+- **Embedding Storage**: Analysis embeddings stored in vector store for similarity matching
+- **MongoDB Storage**: Analysis results saved to MongoDB
+- **Similarity Search**: Automatically finds similar blueprints
+
+**Note**: If analysis already exists, returns existing analysis (uses upsert to prevent duplicates).
 
 ---
 
@@ -574,6 +637,11 @@ Get blueprint analysis results.
 ### POST `/api/blueprints/query`
 
 Query blueprints using natural language with AI-powered search.
+
+**Search Scope:**
+- Searches both **blueprint embeddings** and **blueprint analysis embeddings**
+- Uses vector similarity search (Qdrant or FAISS)
+- LLM processes results for intelligent answers
 
 **Request:**
 - **Method**: `POST`
@@ -628,7 +696,12 @@ Query blueprints using natural language with AI-powered search.
 - `400`: Invalid query
 - `500`: Query processing failed
 
-**Note**: Uses vector similarity search + LLM for intelligent responses.
+**Process:**
+1. Generate embedding for query text
+2. Search vector store for similar blueprints and analyses
+3. Fetch full blueprint and analysis data from MongoDB
+4. Build context from top matches
+5. Use LLM to generate intelligent answer based on context
 
 ---
 
@@ -669,6 +742,11 @@ Query a specific blueprint using natural language.
 ### POST `/api/blueprints/similarity-search`
 
 Search for similar blueprints using vector similarity.
+
+**Search Scope:**
+- Searches **blueprint embeddings** only (type: `blueprint`)
+- Uses vector similarity (Cosine, Euclidean, or Dot product)
+- Works with both Qdrant and FAISS vector stores
 
 **Request:**
 - **Method**: `POST`
@@ -1219,9 +1297,13 @@ Future versions may use URL versioning: `/api/v2/...`
 1. **File Uploads**: Use `multipart/form-data` for file uploads
 2. **Pagination**: Default page size is 20, maximum is 100
 3. **Vector Search**: Similarity threshold ranges from 0.0 to 1.0 (higher = more similar)
-4. **Embeddings**: Automatically generated for blueprints and analyses
+4. **Embeddings**: Automatically generated for blueprints and architecture analyses
 5. **Analysis**: Blueprint analysis is performed automatically on upload
-6. **Vector Store**: Supports both Qdrant (server) and FAISS (in-memory)
+6. **Vector Store**: Supports both Qdrant (server-based) and FAISS (in-memory) - configured via `VECTOR_STORE_TYPE`
+7. **Deterministic Scoring**: Analysis uses `temperature: 0` for consistent, reproducible scores
+8. **Result Caching**: Analysis results are cached for 24 hours based on file content hash
+9. **Architecture Embeddings**: Architecture analysis embeddings are stored in vector store for similarity matching
+10. **Score Consistency**: Same architecture diagram always produces identical scores (within cache TTL)
 
 ---
 
@@ -1229,6 +1311,7 @@ Future versions may use URL versioning: `/api/v2/...`
 
 ### Upload and Analyze Architecture
 ```bash
+# First request - runs analysis and caches result
 curl -X POST http://localhost:3000/api/analyze \
   -F "file=@architecture.png" \
   -F "appId=my-app" \
@@ -1236,6 +1319,31 @@ curl -X POST http://localhost:3000/api/analyze \
   -F "description=Production API Gateway" \
   -F "environment=production" \
   -F "version=1.0.0"
+
+# Response includes:
+# {
+#   "cached": false,
+#   "cacheHash": "a1b2c3d4e5f6g7h8",
+#   "securityScore": 85,
+#   ...
+# }
+
+# Second request (same file + metadata) - returns cached result instantly
+curl -X POST http://localhost:3000/api/analyze \
+  -F "file=@architecture.png" \
+  -F "appId=my-app" \
+  -F "componentName=API Gateway" \
+  -F "description=Production API Gateway" \
+  -F "environment=production" \
+  -F "version=1.0.0"
+
+# Response includes:
+# {
+#   "cached": true,
+#   "cacheHash": "a1b2c3d4e5f6g7h8",
+#   "securityScore": 85,  // Identical to first request
+#   ...
+# }
 ```
 
 ### Query Blueprints
@@ -1254,8 +1362,88 @@ curl -X POST http://localhost:3000/api/blueprints/query \
 curl http://localhost:3000/api/blueprints/12345/analyze
 ```
 
+### Query Architecture Analysis (with custom ID)
+```bash
+# Supports both MongoDB ObjectId and custom string IDs
+curl -X POST http://localhost:3000/api/analysis/analysis-1763456951096/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What are the security risks?"}'
+```
+
+---
+
+## Consistency & Caching
+
+### Deterministic Scoring
+
+All analysis endpoints use **temperature: 0** for deterministic LLM responses:
+- **Stage 1 (Extraction)**: `temperature: 0` - Consistent component extraction
+- **Stage 2 (Analysis)**: `temperature: 0` - Consistent scoring
+
+**Benefits:**
+- Same input → Same output (100% reproducible)
+- No score variance between runs
+- Reliable for auditing and comparison
+
+### Result Caching
+
+Analysis results are cached based on:
+- **Cache Key**: SHA-256 hash of (file content + appId + componentName + environment + version)
+- **TTL**: 24 hours
+- **Storage**: In-memory (can be migrated to Redis for distributed deployments)
+
+**Cache Behavior:**
+- **First Request**: Runs full analysis, caches result, returns with `cached: false`
+- **Subsequent Requests**: Returns cached result instantly with `cached: true`
+- **Cache Hit Rate**: Improves performance and reduces LLM API costs
+
+**Cache Response Fields:**
+```typescript
+{
+  cached: boolean,      // true if from cache, false if newly analyzed
+  cacheHash: string    // First 16 characters of cache hash (for debugging)
+}
+```
+
+### Vector Store Configuration
+
+**Qdrant (Server-Based)** - Default:
+```bash
+VECTOR_STORE_TYPE=qdrant
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION_NAME=blueprints
+QDRANT_VECTOR_SIZE=1024
+```
+
+**FAISS (In-Memory)**:
+```bash
+VECTOR_STORE_TYPE=faiss
+FAISS_COLLECTION_NAME=blueprints
+FAISS_VECTOR_SIZE=1024
+```
+
+**Collection Structure:**
+- **Single Collection**: `blueprints` (default, configurable via `QDRANT_COLLECTION_NAME` or `FAISS_COLLECTION_NAME`)
+- **Type-Based Filtering**: All embeddings stored together, distinguished by `type` field:
+  - `type: 'blueprint'` - Blueprint embeddings (diagrams/IAC)
+  - `type: 'blueprint_analysis'` - Blueprint analysis embeddings
+  - `type: 'architecture_analysis'` - Architecture analysis embeddings
+- **Unified Search**: Can search across all types or filter by specific type
+- **Point IDs**: 
+  - Blueprints: `blueprint_{blueprintId}`
+  - Blueprint Analysis: `analysis_{analysisId}`
+  - Architecture Analysis: `architecture_analysis_{analysisId}`
+
+**Embedding Storage:**
+- **Blueprint Upload**: Generates and stores blueprint embedding
+- **Blueprint Analysis**: Generates and stores analysis embedding
+- **Architecture Analysis**: Generates and stores analysis embedding automatically
+- **Vector Dimensions**: Configurable (default: 1024, must match embedding model)
+
 ---
 
 **Last Updated**: 2025-01-24
 **API Version**: 1.0
+**Scoring Method**: Deterministic (temperature: 0)
+**Caching**: Enabled (24-hour TTL)
 

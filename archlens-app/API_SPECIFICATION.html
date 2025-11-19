@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchLens API Specification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        
+        header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2rem;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h2 {
+            color: #764ba2;
+            font-size: 1.75rem;
+            margin: 2rem 0 1rem;
+            padding-top: 1rem;
+            scroll-margin-top: 80px;
+        }
+        
+        h3 {
+            color: #555;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            padding-top: 0.5rem;
+        }
+        
+        h4 {
+            color: #666;
+            font-size: 1.25rem;
+            margin: 1rem 0 0.5rem;
+        }
+        
+        p {
+            margin: 1rem 0;
+            text-align: justify;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #e83e8c;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 2rem 0;
+        }
+        
+        strong {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 0.5rem 0;
+        }
+        
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .toc a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+        }
+        
+        .method.post {
+            background: #28a745;
+            color: white;
+        }
+        
+        .method.get {
+            background: #007bff;
+            color: white;
+        }
+        
+        .method.put {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .method.delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-code {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+        
+        .status-code.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-code.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-code.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+            
+            header {
+                page-break-after: avoid;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 1rem;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            pre {
+                font-size: 0.8rem;
+                padding: 1rem;
+            }
+        }
+        
+        .footer {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+        
+        .footer p {
+            margin: 0.5rem 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ArchLens API Specification</h1>
+            <p>Comprehensive API Documentation</p>
+        </header>
+        <div class="content">
+            <h1>ArchLens API Specification</h1>
+
+<h2 id="base-url">Base URL</h2>
+<pre><code class="language-text">http://localhost:3000/api</code></pre>
+
+<h2 id="authentication">Authentication</h2>
+<p>Currently, the API does not require authentication. Future versions may implement JWT or OAuth2.</p>
+
+<h2 id="key-features">Key Features</h2>
+
+<h3 id="-deterministic-scoring">🎯 Deterministic Scoring</h3>
+<ul>
+<li><strong>Temperature: 0</strong> for all analysis calls</li>
+<li><strong>100% Consistent</strong>: Same architecture → Same scores</li>
+<li><strong>Reproducible Results</strong>: No variance between runs</li>
+</ul>
+<h3 id="-result-caching">💾 Result Caching</h3>
+<ul>
+<li><strong>24-Hour TTL</strong>: Cached results for identical inputs</li>
+<li><strong>Instant Responses</strong>: Cached analyses return immediately</li>
+<li><strong>Cost Savings</strong>: Reduces LLM API calls</li>
+</ul>
+<h3 id="-vector-search">🔍 Vector Search</h3>
+<ul>
+<li><strong>Dual Vector Store</strong>: Qdrant (server) or FAISS (in-memory)</li>
+<li><strong>Three Embedding Types</strong>: Blueprints, Blueprint Analyses, Architecture Analyses</li>
+<li><strong>Unified Collection</strong>: Single collection with type-based filtering</li>
+</ul>
+<h3 id="-ai-powered-analysis">🤖 AI-Powered Analysis</h3>
+<ul>
+<li><strong>Two-Stage Process</strong>: Component extraction → Detailed analysis</li>
+<li><strong>Natural Language Queries</strong>: AI search for blueprints and analyses</li>
+<li><strong>Similarity Matching</strong>: Finds similar architectures automatically</li>
+</ul>
+<h3 id="-comprehensive-scoring">📊 Comprehensive Scoring</h3>
+<ul>
+<li><strong>Four Dimensions</strong>: Security, Resiliency, Cost Efficiency, Compliance</li>
+<li><strong>Checklist-Driven</strong>: Evaluates against active checklist items</li>
+<li><strong>Cloud Provider-Aware</strong>: Considers AWS/Azure/GCP/Kubernetes best practices</li>
+</ul>
+<hr>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ol>
+<li><a href="#architecture-analysis-apis">Architecture Analysis APIs</a></li>
+<li><a href="#blueprint-management-apis">Blueprint Management APIs</a></li>
+<li><a href="#blueprint-analysis-apis">Blueprint Analysis APIs</a></li>
+<li><a href="#blueprint-query--search-apis">Blueprint Query & Search APIs</a></li>
+<li><a href="#checklist-apis">Checklist APIs</a></li>
+<li><a href="#dashboard-apis">Dashboard APIs</a></li>
+<li><a href="#system--configuration-apis">System & Configuration APIs</a></li>
+<li><a href="#test--utility-apis">Test & Utility APIs</a></li>
+</ol>
+<hr>
+
+<h2 id="architecture-analysis-apis">Architecture Analysis APIs</h2>
+
+<h3 id="post-apianalyze">POST `/api/analyze`</h3>
+
+<p>Analyze an architecture diagram or IAC file and generate comprehensive analysis.</p>
+
+<p><strong>Features:</strong></p>
+<ul>
+<li><strong>Deterministic Scoring</strong>: Uses <code>temperature: 0</code> for consistent, reproducible scores</li>
+<li><strong>Result Caching</strong>: Identical inputs return cached results instantly (24-hour TTL)</li>
+<li><strong>Two-Stage Analysis</strong>: Component extraction → Detailed analysis with scoring</li>
+<li><strong>Automatic Embedding</strong>: Architecture analysis embeddings generated and stored in vector store</li>
+<li><strong>Similarity Matching</strong>: Finds similar blueprints and previous analyses using vector search</li>
+</ul>
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Content-Type</strong>: <code>multipart/form-data</code></li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    file: File,                    // Architecture diagram (image) or IAC file
+    appId: string,                 // Application ID
+    componentName: string,         // Component name
+    description?: string,          // Optional description
+    environment?: string,          // Environment (dev, staging, prod)
+    version?: string              // Version number
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  id: string,
+  timestamp: Date,
+  fileName: string,
+  fileType: &#039;image&#039; | &#039;iac&#039; | &#039;text&#039;,
+  appId: string,
+  componentName: string,
+  description: string,
+  environment: string,
+  version: string,
+  components: ArchitectureComponent[],
+  connections: Connection[],
+  risks: Risk[],
+  complianceGaps: ComplianceGap[],
+  costIssues: CostIssue[],
+  recommendations: Recommendation[],
+  resiliencyScore: number,        // 0-100 (deterministic)
+  securityScore: number,          // 0-100 (deterministic)
+  costEfficiencyScore: number,    // 0-100 (deterministic)
+  complianceScore: number,        // 0-100 (deterministic)
+  summary: string,
+  architectureDescription: string,
+  processingTime: number,         // Seconds
+  llmProvider: string,
+  llmModel: string,
+  similarBlueprints: SimilarBlueprint[],
+  blueprintInsights: BlueprintInsight[],
+  _id: string,                    // MongoDB ID
+  cached?: boolean,               // true if result was from cache
+  cacheHash?: string              // First 16 chars of cache hash (for debugging)
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Analysis completed successfully</li>
+<li><code>400</code>: Invalid request (missing file, etc.)</li>
+<li><code>500</code>: Analysis failed</li>
+</ul>
+<p><strong>Caching Behavior:</strong></p>
+<ul>
+<li><strong>Cache Key</strong>: SHA-256 hash of (file content + appId + componentName + environment + version)</li>
+<li><strong>Cache TTL</strong>: 24 hours</li>
+<li><strong>Cache Hit</strong>: Returns instantly with <code>cached: true</code></li>
+<li><strong>Cache Miss</strong>: Runs full analysis, caches result, returns with <code>cached: false</code></li>
+</ul>
+<p><strong>Consistency:</strong></p>
+<ul>
+<li><strong>Temperature: 0</strong>: Ensures deterministic LLM responses</li>
+<li><strong>Same Input</strong>: Always produces identical scores</li>
+<li><strong>Cached Results</strong>: 100% consistent with original analysis</li>
+</ul>
+<hr>
+
+<h3 id="get-apianalysisid">GET `/api/analysis/[id]`</h3>
+
+<p>Get a specific architecture analysis by ID.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Analysis ID (MongoDB ObjectId or custom string ID like <code>analysis-1763456951096</code>)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  _id: string,
+  timestamp: Date,
+  fileName: string,
+  fileType: string,
+  appId: string,
+  componentName: string,
+  description: string,
+  environment: string,
+  version: string,
+  components: ArchitectureComponent[],
+  connections: Connection[],
+  risks: Risk[],
+  complianceGaps: ComplianceGap[],
+  costIssues: CostIssue[],
+  recommendations: Recommendation[],
+  resiliencyScore: number,
+  securityScore: number,
+  costEfficiencyScore: number,
+  complianceScore: number,
+  summary: string,
+  architectureDescription: string,
+  processingTime: number,
+  llmProvider: string,
+  llmModel: string,
+  metadata: ArchitectureMetadata,
+  similarBlueprints: SimilarBlueprint[],
+  blueprintInsights: BlueprintInsight[]
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Analysis found</li>
+<li><code>400</code>: Invalid ID</li>
+<li><code>404</code>: Analysis not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="get-apianalysisidfile">GET `/api/analysis/[id]/file`</h3>
+
+<p>Download the original file used for analysis.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Analysis ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<ul>
+<li><strong>Content-Type</strong>: Based on original file type</li>
+<li><strong>Body</strong>: File binary data</li>
+</ul>
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: File retrieved</li>
+<li><code>404</code>: Analysis or file not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="post-apianalysisidquery">POST `/api/analysis/[id]/query`</h3>
+
+<p>Query an architecture analysis using natural language.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Analysis ID (MongoDB ObjectId or custom string ID like <code>analysis-1763456951096</code>)</li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    query: string  // Natural language question about the analysis
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  query: string,
+  answer: string,              // LLM-generated answer
+  analysisId: string,
+  componentName: string,
+  timestamp: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Query processed successfully</li>
+<li><code>400</code>: Invalid query</li>
+<li><code>404</code>: Analysis not found</li>
+<li><code>500</code>: Query processing failed</li>
+</ul>
+<hr>
+
+<h3 id="get-apianalyses">GET `/api/analyses`</h3>
+
+<p>Get a list of all architecture analyses with filtering and pagination.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Query Parameters</strong>:</li>
+<li><code>page</code>: Page number (default: 1)</li>
+<li><code>limit</code>: Items per page (default: 20)</li>
+<li><code>appId</code>: Filter by application ID</li>
+<li><code>environment</code>: Filter by environment</li>
+<li><code>status</code>: Filter by status</li>
+<li><code>dateFrom</code>: Filter from date (ISO string)</li>
+<li><code>dateTo</code>: Filter to date (ISO string)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  analyses: Analysis[],
+  total: number,
+  page: number,
+  limit: number,
+  totalPages: number
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Success</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="blueprint-management-apis">Blueprint Management APIs</h2>
+
+<h3 id="get-apiblueprints">GET `/api/blueprints`</h3>
+
+<p>Get a list of blueprints with filtering, sorting, and pagination.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Query Parameters</strong>:</li>
+<li><code>page</code>: Page number (default: 1)</li>
+<li><code>limit</code>: Items per page (default: 20)</li>
+<li><code>search</code>: Search term (searches name, description, tags)</li>
+<li><code>type</code>: Filter by type (<code>diagram</code>, <code>iac</code>, <code>hybrid</code>)</li>
+<li><code>category</code>: Filter by category</li>
+<li><code>cloudProvider</code>: Filter by cloud provider</li>
+<li><code>complexity</code>: Filter by complexity (<code>low</code>, <code>medium</code>, <code>high</code>)</li>
+<li><code>isPublic</code>: Filter by public status (true/false)</li>
+<li><code>tags</code>: Comma-separated tags</li>
+<li><code>sortBy</code>: Sort field (<code>name</code>, <code>createdAt</code>, <code>downloadCount</code>, <code>rating</code>)</li>
+<li><code>sortOrder</code>: Sort order (<code>asc</code>, <code>desc</code>)</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  blueprints: Blueprint[],
+  total: number,
+  page: number,
+  limit: number,
+  totalPages: number
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Success</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="post-apiblueprints">POST `/api/blueprints`</h3>
+
+<p>Upload a new blueprint (diagram or IAC file).</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Content-Type</strong>: <code>multipart/form-data</code></li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    file: File,                    // Blueprint file
+    name: string,                  // Blueprint name
+    description?: string,         // Optional description
+    type: &#039;diagram&#039; | &#039;iac&#039;,      // Blueprint type
+    category: string,             // Category
+    tags?: string[],             // Optional tags
+    isPublic?: boolean           // Public visibility (default: false)
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  id: string,
+  name: string,
+  description: string,
+  type: string,
+  category: string,
+  cloudProviders: string[],
+  complexity: string,
+  tags: string[],
+  fileName: string,
+  fileSize: number,
+  fileType: string,
+  hasEmbedding: boolean,
+  hasAnalysis: boolean,
+  createdAt: Date,
+  updatedAt: Date,
+  // ... other blueprint fields
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>201</code>: Blueprint created successfully</li>
+<li><code>400</code>: Invalid request</li>
+<li><code>500</code>: Upload failed</li>
+</ul>
+<p><strong>Automatic Processing:</strong></p>
+<p>This endpoint automatically performs:</p>
+<ol>
+<li><strong>Component Extraction</strong>: Extracts components and connections from the blueprint</li>
+<li><strong>Embedding Generation</strong>: Generates vector embeddings using configured embedding model</li>
+<li><strong>Vector Storage</strong>: Stores embeddings in vector store (Qdrant or FAISS based on <code>VECTOR_STORE_TYPE</code>)</li>
+<li><strong>Blueprint Analysis</strong>: Performs comprehensive analysis with scoring</li>
+<li><strong>Analysis Embedding</strong>: Generates and stores analysis embeddings for similarity matching</li>
+<li><strong>MongoDB Storage</strong>: Stores blueprint metadata and analysis results in MongoDB</li>
+</ol>
+<p><strong>Vector Store Types:</strong></p>
+<ul>
+<li><strong>Qdrant</strong>: Server-based, persistent storage (default)</li>
+<li><strong>FAISS</strong>: In-memory, no server required (set <code>VECTOR_STORE_TYPE=faiss</code>)</li>
+</ul>
+<hr>
+
+<h3 id="get-apiblueprintsid">GET `/api/blueprints/[id]`</h3>
+
+<p>Get a specific blueprint by ID.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  id: string,
+  name: string,
+  description: string,
+  type: string,
+  category: string,
+  cloudProviders: string[],
+  complexity: string,
+  tags: string[],
+  fileName: string,
+  fileSize: number,
+  fileType: string,
+  hasEmbedding: boolean,
+  hasAnalysis: boolean,
+  lastAnalysisId?: string,
+  lastAnalysisDate?: Date,
+  analysisScores?: {
+    security: number,
+    resiliency: number,
+    costEfficiency: number,
+    compliance: number,
+    scalability: number,
+    maintainability: number
+  },
+  componentCount?: number,
+  architecturePatterns?: string[],
+  technologyStack?: string[],
+  createdAt: Date,
+  updatedAt: Date,
+  // ... other fields
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Blueprint found</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="put-apiblueprintsid">PUT `/api/blueprints/[id]`</h3>
+
+<p>Update a blueprint.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>PUT</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    name?: string,
+    description?: string,
+    category?: string,
+    tags?: string[],
+    isPublic?: boolean,
+    // ... other updatable fields
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  // Updated blueprint object
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Blueprint updated</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Update failed</li>
+</ul>
+<p><strong>Note</strong>: If blueprint content changes, embeddings are automatically updated.</p>
+
+<hr>
+
+<h3 id="delete-apiblueprintsid">DELETE `/api/blueprints/[id]`</h3>
+
+<p>Delete a blueprint and its associated data.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>DELETE</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  message: &quot;Blueprint deleted successfully&quot;
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Blueprint deleted</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Deletion failed</li>
+</ul>
+<p><strong>Automatic Cleanup:</strong></p>
+<p>This endpoint automatically deletes:</p>
+<ul>
+<li><strong>Blueprint Embedding</strong>: Removed from vector store (Qdrant/FAISS)</li>
+<li><strong>Blueprint Analysis Embedding</strong>: Removed from vector store</li>
+<li><strong>Blueprint Analysis</strong>: Removed from MongoDB</li>
+<li><strong>Blueprint Metadata</strong>: Removed from MongoDB</li>
+</ul>
+<hr>
+
+<h3 id="get-apiblueprintsiddownload">GET `/api/blueprints/[id]/download`</h3>
+
+<p>Download a blueprint file.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<ul>
+<li><strong>Content-Type</strong>: Based on file type</li>
+<li><strong>Body</strong>: File binary data</li>
+<li><strong>Headers</strong>:</li>
+<li><code>Content-Disposition</code>: <code>attachment; filename="..."</code></li>
+<li><code>Content-Length</code>: File size</li>
+</ul>
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: File retrieved</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="post-apiblueprintsidrate">POST `/api/blueprints/[id]/rate`</h3>
+
+<p>Rate a blueprint.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    rating: number  // 1-5
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  id: string,
+  rating: number,
+  message: &quot;Rating updated successfully&quot;
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Rating updated</li>
+<li><code>400</code>: Invalid rating (must be 1-5)</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="blueprint-analysis-apis">Blueprint Analysis APIs</h2>
+
+<h3 id="post-apiblueprintsidanalyze">POST `/api/blueprints/[id]/analyze`</h3>
+
+<p>Analyze a specific blueprint.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  analysis: {
+    _id: string,
+    blueprintId: string,
+    analysisId: string,
+    components: Component[],
+    componentRelationships: ComponentRelationship[],
+    architecturePatterns: string[],
+    technologyStack: string[],
+    componentComplexity: {
+      totalComponents: number,
+      criticalComponents: number,
+      highCouplingComponents: number,
+      scalabilityBottlenecks: string[],
+      integrationPoints: number
+    },
+    scores: {
+      security: number,
+      resiliency: number,
+      costEfficiency: number,
+      compliance: number,
+      scalability: number,
+      maintainability: number
+    },
+    recommendations: Recommendation[],
+    insights: string[],
+    bestPractices: string[],
+    industryStandards: string[],
+    createdAt: Date,
+    updatedAt: Date
+  },
+  similarBlueprints: SimilarBlueprint[],
+  recommendations: Recommendation[],
+  message: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Analysis completed</li>
+<li><code>400</code>: Invalid blueprint ID</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Analysis failed</li>
+</ul>
+<p><strong>Automatic Processing:</strong></p>
+<ul>
+<li><strong>Analysis Generation</strong>: Comprehensive blueprint analysis with scoring</li>
+<li><strong>Embedding Storage</strong>: Analysis embeddings stored in vector store for similarity matching</li>
+<li><strong>MongoDB Storage</strong>: Analysis results saved to MongoDB</li>
+<li><strong>Similarity Search</strong>: Automatically finds similar blueprints</li>
+</ul>
+<p><strong>Note</strong>: If analysis already exists, returns existing analysis (uses upsert to prevent duplicates).</p>
+
+<hr>
+
+<h3 id="get-apiblueprintsidanalyze">GET `/api/blueprints/[id]/analyze`</h3>
+
+<p>Get blueprint analysis results.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  analysis: BlueprintAnalysis,
+  similarBlueprints: SimilarBlueprint[]
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Analysis found</li>
+<li><code>404</code>: Analysis not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="blueprint-query-search-apis">Blueprint Query & Search APIs</h2>
+
+<h3 id="post-apiblueprintsquery">POST `/api/blueprints/query`</h3>
+
+<p>Query blueprints using natural language with AI-powered search.</p>
+
+<p><strong>Search Scope:</strong></p>
+<ul>
+<li>Searches both <strong>blueprint embeddings</strong> and <strong>blueprint analysis embeddings</strong></li>
+<li>Uses vector similarity search (Qdrant or FAISS)</li>
+<li>LLM processes results for intelligent answers</li>
+</ul>
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    query: string,        // Natural language query
+    limit?: number,      // Max results (default: 5)
+    threshold?: number   // Similarity threshold (default: 0.7)
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  query: string,
+  answer: string,        // LLM-generated answer
+  relevantBlueprints: Array&lt;{
+    blueprint: {
+      id: string,
+      name: string,
+      description: string,
+      type: string,
+      category: string,
+      cloudProviders: string[],
+      complexity: string,
+      tags: string[]
+    },
+    analysis: {
+      scores: {
+        security: number,
+        resiliency: number,
+        costEfficiency: number,
+        compliance: number,
+        scalability: number,
+        maintainability: number
+      },
+      architecturePatterns: string[],
+      technologyStack: string[],
+      insights: string[]
+    } | null,
+    similarityScore: number
+  }&gt;,
+  totalResults: number,
+  timestamp: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Query processed successfully</li>
+<li><code>400</code>: Invalid query</li>
+<li><code>500</code>: Query processing failed</li>
+</ul>
+<p><strong>Process:</strong></p>
+<ol>
+<li>Generate embedding for query text</li>
+<li>Search vector store for similar blueprints and analyses</li>
+<li>Fetch full blueprint and analysis data from MongoDB</li>
+<li>Build context from top matches</li>
+<li>Use LLM to generate intelligent answer based on context</li>
+</ol>
+<hr>
+
+<h3 id="post-apiblueprintsidquery">POST `/api/blueprints/[id]/query`</h3>
+
+<p>Query a specific blueprint using natural language.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    query: string  // Natural language question
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  query: string,
+  answer: string,        // LLM-generated answer
+  blueprintId: string,
+  timestamp: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Query processed</li>
+<li><code>400</code>: Invalid query</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Query processing failed</li>
+</ul>
+<hr>
+
+<h3 id="post-apiblueprintssimilarity-search">POST `/api/blueprints/similarity-search`</h3>
+
+<p>Search for similar blueprints using vector similarity.</p>
+
+<p><strong>Search Scope:</strong></p>
+<ul>
+<li>Searches <strong>blueprint embeddings</strong> only (type: <code>blueprint</code>)</li>
+<li>Uses vector similarity (Cosine, Euclidean, or Dot product)</li>
+<li>Works with both Qdrant and FAISS vector stores</li>
+</ul>
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    queryVector?: number[],  // Optional: pre-computed vector
+    queryText?: string,      // Optional: text to generate vector from
+    limit?: number,          // Max results (default: 5)
+    threshold?: number       // Similarity threshold (default: 0.7)
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  similarBlueprints: SimilarBlueprint[],
+  totalResults: number
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Search completed</li>
+<li><code>400</code>: Invalid request (must provide queryVector or queryText)</li>
+<li><code>500</code>: Search failed</li>
+</ul>
+<hr>
+
+<h3 id="post-apiblueprintsidsimilarity">POST `/api/blueprints/[id]/similarity`</h3>
+
+<p>Find blueprints similar to a specific blueprint.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Blueprint ID</li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    limit?: number,      // Max results (default: 5)
+    threshold?: number   // Similarity threshold (default: 0.7)
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  similarBlueprints: SimilarBlueprint[],
+  totalResults: number
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Similarity search completed</li>
+<li><code>404</code>: Blueprint not found</li>
+<li><code>500</code>: Search failed</li>
+</ul>
+<hr>
+
+<h3 id="get-apiblueprintsanalytics">GET `/api/blueprints/analytics`</h3>
+
+<p>Get blueprint analytics and statistics.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  totalBlueprints: number,
+  totalDownloads: number,
+  averageRating: number,
+  mostPopularCategory: string,
+  mostDownloadedBlueprint: string,
+  recentUploads: number,
+  topTags: Array&lt;{
+    tag: string,
+    count: number
+  }&gt;,
+  categoryDistribution: Array&lt;{
+    category: string,
+    count: number,
+    percentage: number
+  }&gt;,
+  complexityDistribution: Array&lt;{
+    complexity: string,
+    count: number,
+    percentage: number
+  }&gt;,
+  monthlyStats: Array&lt;{
+    month: string,
+    uploads: number,
+    downloads: number
+  }&gt;,
+  topContributors: Array&lt;{
+    name: string,
+    uploads: number,
+    downloads: number
+  }&gt;
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Analytics retrieved</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="checklist-apis">Checklist APIs</h2>
+
+<h3 id="get-apichecklist">GET `/api/checklist`</h3>
+
+<p>Get checklist items or statistics.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Query Parameters</strong>:</li>
+<li><code>action</code>: Optional action (<code>stats</code>, <code>init</code>)</li>
+</ul>
+<p><strong>Response (default):</strong></p>
+<pre><code class="language-typescript">ChecklistItem[]</code></pre>
+
+<p><strong>Response (action=stats):</strong></p>
+<pre><code class="language-typescript">{
+  total: number,
+  completed: number,
+  pending: number,
+  byCategory: Record&lt;string, number&gt;,
+  byPriority: Record&lt;string, number&gt;
+}</code></pre>
+
+<p><strong>Response (action=init):</strong></p>
+<pre><code class="language-typescript">{
+  message: &quot;Default checklist initialized successfully&quot;
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Success</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="post-apichecklist">POST `/api/checklist`</h3>
+
+<p>Create a new checklist item.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>POST</code></li>
+<li><strong>Body</strong>:</li>
+<pre><code class="language-typescript">  {
+    category: string,
+    item: string,
+    description: string,
+    recommendedAction: string,
+    owner: string,
+    priority: &#039;low&#039; | &#039;medium&#039; | &#039;high&#039;,
+    status?: &#039;pending&#039; | &#039;in-progress&#039; | &#039;completed&#039;,
+    dueDate?: Date,
+    tags?: string[]
+  }</code></pre>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  _id: string,
+  category: string,
+  item: string,
+  description: string,
+  recommendedAction: string,
+  owner: string,
+  priority: string,
+  status: string,
+  createdAt: Date,
+  updatedAt: Date
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>201</code>: Item created</li>
+<li><code>400</code>: Missing required fields</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="get-apichecklistid">GET `/api/checklist/[id]`</h3>
+
+<p>Get a specific checklist item.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+<li><strong>Path Parameters</strong>:</li>
+<li><code>id</code>: Checklist item ID</li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  _id: string,
+  category: string,
+  item: string,
+  description: string,
+  recommendedAction: string,
+  owner: string,
+  priority: string,
+  status: string,
+  createdAt: Date,
+  updatedAt: Date
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Item found</li>
+<li><code>404</code>: Item not found</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="dashboard-apis">Dashboard APIs</h2>
+
+<h3 id="get-apidashboard">GET `/api/dashboard`</h3>
+
+<p>Get dashboard statistics and overview.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  totalAnalyses: number,
+  totalBlueprints: number,
+  totalChecklistItems: number,
+  completedChecklistItems: number,
+  recentAnalyses: Analysis[],
+  recentBlueprints: Blueprint[],
+  averageScores: {
+    security: number,
+    resiliency: number,
+    costEfficiency: number,
+    compliance: number
+  },
+  trends: {
+    analysesByMonth: Array&lt;{ month: string, count: number }&gt;,
+    blueprintsByMonth: Array&lt;{ month: string, count: number }&gt;
+  }
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Statistics retrieved</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="system-configuration-apis">System & Configuration APIs</h2>
+
+<h3 id="get-apistatus">GET `/api/status`</h3>
+
+<p>Get system status and LLM provider availability.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  status: &#039;healthy&#039; | &#039;warning&#039; | &#039;error&#039;,
+  message: string,
+  availableProviders: string[],
+  providerCount: number,
+  currentClient: {
+    provider: string,
+    model: string,
+    baseUrl?: string
+  } | null,
+  providerStatus: Array&lt;{
+    provider: string,
+    available: boolean,
+    current: boolean
+  }&gt;,
+  environmentStatus: {
+    openai: boolean,
+    anthropic: boolean,
+    gemini: boolean,
+    ollama: boolean,
+    local: boolean,
+    enterprise: boolean,
+    apigee: boolean
+  },
+  timestamp: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Status retrieved</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h3 id="get-apiconfig">GET `/api/config`</h3>
+
+<p>Get LLM configuration details.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  summary: {
+    totalProviders: number,
+    availableProviders: number,
+    configuredProviders: number
+  },
+  availableProviders: string[],
+  providerDetails: Array&lt;{
+    provider: string,
+    available: boolean,
+    config: {
+      model: string,
+      baseUrl?: string,
+      temperature?: string,
+      maxTokens?: string,
+      apiKey?: string
+    } | null,
+    error: string | null
+  }&gt;,
+  environmentVariables: {
+    openai: { ... },
+    anthropic: { ... },
+    gemini: { ... },
+    ollama: { ... },
+    local: { ... },
+    enterprise: { ... },
+    apigee: { ... }
+  },
+  timestamp: string
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Configuration retrieved</li>
+<li><code>500</code>: Server error</li>
+</ul>
+<hr>
+
+<h2 id="test-utility-apis">Test & Utility APIs</h2>
+
+<h3 id="get-apitest-llm">GET `/api/test-llm`</h3>
+
+<p>Test LLM client initialization and functionality.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  provider: string,
+  model: string,
+  message: string,
+  config: object
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Test completed</li>
+<li><code>500</code>: Test failed</li>
+</ul>
+<hr>
+
+<h3 id="get-apitest-embeddings">GET `/api/test-embeddings`</h3>
+
+<p>Test embedding service status and functionality.</p>
+
+<p><strong>Request:</strong></p>
+<ul>
+<li><strong>Method</strong>: <code>GET</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-typescript">{
+  success: boolean,
+  embeddingService: {
+    available: boolean,
+    provider: string,
+    model: string,
+    dimensions: number
+  },
+  vectorStore: {
+    type: &#039;qdrant&#039; | &#039;faiss&#039;,
+    available: boolean,
+    collectionName: string,
+    vectorSize: number
+  },
+  testEmbedding: {
+    success: boolean,
+    dimensions: number,
+    sample: number[]
+  }
+}</code></pre>
+
+<p><strong>Status Codes:</strong></p>
+<ul>
+<li><code>200</code>: Test completed</li>
+<li><code>500</code>: Test failed</li>
+</ul>
+<hr>
+
+<h2 id="data-types">Data Types</h2>
+
+<h3 id="architecturecomponent">ArchitectureComponent</h3>
+<pre><code class="language-typescript">{
+  id: string,
+  name: string,
+  type: ComponentType,
+  terraformCategory?: TerraformCategory,
+  cloudService?: string,
+  cloudProvider?: CloudProvider,
+  cloudRegion?: string,
+  cloudAvailabilityZone?: string,
+  isManagedService?: boolean,
+  isServerless?: boolean,
+  description?: string,
+  metadata?: Record&lt;string, unknown&gt;
+}</code></pre>
+
+<h3 id="similarblueprint">SimilarBlueprint</h3>
+<pre><code class="language-typescript">{
+  id: string,
+  score: number,  // Similarity score (0-1)
+  blueprint: {
+    id: string,
+    name: string,
+    type: string,
+    category: string,
+    cloudProvider: string,
+    complexity: string,
+    tags: string[]
+  }
+}</code></pre>
+
+<h3 id="blueprint">Blueprint</h3>
+<pre><code class="language-typescript">{
+  id: string,
+  name: string,
+  description: string,
+  type: &#039;diagram&#039; | &#039;iac&#039; | &#039;hybrid&#039;,
+  category: string,
+  cloudProviders: string[],
+  complexity: &#039;low&#039; | &#039;medium&#039; | &#039;high&#039;,
+  tags: string[],
+  fileName: string,
+  fileSize: number,
+  fileType: string,
+  hasEmbedding: boolean,
+  hasAnalysis: boolean,
+  isPublic: boolean,
+  createdBy: string,
+  createdAt: Date,
+  updatedAt: Date,
+  downloadCount: number,
+  rating: number,
+  version: string,
+  metadata: BlueprintMetadata
+}</code></pre>
+
+<h3 id="risk">Risk</h3>
+<pre><code class="language-typescript">{
+  id: string,
+  title: string,
+  description: string,
+  severity: &#039;low&#039; | &#039;medium&#039; | &#039;high&#039; | &#039;critical&#039;,
+  category: string,
+  impact: string,
+  recommendation: string,
+  components: string[]
+}</code></pre>
+
+<h3 id="recommendation">Recommendation</h3>
+<pre><code class="language-typescript">{
+  id: string,
+  issue: string,
+  fix: string,
+  priority: &#039;low&#039; | &#039;medium&#039; | &#039;high&#039;,
+  category: string,
+  impact: string,
+  effort: &#039;low&#039; | &#039;medium&#039; | &#039;high&#039;,
+  components: string[]
+}</code></pre>
+
+<hr>
+
+<h2 id="error-responses">Error Responses</h2>
+
+<p>All error responses follow this format:</p>
+
+<pre><code class="language-typescript">{
+  error: string,
+  details?: string,
+  timestamp?: string
+}</code></pre>
+
+<p><strong>Common Status Codes:</strong></p>
+<ul>
+<li><code>400</code>: Bad Request - Invalid input</li>
+<li><code>404</code>: Not Found - Resource doesn't exist</li>
+<li><code>500</code>: Internal Server Error - Server-side error</li>
+</ul>
+<hr>
+
+<h2 id="rate-limiting">Rate Limiting</h2>
+
+<p>Currently, there are no rate limits. Future versions may implement rate limiting based on API keys or user authentication.</p>
+
+<hr>
+
+<h2 id="versioning">Versioning</h2>
+
+<p>Current API version: <strong>v1</strong> (implicit)</p>
+
+<p>Future versions may use URL versioning: <code>/api/v2/...</code></p>
+
+<hr>
+
+<h2 id="notes">Notes</h2>
+
+<ol>
+<li><strong>File Uploads</strong>: Use <code>multipart/form-data</code> for file uploads</li>
+<li><strong>Pagination</strong>: Default page size is 20, maximum is 100</li>
+<li><strong>Vector Search</strong>: Similarity threshold ranges from 0.0 to 1.0 (higher = more similar)</li>
+<li><strong>Embeddings</strong>: Automatically generated for blueprints and architecture analyses</li>
+<li><strong>Analysis</strong>: Blueprint analysis is performed automatically on upload</li>
+<li><strong>Vector Store</strong>: Supports both Qdrant (server-based) and FAISS (in-memory) - configured via <code>VECTOR_STORE_TYPE</code></li>
+<li><strong>Deterministic Scoring</strong>: Analysis uses <code>temperature: 0</code> for consistent, reproducible scores</li>
+<li><strong>Result Caching</strong>: Analysis results are cached for 24 hours based on file content hash</li>
+<li><strong>Architecture Embeddings</strong>: Architecture analysis embeddings are stored in vector store for similarity matching</li>
+<li><strong>Score Consistency</strong>: Same architecture diagram always produces identical scores (within cache TTL)</li>
+</ol>
+<hr>
+
+<h2 id="examples">Examples</h2>
+
+<h3 id="upload-and-analyze-architecture">Upload and Analyze Architecture</h3>
+<pre><code class="language-bash"># First request - runs analysis and caches result
+curl -X POST http://localhost:3000/api/analyze \
+  -F &quot;file=@architecture.png&quot; \
+  -F &quot;appId=my-app&quot; \
+  -F &quot;componentName=API Gateway&quot; \
+  -F &quot;description=Production API Gateway&quot; \
+  -F &quot;environment=production&quot; \
+  -F &quot;version=1.0.0&quot;
+
+# Response includes:
+# {
+#   &quot;cached&quot;: false,
+#   &quot;cacheHash&quot;: &quot;a1b2c3d4e5f6g7h8&quot;,
+#   &quot;securityScore&quot;: 85,
+#   ...
+# }
+
+# Second request (same file + metadata) - returns cached result instantly
+curl -X POST http://localhost:3000/api/analyze \
+  -F &quot;file=@architecture.png&quot; \
+  -F &quot;appId=my-app&quot; \
+  -F &quot;componentName=API Gateway&quot; \
+  -F &quot;description=Production API Gateway&quot; \
+  -F &quot;environment=production&quot; \
+  -F &quot;version=1.0.0&quot;
+
+# Response includes:
+# {
+#   &quot;cached&quot;: true,
+#   &quot;cacheHash&quot;: &quot;a1b2c3d4e5f6g7h8&quot;,
+#   &quot;securityScore&quot;: 85,  // Identical to first request
+#   ...
+# }</code></pre>
+
+<h3 id="query-blueprints">Query Blueprints</h3>
+<pre><code class="language-bash">curl -X POST http://localhost:3000/api/blueprints/query \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#039;{
+    &quot;query&quot;: &quot;Find blueprints for microservices architecture on AWS&quot;,
+    &quot;limit&quot;: 5,
+    &quot;threshold&quot;: 0.7
+  }&#039;</code></pre>
+
+<h3 id="get-blueprint-analysis">Get Blueprint Analysis</h3>
+<pre><code class="language-bash">curl http://localhost:3000/api/blueprints/12345/analyze</code></pre>
+
+<h3 id="query-architecture-analysis-with-custom-id">Query Architecture Analysis (with custom ID)</h3>
+<pre><code class="language-bash"># Supports both MongoDB ObjectId and custom string IDs
+curl -X POST http://localhost:3000/api/analysis/analysis-1763456951096/query \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#039;{&quot;query&quot;: &quot;What are the security risks?&quot;}&#039;</code></pre>
+
+<hr>
+
+<h2 id="consistency-caching">Consistency & Caching</h2>
+
+<h3 id="deterministic-scoring">Deterministic Scoring</h3>
+
+<p>All analysis endpoints use <strong>temperature: 0</strong> for deterministic LLM responses:</p>
+<ul>
+<li><strong>Stage 1 (Extraction)</strong>: <code>temperature: 0</code> - Consistent component extraction</li>
+<li><strong>Stage 2 (Analysis)</strong>: <code>temperature: 0</code> - Consistent scoring</li>
+</ul>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Same input → Same output (100% reproducible)</li>
+<li>No score variance between runs</li>
+<li>Reliable for auditing and comparison</li>
+</ul>
+<h3 id="result-caching">Result Caching</h3>
+
+<p>Analysis results are cached based on:</p>
+<ul>
+<li><strong>Cache Key</strong>: SHA-256 hash of (file content + appId + componentName + environment + version)</li>
+<li><strong>TTL</strong>: 24 hours</li>
+<li><strong>Storage</strong>: In-memory (can be migrated to Redis for distributed deployments)</li>
+</ul>
+<p><strong>Cache Behavior:</strong></p>
+<ul>
+<li><strong>First Request</strong>: Runs full analysis, caches result, returns with <code>cached: false</code></li>
+<li><strong>Subsequent Requests</strong>: Returns cached result instantly with <code>cached: true</code></li>
+<li><strong>Cache Hit Rate</strong>: Improves performance and reduces LLM API costs</li>
+</ul>
+<p><strong>Cache Response Fields:</strong></p>
+<pre><code class="language-typescript">{
+  cached: boolean,      // true if from cache, false if newly analyzed
+  cacheHash: string    // First 16 characters of cache hash (for debugging)
+}</code></pre>
+
+<h3 id="vector-store-configuration">Vector Store Configuration</h3>
+
+<p><strong>Qdrant (Server-Based)</strong> - Default:</p>
+<pre><code class="language-bash">VECTOR_STORE_TYPE=qdrant
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION_NAME=blueprints
+QDRANT_VECTOR_SIZE=1024</code></pre>
+
+<p><strong>FAISS (In-Memory)</strong>:</p>
+<pre><code class="language-bash">VECTOR_STORE_TYPE=faiss
+FAISS_COLLECTION_NAME=blueprints
+FAISS_VECTOR_SIZE=1024</code></pre>
+
+<p><strong>Collection Structure:</strong></p>
+<ul>
+<li><strong>Single Collection</strong>: <code>blueprints</code> (default, configurable via <code>QDRANT_COLLECTION_NAME</code> or <code>FAISS_COLLECTION_NAME</code>)</li>
+<li><strong>Type-Based Filtering</strong>: All embeddings stored together, distinguished by <code>type</code> field:</li>
+<li><code>type: 'blueprint'</code> - Blueprint embeddings (diagrams/IAC)</li>
+<li><code>type: 'blueprint_analysis'</code> - Blueprint analysis embeddings</li>
+<li><code>type: 'architecture_analysis'</code> - Architecture analysis embeddings</li>
+<li><strong>Unified Search</strong>: Can search across all types or filter by specific type</li>
+<li><strong>Point IDs</strong>:</li>
+<li>Blueprints: <code>blueprint_{blueprintId}</code></li>
+<li>Blueprint Analysis: <code>analysis_{analysisId}</code></li>
+<li>Architecture Analysis: <code>architecture_analysis_{analysisId}</code></li>
+</ul>
+<p><strong>Embedding Storage:</strong></p>
+<ul>
+<li><strong>Blueprint Upload</strong>: Generates and stores blueprint embedding</li>
+<li><strong>Blueprint Analysis</strong>: Generates and stores analysis embedding</li>
+<li><strong>Architecture Analysis</strong>: Generates and stores analysis embedding automatically</li>
+<li><strong>Vector Dimensions</strong>: Configurable (default: 1024, must match embedding model)</li>
+</ul>
+<hr>
+
+<p><strong>Last Updated</strong>: 2025-01-24</p>
+<p><strong>API Version</strong>: 1.0</p>
+<p><strong>Scoring Method</strong>: Deterministic (temperature: 0)</p>
+<p><strong>Caching</strong>: Enabled (24-hour TTL)</p>
+
+
+
+        </div>
+        <div class="footer">
+            <p><strong>Last Updated:</strong> 11/19/2025</p>
+            <p><strong>API Version:</strong> 1.0</p>
+            <p><strong>Scoring Method:</strong> Deterministic (temperature: 0)</p>
+            <p><strong>Caching:</strong> Enabled (24-hour TTL)</p>
+        </div>
+    </div>
+</body>
+</html>
