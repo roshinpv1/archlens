@@ -45,6 +45,8 @@ export interface LLMCallOptions {
   useCache?: boolean;
   timeout?: number;
   retries?: number;
+  temperature?: number;  // Override temperature for this call (0 = deterministic, default uses config)
+  maxTokens?: number;    // Override maxTokens for this call
 }
 
 export interface ProviderAvailability {

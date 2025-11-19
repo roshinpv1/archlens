@@ -8,6 +8,7 @@ import { smartOptimizeImage } from '../../../services/imageOptimizer';
 import { getSimilarityService } from '../../../services/similarityService';
 import { getEmbeddingService } from '../../../services/embeddingService';
 import { blueprintAnalysisService } from '../../../services/blueprintAnalysisService';
+import { generateAnalysisHash, getCachedAnalysis, cacheAnalysis } from '../../../services/analysisCache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -246,8 +247,32 @@ IMPORTANT:
 File: ${file.name}
 Content: ${fileContent}`;
 
+    // Check cache for identical analysis
+    // Use the processed fileContent for hashing (already optimized for images)
+    const fileContentForHash = fileContent;
+    const analysisHash = generateAnalysisHash(
+      fileContentForHash,
+      appId,
+      componentName,
+      environment,
+      version
+    );
+    
+    const cachedAnalysis = getCachedAnalysis(analysisHash);
+    if (cachedAnalysis) {
+      console.log(`✅ Returning cached analysis (hash: ${analysisHash.substring(0, 8)}...)`);
+      return NextResponse.json({
+        ...cachedAnalysis,
+        cached: true,
+        cacheHash: analysisHash.substring(0, 16)
+      });
+    }
+
     console.log('Stage 1: Extracting components from file...');
-    const extractionResponse = await llmClient.callLLM(extractionPrompt);
+    const extractionResponse = await llmClient.callLLM(extractionPrompt, {
+      temperature: 0, // Deterministic extraction for consistency
+      maxTokens: 4000
+    });
     
     // Helper function to parse stringified arrays with newlines
     const parseIfStringified = (value: unknown) => {
@@ -689,7 +714,10 @@ IMPORTANT:
 Return ONLY valid JSON with detailed analysis including risks, compliance gaps, cost optimizations, recommendations, and realistic scores (0-100).`;
 
     console.log('Stage 2: Performing detailed analysis...');
-    const response = await llmClient.callLLM(analysisPrompt);
+    const response = await llmClient.callLLM(analysisPrompt, {
+      temperature: 0, // Deterministic analysis for consistent scoring
+      maxTokens: 4000
+    });
 
     // Parse response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -1033,11 +1061,20 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       // Don't fail the analysis if blueprint insights generation fails
     }
 
-    return NextResponse.json({
+    const finalAnalysis = {
       ...analysis,
       _id: savedAnalysis._id,
       similarBlueprints,
       blueprintInsights
+    };
+
+    // Cache the analysis result for future identical requests
+    cacheAnalysis(analysisHash, finalAnalysis);
+
+    return NextResponse.json({
+      ...finalAnalysis,
+      cached: false,
+      cacheHash: analysisHash.substring(0, 16)
     });
 
   } catch (error) {

@@ -30,22 +30,24 @@ export class LLMClient {
   async callLLM(prompt: string, options?: LLMCallOptions): Promise<string> {
     try {
       const timeout = options?.timeout || this.config.timeout || 600000;
+      const temperature = options?.temperature !== undefined ? options.temperature : this.config.temperature;
+      const maxTokens = options?.maxTokens !== undefined ? options.maxTokens : this.config.maxTokens;
       
       switch (this.config.provider) {
         case LLMProvider.OPENAI:
-          return await this.callOpenAI(prompt, timeout);
+          return await this.callOpenAI(prompt, timeout, temperature, maxTokens);
         case LLMProvider.ANTHROPIC:
-          return await this.callAnthropic(prompt, timeout);
+          return await this.callAnthropic(prompt, timeout, temperature, maxTokens);
         case LLMProvider.GEMINI:
-          return await this.callGemini(prompt, timeout);
+          return await this.callGemini(prompt, timeout, temperature, maxTokens);
         case LLMProvider.OLLAMA:
-          return await this.callOllama(prompt, timeout);
+          return await this.callOllama(prompt, timeout, temperature, maxTokens);
         case LLMProvider.LOCAL:
-          return await this.callLocal(prompt, timeout);
+          return await this.callLocal(prompt, timeout, temperature, maxTokens);
         case LLMProvider.ENTERPRISE:
-          return await this.callEnterprise(prompt, timeout);
+          return await this.callEnterprise(prompt, timeout, temperature, maxTokens);
         case LLMProvider.APIGEE:
-          return await this.callApigee(prompt, timeout);
+          return await this.callApigee(prompt, timeout, temperature, maxTokens);
         default:
           throw new LLMError(`Unsupported LLM provider: ${this.config.provider}`, this.config.provider);
       }
@@ -65,7 +67,7 @@ export class LLMClient {
     }
   }
 
-  private async callOpenAI(prompt: string, timeout: number): Promise<string> {
+  private async callOpenAI(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     if (!this.config.apiKey) {
       throw new LLMError('OpenAI API key not provided', LLMProvider.OPENAI);
     }
@@ -85,8 +87,8 @@ export class LLMClient {
         body: JSON.stringify({
           model: this.config.model,
           messages: [{ role: 'user', content: prompt }],
-          temperature: this.config.temperature,
-          max_tokens: this.config.maxTokens
+          temperature: temperature !== undefined ? temperature : this.config.temperature,
+          max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
         }),
         signal: controller.signal
       });
@@ -114,7 +116,7 @@ export class LLMClient {
     }
   }
 
-  private async callAnthropic(prompt: string, timeout: number): Promise<string> {
+  private async callAnthropic(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     if (!this.config.apiKey) {
       throw new LLMError('Anthropic API key not provided', LLMProvider.ANTHROPIC);
     }
@@ -135,8 +137,8 @@ export class LLMClient {
         body: JSON.stringify({
           model: this.config.model,
           messages: [{ role: 'user', content: prompt }],
-          temperature: this.config.temperature,
-          max_tokens: this.config.maxTokens
+          temperature: temperature !== undefined ? temperature : this.config.temperature,
+          max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
         }),
         signal: controller.signal
       });
@@ -164,7 +166,7 @@ export class LLMClient {
     }
   }
 
-  private async callGemini(prompt: string, timeout: number): Promise<string> {
+  private async callGemini(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     if (!this.config.apiKey) {
       throw new LLMError('Gemini API key not provided', LLMProvider.GEMINI);
     }
@@ -185,8 +187,8 @@ export class LLMClient {
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              temperature: this.config.temperature,
-              maxOutputTokens: this.config.maxTokens
+            temperature: temperature !== undefined ? temperature : this.config.temperature,
+            maxOutputTokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
             }
           }),
           signal: controller.signal
@@ -216,7 +218,7 @@ export class LLMClient {
     }
   }
 
-  private async callOllama(prompt: string, timeout: number): Promise<string> {
+  private async callOllama(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -261,8 +263,8 @@ export class LLMClient {
           model: this.config.model,
           messages,
           options: {
-            temperature: this.config.temperature,
-            num_predict: this.config.maxTokens
+            temperature: temperature !== undefined ? temperature : this.config.temperature,
+            num_predict: maxTokens !== undefined ? maxTokens : this.config.maxTokens
           },
           stream: false
         }),
@@ -309,7 +311,7 @@ export class LLMClient {
     return 'image/png';
   }
 
-  private async callLocal(prompt: string, timeout: number): Promise<string> {
+  private async callLocal(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -361,8 +363,8 @@ export class LLMClient {
         body: JSON.stringify({
           model: this.config.model,
           messages,
-          temperature: this.config.temperature,
-          max_tokens: this.config.maxTokens
+          temperature: temperature !== undefined ? temperature : this.config.temperature,
+          max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
         }),
         signal: controller.signal
       });
@@ -390,7 +392,7 @@ export class LLMClient {
     }
   }
 
-  private async callEnterprise(prompt: string, timeout: number): Promise<string> {
+  private async callEnterprise(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     if (!this.enterpriseTokenManager) {
       throw new LLMError('Enterprise token manager not initialized', LLMProvider.ENTERPRISE);
     }
@@ -445,23 +447,23 @@ export class LLMClient {
                 ]
               }
             ],
-            temperature: this.config.temperature,
-            max_tokens: this.config.maxTokens
+            temperature: temperature !== undefined ? temperature : this.config.temperature,
+            max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
           };
         } else {
           requestBody = {
             model: this.config.model,
             prompt: textPrompt,
-            temperature: this.config.temperature,
-            max_tokens: this.config.maxTokens
+            temperature: temperature !== undefined ? temperature : this.config.temperature,
+            max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
           };
         }
       } else {
         requestBody = {
           model: this.config.model,
           prompt: prompt,
-          temperature: this.config.temperature,
-          max_tokens: this.config.maxTokens
+          temperature: temperature !== undefined ? temperature : this.config.temperature,
+          max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
         };
       }
 
@@ -496,7 +498,7 @@ export class LLMClient {
     }
   }
 
-  private async callApigee(prompt: string, timeout: number): Promise<string> {
+  private async callApigee(prompt: string, timeout: number, temperature?: number, maxTokens?: number): Promise<string> {
     if (!this.apigeeTokenManager) {
       throw new LLMError('Apigee token manager not initialized', LLMProvider.APIGEE);
     }
@@ -557,13 +559,13 @@ export class LLMClient {
       }
 
       const headers = {
-        'x-w-request-date': new Date().toISOString(),
+        'x-wf-request-date': new Date().toISOString(),
         'Authorization': `Bearer ${apigeeToken}`,
         'x-request-id': generateUUID(),
         'x-correlation-id': generateUUID(),
-        'X-YY-client-id': wfClientId,
-        'X-YY-api-key': wfApiKey,
-        'X-YY-usecase-id': wfUseCaseId,
+        'X-WF-client-id': wfClientId,
+        'X-WF-api-key': wfApiKey,
+        'X-WF-usecase-id': wfUseCaseId,
         'Content-Type': 'application/json'
       };
 
@@ -573,8 +575,8 @@ export class LLMClient {
         body: JSON.stringify({
           model: this.config.model,
           messages: messages,
-          temperature: this.config.temperature,
-          max_tokens: this.config.maxTokens
+          temperature: temperature !== undefined ? temperature : this.config.temperature,
+          max_tokens: maxTokens !== undefined ? maxTokens : this.config.maxTokens
         }),
         signal: controller.signal
       });
