@@ -81,6 +81,9 @@ export enum ComplianceFramework {
   ISO27001 = "iso27001"
 }
 
+export type ProviderType = "public-cloud" | "private-cloud" | "on-premises";
+export type DetectionConfidence = "high" | "medium" | "low";
+
 export interface ArchitectureComponent {
   id: string;
   name: string;
@@ -88,10 +91,12 @@ export interface ArchitectureComponent {
   terraformCategory?: TerraformCategory | string; // Standard Terraform category classification
   cloudService?: string;
   cloudProvider?: CloudProvider;
+  providerType?: ProviderType; // public-cloud, private-cloud, or on-premises
   cloudRegion?: string;
   cloudAvailabilityZone?: string;
   isManagedService?: boolean;
   isServerless?: boolean;
+  detectionConfidence?: DetectionConfidence; // Confidence level of cloud provider detection
   description?: string;
   metadata?: Record<string, unknown>;
 }

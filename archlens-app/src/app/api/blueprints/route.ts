@@ -222,13 +222,38 @@ export async function POST(request: NextRequest) {
     const extractionPrompt = `You are an expert cloud architect. Analyze this ${fileType === 'image' ? 'blueprint architecture diagram' : 'infrastructure code blueprint'} and extract ALL architectural components, connections, and metadata with 100% accuracy.
 
 ${fileType === 'image' ? 
-  'This is a base64-encoded architecture blueprint diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. Look for cloud provider logos, service names, and architectural patterns.' :
+  'This is a base64-encoded architecture blueprint diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. CRITICAL: Prioritize component LABELS and TEXT over icons/images. Only use visual icons as a secondary reference if labels are unclear.' :
   'This is infrastructure code blueprint. Parse all resources, services, and their configurations to understand the complete architecture. Identify cloud providers from resource types, service names, and provider configurations.'
 }
 
 CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
 
-ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators:
+CLOUD PROVIDER DETECTION RULES - FOLLOW THESE STRICTLY:
+
+1. PRIMARY SOURCE: Component labels, text annotations, and explicit naming
+   - ALWAYS check the label/text first before considering any visual elements
+   - Look for explicit service names, provider names, or resource identifiers in text
+   - Icons/images should ONLY be used as a last resort if no text/label is available
+
+2. HIGH CONFIDENCE REQUIRED:
+   - Only assign a cloud provider if you find EXPLICIT evidence in labels/text
+   - Do NOT assume or guess based on generic icons or shapes
+   - If a component has no clear cloud provider reference, mark it as "on-premises"
+   - Default to "on-premises" when in doubt - never assume a public cloud provider
+
+3. PROVIDER TYPE DETECTION:
+   - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named)
+   - "private-cloud": Private cloud infrastructure (OpenStack, VMware Cloud, etc. - only if explicitly named)
+   - "on-premises": Traditional on-premises infrastructure, self-hosted, or when no cloud provider is identified
+   - If no clear indication exists, default to "on-premises"
+
+4. DETECTION PRIORITY ORDER:
+   a) Component label/text with explicit provider/service name (HIGHEST PRIORITY)
+   b) Resource type or configuration indicating provider
+   c) Context clues from surrounding components
+   d) Visual icons/images (LOWEST PRIORITY - only if no text available)
+
+ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators in LABELS and TEXT:
 
 AWS Services & Patterns:
 - Compute: EC2, Lambda, ECS, EKS, Fargate, Batch, Lightsail, Auto Scaling
@@ -295,7 +320,9 @@ Return ONLY valid JSON without any prefix or suffix:
       "terraformCategory": "Platform Services / Compute",
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
+      "providerType": "public-cloud",
       "cloudRegion": "East US",
+      "detectionConfidence": "high",
       "description": "Hosts the main web application"
     }
   ],

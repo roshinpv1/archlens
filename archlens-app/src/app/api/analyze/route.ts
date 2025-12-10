@@ -100,13 +100,38 @@ export async function POST(request: NextRequest) {
     const extractionPrompt = `You are an expert cloud architect with deep expertise in multi-cloud environments. Analyze this ${fileType === 'image' ? 'architecture diagram' : 'infrastructure code'} and extract ALL architectural components, connections, and metadata with 100% accuracy.
 
 ${fileType === 'image' ? 
-  'This is a base64-encoded architecture diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. Look for cloud provider logos, service names, and architectural patterns.' :
+  'This is a base64-encoded architecture diagram. Analyze the visual components, connections, and labels to understand the cloud architecture. CRITICAL: Prioritize component LABELS and TEXT over icons/images. Only use visual icons as a secondary reference if labels are unclear.' :
   'This is infrastructure code. Parse all resources, services, and their configurations to understand the complete architecture. Identify cloud providers from resource types, service names, and provider configurations.'
 }
 
 CRITICAL: Return ONLY valid JSON with proper array structures. Do NOT stringify arrays or use newlines in JSON values.
 
-ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators:
+CLOUD PROVIDER DETECTION RULES - FOLLOW THESE STRICTLY:
+
+1. PRIMARY SOURCE: Component labels, text annotations, and explicit naming
+   - ALWAYS check the label/text first before considering any visual elements
+   - Look for explicit service names, provider names, or resource identifiers in text
+   - Icons/images should ONLY be used as a last resort if no text/label is available
+
+2. HIGH CONFIDENCE REQUIRED:
+   - Only assign a cloud provider if you find EXPLICIT evidence in labels/text
+   - Do NOT assume or guess based on generic icons or shapes
+   - If a component has no clear cloud provider reference, mark it as "on-premises"
+   - Default to "on-premises" when in doubt - never assume a public cloud provider
+
+3. PROVIDER TYPE DETECTION:
+   - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named)
+   - "private-cloud": Private cloud infrastructure (OpenStack, VMware Cloud, etc. - only if explicitly named)
+   - "on-premises": Traditional on-premises infrastructure, self-hosted, or when no cloud provider is identified
+   - If no clear indication exists, default to "on-premises"
+
+4. DETECTION PRIORITY ORDER:
+   a) Component label/text with explicit provider/service name (HIGHEST PRIORITY)
+   b) Resource type or configuration indicating provider
+   c) Context clues from surrounding components
+   d) Visual icons/images (LOWEST PRIORITY - only if no text available)
+
+ENHANCED CLOUD PROVIDER DETECTION - Look for these specific indicators in LABELS and TEXT:
 
 AWS Services & Patterns:
 - Compute: EC2, Lambda, ECS, EKS, Fargate, Batch, Lightsail, Auto Scaling
@@ -154,15 +179,27 @@ Hybrid & Multi-Cloud Patterns:
 - Edge Computing: CDN, Edge Locations, IoT Gateways, 5G Networks
 - Patterns: hybrid, on-premises, private-cloud, multi-cloud, edge
 
-CRITICAL DETECTION RULES:
-1. Examine EVERY component for cloud provider indicators
-2. Look for provider-specific naming conventions and resource types
-3. Check for provider-specific configuration patterns and metadata
-4. Identify cross-cloud connections and hybrid architectures
-5. Detect container orchestration platforms (Kubernetes, Docker Swarm)
-6. Recognize serverless and managed service patterns
-7. Identify networking and security service providers
-8. Look for provider-specific monitoring and management tools
+CRITICAL DETECTION RULES - FOLLOW IN ORDER:
+1. FIRST: Examine component LABELS and TEXT for explicit cloud provider/service names
+2. SECOND: Check for provider-specific naming conventions in text (e.g., "AWS S3", "Azure App Service")
+3. THIRD: Look for resource types or configuration patterns in text/code
+4. LAST RESORT: Only if no text/label exists, consider visual icons (with low confidence)
+5. DEFAULT: If no clear cloud provider is found in text/labels, mark as "on-premises"
+6. NEVER assume a cloud provider based solely on generic shapes or icons
+7. For each component, explicitly state your confidence level:
+   - HIGH: Explicit provider name in label/text
+   - MEDIUM: Strong indicators in text (service names, resource types)
+   - LOW: Only visual indicators (use sparingly)
+   - DEFAULT: No indicators found → mark as "on-premises"
+
+COMPONENT CLASSIFICATION RULES:
+- If component label contains: "AWS", "Amazon", "EC2", "S3", "Lambda", etc. → cloudProvider: "aws", providerType: "public-cloud"
+- If component label contains: "Azure", "Microsoft", "App Service", "Blob Storage", etc. → cloudProvider: "azure", providerType: "public-cloud"
+- If component label contains: "GCP", "Google", "Cloud", "Compute Engine", etc. → cloudProvider: "gcp", providerType: "public-cloud"
+- If component label contains: "Kubernetes", "K8s", "EKS", "AKS", "GKE" → cloudProvider: "kubernetes", providerType: "public-cloud" or "private-cloud" based on context
+- If component label contains: "VMware", "OpenStack", "Private Cloud" → providerType: "private-cloud"
+- If component has NO cloud provider indicators in label/text → cloudProvider: "on-premises", providerType: "on-premises"
+- Generic terms like "Server", "Database", "Load Balancer" without provider context → "on-premises"
 
 TERRAFORM CATEGORY CLASSIFICATION:
 Each component MUST be classified into one of these standard Terraform categories:
@@ -201,10 +238,12 @@ Return ONLY valid JSON without any prefix or suffix:
       "terraformCategory": "Platform Services / Compute",
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
+      "providerType": "public-cloud",
       "cloudRegion": "East US",
       "cloudAvailabilityZone": "East US 1",
       "isManagedService": true,
       "isServerless": false,
+      "detectionConfidence": "high",
       "configuration": {
         "instanceType": "Standard_B1s",
         "region": "East US",
@@ -438,6 +477,63 @@ Content: ${fileContent}`;
     extractedData.components.forEach((component: Record<string, unknown>) => {
       const componentProviders = detectCloudProviderFromComponent(component);
       componentProviders.forEach(provider => detectedProviders.add(provider));
+      
+      // Set providerType and detectionConfidence based on detection
+      const name = String(component.name || '').toLowerCase();
+      const cloudService = String(component.cloudService || '').toLowerCase();
+      const cloudProvider = String(component.cloudProvider || '').toLowerCase();
+      
+      // Determine provider type and confidence
+      let providerType: string = 'on-premises';
+      let detectionConfidence: string = 'low';
+      
+      // Check if component has explicit cloud provider indicators in name/service
+      const hasExplicitProvider = 
+        name.includes('aws') || name.includes('amazon') || name.includes('ec2') || name.includes('s3') ||
+        name.includes('azure') || name.includes('microsoft') || name.includes('app service') ||
+        name.includes('gcp') || name.includes('google') || name.includes('cloud') ||
+        name.includes('kubernetes') || name.includes('k8s') ||
+        cloudService.includes('aws') || cloudService.includes('azure') || cloudService.includes('gcp') ||
+        cloudService.includes('amazon') || cloudService.includes('microsoft') || cloudService.includes('google');
+      
+      if (componentProviders.length > 0) {
+        // High confidence if explicit provider name in label/text
+        if (hasExplicitProvider) {
+          detectionConfidence = 'high';
+        } else {
+          detectionConfidence = 'medium';
+        }
+        
+        // Determine provider type
+        const provider = componentProviders[0];
+        if (provider === 'aws' || provider === 'azure' || provider === 'gcp') {
+          providerType = 'public-cloud';
+        } else if (provider === 'kubernetes') {
+          // Kubernetes can be public or private - check context
+          providerType = name.includes('eks') || name.includes('aks') || name.includes('gke') 
+            ? 'public-cloud' 
+            : 'private-cloud';
+        } else {
+          providerType = 'on-premises';
+        }
+      } else {
+        // No cloud provider detected - default to on-premises
+        providerType = 'on-premises';
+        detectionConfidence = 'low';
+      }
+      
+      // Update component with provider type and confidence
+      component.providerType = providerType;
+      component.detectionConfidence = detectionConfidence;
+      
+      // If no cloud provider was set by LLM, set it based on detection or default to on-premises
+      if (!component.cloudProvider || component.cloudProvider === 'unknown') {
+        if (componentProviders.length > 0) {
+          component.cloudProvider = componentProviders[0];
+        } else {
+          component.cloudProvider = 'on-premises';
+        }
+      }
     });
     
     // Additional file content analysis for missed providers
