@@ -235,11 +235,19 @@ CLOUD PROVIDER DETECTION RULES - FOLLOW THESE STRICTLY:
    - Look for explicit service names, provider names, or resource identifiers in text
    - Icons/images should ONLY be used as a last resort if no text/label is available
 
-2. HIGH CONFIDENCE REQUIRED:
-   - Only assign a cloud provider if you find EXPLICIT evidence in labels/text
-   - Do NOT assume or guess based on generic icons or shapes
-   - If a component has no clear cloud provider reference, mark it as "on-premises"
-   - Default to "on-premises" when in doubt - never assume a public cloud provider
+2. STRICT EVIDENCE REQUIREMENT - NO ASSUMPTIONS:
+   - ONLY assign a cloud provider if you find EXPLICIT, UNAMBIGUOUS evidence in labels/text
+   - REQUIRED: Component label MUST contain explicit provider name (AWS, Azure, GCP) or specific service name (EC2, S3, App Service, etc.)
+   - FORBIDDEN: Do NOT assign cloud provider based on:
+     * Generic icons or shapes (server icon, database icon, etc.)
+     * Generic terms like "Server", "Database", "Load Balancer" without provider context
+     * Visual patterns that could be from any provider
+     * Assumptions or guesses
+   - If evidence is insufficient or ambiguous, you MUST:
+     * Set cloudProvider to null or "on-premises"
+     * Set deployedEnvironment to "ONPREM" or "UNKNOWN"
+     * Set detectionConfidence to "low"
+   - When in doubt, ALWAYS default to "on-premises" - NEVER assume a public cloud provider
 
 3. PROVIDER TYPE DETECTION:
    - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named)
@@ -283,6 +291,48 @@ Kubernetes & Container Platforms:
 - Resources: Pods, Services, Deployments, ConfigMaps, Secrets, Ingress, PersistentVolumes
 - Patterns: apiVersion: v1, kind: Pod/Service/Deployment, kubernetes.io/, k8s.io/
 
+CRITICAL DETECTION RULES - FOLLOW IN ORDER:
+1. FIRST: Examine component LABELS and TEXT for explicit cloud provider/service names
+2. SECOND: Check for provider-specific naming conventions in text (e.g., "AWS S3", "Azure App Service")
+3. THIRD: Look for resource types or configuration patterns in text/code
+4. LAST RESORT: Only if no text/label exists, consider visual icons (with low confidence)
+5. DEFAULT: If no clear cloud provider is found in text/labels, mark as "on-premises"
+6. NEVER assume a cloud provider based solely on generic shapes or icons
+7. For each component, explicitly state your confidence level:
+   - HIGH: Explicit provider name in label/text
+   - MEDIUM: Strong indicators in text (service names, resource types)
+   - LOW: Only visual indicators (use sparingly)
+   - DEFAULT: No indicators found → mark as "on-premises"
+
+COMPONENT CLASSIFICATION RULES - STRICT EVIDENCE REQUIRED:
+
+ONLY classify if label/text contains EXPLICIT provider/service names:
+
+✅ HIGH CONFIDENCE (Explicit provider/service name in label):
+- Label contains "AWS", "Amazon", "EC2", "S3", "Lambda", "RDS", "VPC", "CloudFront", etc.
+  → cloudProvider: "aws", deployedEnvironment: "AWS", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "Azure", "Microsoft", "App Service", "Blob Storage", "SQL Database", "Virtual Network", etc.
+  → cloudProvider: "azure", deployedEnvironment: "AZURE", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "GCP", "Google Cloud", "Compute Engine", "Cloud Storage", "Cloud SQL", "BigQuery", etc.
+  → cloudProvider: "gcp", deployedEnvironment: "GCP", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "Kubernetes", "K8s", "EKS", "AKS", "GKE", "OpenShift"
+  → cloudProvider: "kubernetes", deployedEnvironment: "KUBERNETES", providerType: "public-cloud" or "private-cloud", detectionConfidence: "high"
+
+- Label contains "OCP", "OpenShift Container Platform"
+  → deployedEnvironment: "OCP", providerType: "private-cloud", detectionConfidence: "high"
+
+- Label contains "VMware", "OpenStack", "Private Cloud"
+  → deployedEnvironment: "PRIVATE", providerType: "private-cloud", detectionConfidence: "high"
+
+❌ DO NOT CLASSIFY (Insufficient evidence):
+- Generic terms: "Server", "Database", "Load Balancer", "API Gateway" (without provider name)
+- Generic icons: Server icon, database icon, network icon (without text labels)
+- Ambiguous terms: "Cloud", "Storage", "Compute" (without provider context)
+- If label is unclear or missing → deployedEnvironment: "ONPREM" or "UNKNOWN", cloudProvider: "on-premises", detectionConfidence: "low"
+
 TERRAFORM CATEGORY CLASSIFICATION:
 Each component MUST be classified into one of these standard Terraform categories:
 
@@ -321,6 +371,7 @@ Return ONLY valid JSON without any prefix or suffix:
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
       "providerType": "public-cloud",
+      "deployedEnvironment": "AZURE",
       "cloudRegion": "East US",
       "detectionConfidence": "high",
       "description": "Hosts the main web application"
@@ -394,14 +445,134 @@ Content: ${fileContent}`;
       }
     }
 
-    // Detect cloud providers from extracted data
+    // STRICT VALIDATION: Only accept high-confidence cloud provider classifications
     const detectedProviders = new Set<string>(cloudProviders || []);
     if (extractedData.metadata?.cloudProviders) {
       extractedData.metadata.cloudProviders.forEach((p: string) => detectedProviders.add(p));
     }
+    
+    // Validate and set deployedEnvironment for each component
     extractedData.components?.forEach((component: any) => {
-      if (component.cloudProvider) {
-        detectedProviders.add(component.cloudProvider.toLowerCase());
+      const name = String(component.name || '').toLowerCase();
+      const cloudService = String(component.cloudService || '').toLowerCase();
+      const description = String(component.description || '').toLowerCase();
+      const allText = `${name} ${cloudService} ${description}`.toLowerCase();
+      
+      // STRICT: Only accept if explicit provider/service name is in the text
+      const hasExplicitAWS = 
+        name.includes('aws') || name.includes('amazon') || 
+        name.includes('ec2') || name.includes('s3') || name.includes('lambda') || 
+        name.includes('rds') || name.includes('vpc') || name.includes('cloudfront') ||
+        cloudService.includes('aws') || cloudService.includes('amazon') ||
+        cloudService.includes('ec2') || cloudService.includes('s3');
+      
+      const hasExplicitAzure = 
+        name.includes('azure') || name.includes('microsoft') ||
+        name.includes('app service') || name.includes('blob storage') ||
+        name.includes('sql database') || name.includes('virtual network') ||
+        cloudService.includes('azure') || cloudService.includes('microsoft') ||
+        cloudService.includes('app service') || cloudService.includes('blob');
+      
+      const hasExplicitGCP = 
+        name.includes('gcp') || name.includes('google cloud') ||
+        name.includes('compute engine') || name.includes('cloud storage') ||
+        name.includes('cloud sql') || name.includes('bigquery') ||
+        cloudService.includes('gcp') || cloudService.includes('google') ||
+        cloudService.includes('compute engine') || cloudService.includes('cloud storage');
+      
+      const hasExplicitK8s = 
+        name.includes('kubernetes') || name.includes('k8s') ||
+        name.includes('eks') || name.includes('aks') || name.includes('gke') ||
+        name.includes('openshift') || name.includes('ocp') ||
+        cloudService.includes('kubernetes') || cloudService.includes('k8s');
+      
+      const hasExplicitOCP = 
+        name.includes('ocp') || name.includes('openshift container platform') ||
+        cloudService.includes('ocp') || cloudService.includes('openshift');
+      
+      const hasExplicitPrivate = 
+        name.includes('vmware') || name.includes('openstack') ||
+        name.includes('private cloud') || cloudService.includes('vmware') ||
+        cloudService.includes('openstack') || cloudService.includes('private');
+      
+      // Determine deployed environment and provider
+      let deployedEnvironment: string = 'UNKNOWN';
+      let providerType: string = 'on-premises';
+      let detectionConfidence: string = 'low';
+      let cloudProvider: string | null = null;
+      
+      if (hasExplicitAWS) {
+        deployedEnvironment = 'AWS';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'aws';
+        detectedProviders.add('aws');
+      } else if (hasExplicitAzure) {
+        deployedEnvironment = 'AZURE';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'azure';
+        detectedProviders.add('azure');
+      } else if (hasExplicitGCP) {
+        deployedEnvironment = 'GCP';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'gcp';
+        detectedProviders.add('gcp');
+      } else if (hasExplicitOCP) {
+        deployedEnvironment = 'OCP';
+        providerType = 'private-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'kubernetes';
+        detectedProviders.add('kubernetes');
+      } else if (hasExplicitK8s) {
+        deployedEnvironment = 'KUBERNETES';
+        // Check if it's a managed service (EKS, AKS, GKE) = public, otherwise private
+        if (name.includes('eks') || name.includes('aks') || name.includes('gke')) {
+          providerType = 'public-cloud';
+        } else {
+          providerType = 'private-cloud';
+        }
+        detectionConfidence = 'high';
+        cloudProvider = 'kubernetes';
+        detectedProviders.add('kubernetes');
+      } else if (hasExplicitPrivate) {
+        deployedEnvironment = 'PRIVATE';
+        providerType = 'private-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = null; // Private cloud, not a specific public provider
+      } else {
+        // No explicit evidence - default to on-premises
+        deployedEnvironment = 'ONPREM';
+        providerType = 'on-premises';
+        detectionConfidence = 'low';
+        cloudProvider = 'on-premises';
+      }
+      
+      // STRICT VALIDATION: Remove cloudProvider if confidence is too low
+      // Only keep cloudProvider if we have high confidence
+      if (detectionConfidence !== 'high') {
+        // If LLM set a provider but we don't have high confidence, remove it
+        if (component.cloudProvider && component.cloudProvider !== 'on-premises') {
+          console.warn(`⚠️ Removing low-confidence cloud provider "${component.cloudProvider}" from blueprint component "${component.name}"`);
+          component.cloudProvider = 'on-premises';
+          cloudProvider = 'on-premises';
+        }
+      }
+      
+      // Update component with validated values
+      component.deployedEnvironment = deployedEnvironment;
+      component.providerType = providerType;
+      component.detectionConfidence = detectionConfidence;
+      component.cloudProvider = cloudProvider || 'on-premises';
+      
+      // Remove cloudService if it was guessed without evidence
+      if (detectionConfidence === 'low' && component.cloudService && 
+          !cloudService.includes('aws') && !cloudService.includes('azure') && 
+          !cloudService.includes('gcp') && !cloudService.includes('google') &&
+          !cloudService.includes('amazon') && !cloudService.includes('microsoft')) {
+        console.warn(`⚠️ Removing unverified cloudService "${component.cloudService}" from blueprint component "${component.name}"`);
+        component.cloudService = undefined;
       }
     });
 

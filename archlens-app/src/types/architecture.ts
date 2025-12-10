@@ -83,6 +83,7 @@ export enum ComplianceFramework {
 
 export type ProviderType = "public-cloud" | "private-cloud" | "on-premises";
 export type DetectionConfidence = "high" | "medium" | "low";
+export type DeployedEnvironment = "AWS" | "AZURE" | "GCP" | "PRIVATE" | "OCP" | "ONPREM" | "KUBERNETES" | "MULTI-CLOUD" | "UNKNOWN";
 
 export interface ArchitectureComponent {
   id: string;
@@ -92,6 +93,7 @@ export interface ArchitectureComponent {
   cloudService?: string;
   cloudProvider?: CloudProvider;
   providerType?: ProviderType; // public-cloud, private-cloud, or on-premises
+  deployedEnvironment?: DeployedEnvironment; // AWS, AZURE, GCP, PRIVATE, OCP, ONPREM, KUBERNETES, MULTI-CLOUD, UNKNOWN
   cloudRegion?: string;
   cloudAvailabilityZone?: string;
   isManagedService?: boolean;

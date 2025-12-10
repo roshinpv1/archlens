@@ -113,11 +113,19 @@ CLOUD PROVIDER DETECTION RULES - FOLLOW THESE STRICTLY:
    - Look for explicit service names, provider names, or resource identifiers in text
    - Icons/images should ONLY be used as a last resort if no text/label is available
 
-2. HIGH CONFIDENCE REQUIRED:
-   - Only assign a cloud provider if you find EXPLICIT evidence in labels/text
-   - Do NOT assume or guess based on generic icons or shapes
-   - If a component has no clear cloud provider reference, mark it as "on-premises"
-   - Default to "on-premises" when in doubt - never assume a public cloud provider
+2. STRICT EVIDENCE REQUIREMENT - NO ASSUMPTIONS:
+   - ONLY assign a cloud provider if you find EXPLICIT, UNAMBIGUOUS evidence in labels/text
+   - REQUIRED: Component label MUST contain explicit provider name (AWS, Azure, GCP) or specific service name (EC2, S3, App Service, etc.)
+   - FORBIDDEN: Do NOT assign cloud provider based on:
+     * Generic icons or shapes (server icon, database icon, etc.)
+     * Generic terms like "Server", "Database", "Load Balancer" without provider context
+     * Visual patterns that could be from any provider
+     * Assumptions or guesses
+   - If evidence is insufficient or ambiguous, you MUST:
+     * Set cloudProvider to null or "on-premises"
+     * Set deployedEnvironment to "ONPREM" or "UNKNOWN"
+     * Set detectionConfidence to "low"
+   - When in doubt, ALWAYS default to "on-premises" - NEVER assume a public cloud provider
 
 3. PROVIDER TYPE DETECTION:
    - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named)
@@ -192,14 +200,34 @@ CRITICAL DETECTION RULES - FOLLOW IN ORDER:
    - LOW: Only visual indicators (use sparingly)
    - DEFAULT: No indicators found → mark as "on-premises"
 
-COMPONENT CLASSIFICATION RULES:
-- If component label contains: "AWS", "Amazon", "EC2", "S3", "Lambda", etc. → cloudProvider: "aws", providerType: "public-cloud"
-- If component label contains: "Azure", "Microsoft", "App Service", "Blob Storage", etc. → cloudProvider: "azure", providerType: "public-cloud"
-- If component label contains: "GCP", "Google", "Cloud", "Compute Engine", etc. → cloudProvider: "gcp", providerType: "public-cloud"
-- If component label contains: "Kubernetes", "K8s", "EKS", "AKS", "GKE" → cloudProvider: "kubernetes", providerType: "public-cloud" or "private-cloud" based on context
-- If component label contains: "VMware", "OpenStack", "Private Cloud" → providerType: "private-cloud"
-- If component has NO cloud provider indicators in label/text → cloudProvider: "on-premises", providerType: "on-premises"
-- Generic terms like "Server", "Database", "Load Balancer" without provider context → "on-premises"
+COMPONENT CLASSIFICATION RULES - STRICT EVIDENCE REQUIRED:
+
+ONLY classify if label/text contains EXPLICIT provider/service names:
+
+✅ HIGH CONFIDENCE (Explicit provider/service name in label):
+- Label contains "AWS", "Amazon", "EC2", "S3", "Lambda", "RDS", "VPC", "CloudFront", etc.
+  → cloudProvider: "aws", deployedEnvironment: "AWS", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "Azure", "Microsoft", "App Service", "Blob Storage", "SQL Database", "Virtual Network", etc.
+  → cloudProvider: "azure", deployedEnvironment: "AZURE", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "GCP", "Google Cloud", "Compute Engine", "Cloud Storage", "Cloud SQL", "BigQuery", etc.
+  → cloudProvider: "gcp", deployedEnvironment: "GCP", providerType: "public-cloud", detectionConfidence: "high"
+
+- Label contains "Kubernetes", "K8s", "EKS", "AKS", "GKE", "OpenShift"
+  → cloudProvider: "kubernetes", deployedEnvironment: "KUBERNETES", providerType: "public-cloud" or "private-cloud", detectionConfidence: "high"
+
+- Label contains "OCP", "OpenShift Container Platform"
+  → deployedEnvironment: "OCP", providerType: "private-cloud", detectionConfidence: "high"
+
+- Label contains "VMware", "OpenStack", "Private Cloud"
+  → deployedEnvironment: "PRIVATE", providerType: "private-cloud", detectionConfidence: "high"
+
+❌ DO NOT CLASSIFY (Insufficient evidence):
+- Generic terms: "Server", "Database", "Load Balancer", "API Gateway" (without provider name)
+- Generic icons: Server icon, database icon, network icon (without text labels)
+- Ambiguous terms: "Cloud", "Storage", "Compute" (without provider context)
+- If label is unclear or missing → deployedEnvironment: "ONPREM" or "UNKNOWN", cloudProvider: "on-premises", detectionConfidence: "low"
 
 TERRAFORM CATEGORY CLASSIFICATION:
 Each component MUST be classified into one of these standard Terraform categories:
@@ -239,6 +267,7 @@ Return ONLY valid JSON without any prefix or suffix:
       "cloudProvider": "azure",
       "cloudService": "Azure App Service",
       "providerType": "public-cloud",
+      "deployedEnvironment": "AZURE",
       "cloudRegion": "East US",
       "cloudAvailabilityZone": "East US 1",
       "isManagedService": true,
@@ -310,7 +339,7 @@ Content: ${fileContent}`;
     console.log('Stage 1: Extracting components from file...');
     const extractionResponse = await llmClient.callLLM(extractionPrompt, {
       temperature: 0, // Deterministic extraction for consistency
-      maxTokens: 4000
+      maxTokens: 60000
     });
     
     // Helper function to parse stringified arrays with newlines
@@ -472,67 +501,129 @@ Content: ${fileContent}`;
       return providers;
     };
     
-    // Validate and enhance cloud provider detection
+    // STRICT VALIDATION: Only accept high-confidence cloud provider classifications
     const detectedProviders = new Set<string>();
     extractedData.components.forEach((component: Record<string, unknown>) => {
-      const componentProviders = detectCloudProviderFromComponent(component);
-      componentProviders.forEach(provider => detectedProviders.add(provider));
-      
-      // Set providerType and detectionConfidence based on detection
       const name = String(component.name || '').toLowerCase();
       const cloudService = String(component.cloudService || '').toLowerCase();
-      const cloudProvider = String(component.cloudProvider || '').toLowerCase();
+      const description = String(component.description || '').toLowerCase();
+      const allText = `${name} ${cloudService} ${description}`.toLowerCase();
       
-      // Determine provider type and confidence
+      // STRICT: Only accept if explicit provider/service name is in the text
+      const hasExplicitAWS = 
+        name.includes('aws') || name.includes('amazon') || 
+        name.includes('ec2') || name.includes('s3') || name.includes('lambda') || 
+        name.includes('rds') || name.includes('vpc') || name.includes('cloudfront') ||
+        cloudService.includes('aws') || cloudService.includes('amazon') ||
+        cloudService.includes('ec2') || cloudService.includes('s3');
+      
+      const hasExplicitAzure = 
+        name.includes('azure') || name.includes('microsoft') ||
+        name.includes('app service') || name.includes('blob storage') ||
+        name.includes('sql database') || name.includes('virtual network') ||
+        cloudService.includes('azure') || cloudService.includes('microsoft') ||
+        cloudService.includes('app service') || cloudService.includes('blob');
+      
+      const hasExplicitGCP = 
+        name.includes('gcp') || name.includes('google cloud') ||
+        name.includes('compute engine') || name.includes('cloud storage') ||
+        name.includes('cloud sql') || name.includes('bigquery') ||
+        cloudService.includes('gcp') || cloudService.includes('google') ||
+        cloudService.includes('compute engine') || cloudService.includes('cloud storage');
+      
+      const hasExplicitK8s = 
+        name.includes('kubernetes') || name.includes('k8s') ||
+        name.includes('eks') || name.includes('aks') || name.includes('gke') ||
+        name.includes('openshift') || name.includes('ocp') ||
+        cloudService.includes('kubernetes') || cloudService.includes('k8s');
+      
+      const hasExplicitOCP = 
+        name.includes('ocp') || name.includes('openshift container platform') ||
+        cloudService.includes('ocp') || cloudService.includes('openshift');
+      
+      const hasExplicitPrivate = 
+        name.includes('vmware') || name.includes('openstack') ||
+        name.includes('private cloud') || cloudService.includes('vmware') ||
+        cloudService.includes('openstack') || cloudService.includes('private');
+      
+      // Determine deployed environment and provider
+      let deployedEnvironment: string = 'UNKNOWN';
       let providerType: string = 'on-premises';
       let detectionConfidence: string = 'low';
+      let cloudProvider: string | null = null;
       
-      // Check if component has explicit cloud provider indicators in name/service
-      const hasExplicitProvider = 
-        name.includes('aws') || name.includes('amazon') || name.includes('ec2') || name.includes('s3') ||
-        name.includes('azure') || name.includes('microsoft') || name.includes('app service') ||
-        name.includes('gcp') || name.includes('google') || name.includes('cloud') ||
-        name.includes('kubernetes') || name.includes('k8s') ||
-        cloudService.includes('aws') || cloudService.includes('azure') || cloudService.includes('gcp') ||
-        cloudService.includes('amazon') || cloudService.includes('microsoft') || cloudService.includes('google');
-      
-      if (componentProviders.length > 0) {
-        // High confidence if explicit provider name in label/text
-        if (hasExplicitProvider) {
-          detectionConfidence = 'high';
-        } else {
-          detectionConfidence = 'medium';
-        }
-        
-        // Determine provider type
-        const provider = componentProviders[0];
-        if (provider === 'aws' || provider === 'azure' || provider === 'gcp') {
+      if (hasExplicitAWS) {
+        deployedEnvironment = 'AWS';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'aws';
+        detectedProviders.add('aws');
+      } else if (hasExplicitAzure) {
+        deployedEnvironment = 'AZURE';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'azure';
+        detectedProviders.add('azure');
+      } else if (hasExplicitGCP) {
+        deployedEnvironment = 'GCP';
+        providerType = 'public-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'gcp';
+        detectedProviders.add('gcp');
+      } else if (hasExplicitOCP) {
+        deployedEnvironment = 'OCP';
+        providerType = 'private-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = 'kubernetes';
+        detectedProviders.add('kubernetes');
+      } else if (hasExplicitK8s) {
+        deployedEnvironment = 'KUBERNETES';
+        // Check if it's a managed service (EKS, AKS, GKE) = public, otherwise private
+        if (name.includes('eks') || name.includes('aks') || name.includes('gke')) {
           providerType = 'public-cloud';
-        } else if (provider === 'kubernetes') {
-          // Kubernetes can be public or private - check context
-          providerType = name.includes('eks') || name.includes('aks') || name.includes('gke') 
-            ? 'public-cloud' 
-            : 'private-cloud';
         } else {
-          providerType = 'on-premises';
+          providerType = 'private-cloud';
         }
+        detectionConfidence = 'high';
+        cloudProvider = 'kubernetes';
+        detectedProviders.add('kubernetes');
+      } else if (hasExplicitPrivate) {
+        deployedEnvironment = 'PRIVATE';
+        providerType = 'private-cloud';
+        detectionConfidence = 'high';
+        cloudProvider = null; // Private cloud, not a specific public provider
       } else {
-        // No cloud provider detected - default to on-premises
+        // No explicit evidence - default to on-premises
+        deployedEnvironment = 'ONPREM';
         providerType = 'on-premises';
         detectionConfidence = 'low';
+        cloudProvider = 'on-premises';
       }
       
-      // Update component with provider type and confidence
+      // STRICT VALIDATION: Remove cloudProvider if confidence is too low
+      // Only keep cloudProvider if we have high confidence
+      if (detectionConfidence !== 'high') {
+        // If LLM set a provider but we don't have high confidence, remove it
+        if (component.cloudProvider && component.cloudProvider !== 'on-premises') {
+          console.warn(`⚠️ Removing low-confidence cloud provider "${component.cloudProvider}" from component "${component.name}"`);
+          component.cloudProvider = 'on-premises';
+          cloudProvider = 'on-premises';
+        }
+      }
+      
+      // Update component with validated values
+      component.deployedEnvironment = deployedEnvironment;
       component.providerType = providerType;
       component.detectionConfidence = detectionConfidence;
+      component.cloudProvider = cloudProvider || 'on-premises';
       
-      // If no cloud provider was set by LLM, set it based on detection or default to on-premises
-      if (!component.cloudProvider || component.cloudProvider === 'unknown') {
-        if (componentProviders.length > 0) {
-          component.cloudProvider = componentProviders[0];
-        } else {
-          component.cloudProvider = 'on-premises';
-        }
+      // Remove cloudService if it was guessed without evidence
+      if (detectionConfidence === 'low' && component.cloudService && 
+          !cloudService.includes('aws') && !cloudService.includes('azure') && 
+          !cloudService.includes('gcp') && !cloudService.includes('google') &&
+          !cloudService.includes('amazon') && !cloudService.includes('microsoft')) {
+        console.warn(`⚠️ Removing unverified cloudService "${component.cloudService}" from component "${component.name}"`);
+        component.cloudService = undefined;
       }
     });
     
@@ -812,7 +903,7 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     console.log('Stage 2: Performing detailed analysis...');
     const response = await llmClient.callLLM(analysisPrompt, {
       temperature: 0, // Deterministic analysis for consistent scoring
-      maxTokens: 4000
+      maxTokens: 60000
     });
 
     // Parse response
