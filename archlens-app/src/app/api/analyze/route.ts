@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     // Read and optimize file content for Stage 1 analysis
     let fileContent: string;
     let fileType: 'image' | 'iac' | 'text';
+    let originalFileData: string | null = null; // Store original for database
     let optimizationInfo: {
       original_size_kb: number;
       optimized_size_kb: number;
@@ -53,21 +54,26 @@ export async function POST(request: NextRequest) {
     } | null = null;
     
     if (file.type.startsWith('image/')) {
-      // For images, use compression-based optimization
+      // For images, store original and create optimized version for LLM
       const fileBuffer = await file.arrayBuffer();
       const originalBase64 = Buffer.from(fileBuffer).toString('base64');
       const originalSizeKB = Math.round(fileBuffer.byteLength / 1024);
       
-      console.log(`🖼️ Original image size: ${originalSizeKB}KB`);
+      // Store original image for database (for viewing/downloading later)
+      originalFileData = originalBase64;
       
-      // Optimize image using Sharp (JavaScript)
+      console.log(`🖼️ Original image size: ${originalSizeKB}KB`);
+      console.log(`💾 Storing original image for later viewing/download`);
+      
+      // Create optimized/scaled-down version for LLM processing (saves tokens and improves speed)
       const optimizationResult = await smartOptimizeImage(originalBase64, {
         quality: originalSizeKB > 1000 ? 50 : 70, // Lower quality for larger images
-        maxWidth: 512,
-        maxHeight: 512
+        maxWidth: 1024, // Increased from 512 for better LLM analysis while still being efficient
+        maxHeight: 1024
       });
       
       if (optimizationResult.success && optimizationResult.optimized_base64) {
+        // Use optimized version for LLM processing
         fileContent = `Base64 Image Data: ${optimizationResult.optimized_base64}`;
         optimizationInfo = {
           original_size_kb: originalSizeKB,
@@ -75,10 +81,11 @@ export async function POST(request: NextRequest) {
           compression_ratio: optimizationResult.compression_ratio_percent || 0,
           dimensions: optimizationResult.optimized_dimensions
         };
-        console.log(`✅ Image optimized: ${optimizationInfo.compression_ratio}% compression`);
+        console.log(`✅ Image optimized for LLM: ${optimizationInfo.compression_ratio}% compression`);
+        console.log(`📊 Using optimized image (${optimizationInfo.optimized_size_kb}KB) for analysis, original (${originalSizeKB}KB) stored for viewing`);
       } else {
-        // Fallback to original if optimization fails
-        console.warn('⚠️ Image optimization failed, using original:', optimizationResult.error);
+        // Fallback to original if optimization fails (but still store original separately)
+        console.warn('⚠️ Image optimization failed, using original for LLM:', optimizationResult.error);
         fileContent = `Base64 Image Data: ${originalBase64}`;
         optimizationInfo = {
           original_size_kb: originalSizeKB,
@@ -501,129 +508,51 @@ Content: ${fileContent}`;
       return providers;
     };
     
-    // STRICT VALIDATION: Only accept high-confidence cloud provider classifications
+    // Trust LLM results - only ensure required fields exist and collect providers for metadata
     const detectedProviders = new Set<string>();
     extractedData.components.forEach((component: Record<string, unknown>) => {
-      const name = String(component.name || '').toLowerCase();
-      const cloudService = String(component.cloudService || '').toLowerCase();
-      const description = String(component.description || '').toLowerCase();
-      const allText = `${name} ${cloudService} ${description}`.toLowerCase();
+      // Trust the LLM's classification - it follows strict prompts with temperature: 0
+      // Only ensure required fields have defaults if missing
       
-      // STRICT: Only accept if explicit provider/service name is in the text
-      const hasExplicitAWS = 
-        name.includes('aws') || name.includes('amazon') || 
-        name.includes('ec2') || name.includes('s3') || name.includes('lambda') || 
-        name.includes('rds') || name.includes('vpc') || name.includes('cloudfront') ||
-        cloudService.includes('aws') || cloudService.includes('amazon') ||
-        cloudService.includes('ec2') || cloudService.includes('s3');
-      
-      const hasExplicitAzure = 
-        name.includes('azure') || name.includes('microsoft') ||
-        name.includes('app service') || name.includes('blob storage') ||
-        name.includes('sql database') || name.includes('virtual network') ||
-        cloudService.includes('azure') || cloudService.includes('microsoft') ||
-        cloudService.includes('app service') || cloudService.includes('blob');
-      
-      const hasExplicitGCP = 
-        name.includes('gcp') || name.includes('google cloud') ||
-        name.includes('compute engine') || name.includes('cloud storage') ||
-        name.includes('cloud sql') || name.includes('bigquery') ||
-        cloudService.includes('gcp') || cloudService.includes('google') ||
-        cloudService.includes('compute engine') || cloudService.includes('cloud storage');
-      
-      const hasExplicitK8s = 
-        name.includes('kubernetes') || name.includes('k8s') ||
-        name.includes('eks') || name.includes('aks') || name.includes('gke') ||
-        name.includes('openshift') || name.includes('ocp') ||
-        cloudService.includes('kubernetes') || cloudService.includes('k8s');
-      
-      const hasExplicitOCP = 
-        name.includes('ocp') || name.includes('openshift container platform') ||
-        cloudService.includes('ocp') || cloudService.includes('openshift');
-      
-      const hasExplicitPrivate = 
-        name.includes('vmware') || name.includes('openstack') ||
-        name.includes('private cloud') || cloudService.includes('vmware') ||
-        cloudService.includes('openstack') || cloudService.includes('private');
-      
-      // Determine deployed environment and provider
-      let deployedEnvironment: string = 'UNKNOWN';
-      let providerType: string = 'on-premises';
-      let detectionConfidence: string = 'low';
-      let cloudProvider: string | null = null;
-      
-      if (hasExplicitAWS) {
-        deployedEnvironment = 'AWS';
-        providerType = 'public-cloud';
-        detectionConfidence = 'high';
-        cloudProvider = 'aws';
-        detectedProviders.add('aws');
-      } else if (hasExplicitAzure) {
-        deployedEnvironment = 'AZURE';
-        providerType = 'public-cloud';
-        detectionConfidence = 'high';
-        cloudProvider = 'azure';
-        detectedProviders.add('azure');
-      } else if (hasExplicitGCP) {
-        deployedEnvironment = 'GCP';
-        providerType = 'public-cloud';
-        detectionConfidence = 'high';
-        cloudProvider = 'gcp';
-        detectedProviders.add('gcp');
-      } else if (hasExplicitOCP) {
-        deployedEnvironment = 'OCP';
-        providerType = 'private-cloud';
-        detectionConfidence = 'high';
-        cloudProvider = 'kubernetes';
-        detectedProviders.add('kubernetes');
-      } else if (hasExplicitK8s) {
-        deployedEnvironment = 'KUBERNETES';
-        // Check if it's a managed service (EKS, AKS, GKE) = public, otherwise private
-        if (name.includes('eks') || name.includes('aks') || name.includes('gke')) {
-          providerType = 'public-cloud';
+      // Ensure deployedEnvironment exists (LLM should set this, but provide fallback)
+      if (!component.deployedEnvironment) {
+        if (component.cloudProvider === 'aws') {
+          component.deployedEnvironment = 'AWS';
+        } else if (component.cloudProvider === 'azure') {
+          component.deployedEnvironment = 'AZURE';
+        } else if (component.cloudProvider === 'gcp') {
+          component.deployedEnvironment = 'GCP';
+        } else if (component.cloudProvider === 'kubernetes') {
+          component.deployedEnvironment = 'KUBERNETES';
         } else {
-          providerType = 'private-cloud';
-        }
-        detectionConfidence = 'high';
-        cloudProvider = 'kubernetes';
-        detectedProviders.add('kubernetes');
-      } else if (hasExplicitPrivate) {
-        deployedEnvironment = 'PRIVATE';
-        providerType = 'private-cloud';
-        detectionConfidence = 'high';
-        cloudProvider = null; // Private cloud, not a specific public provider
-      } else {
-        // No explicit evidence - default to on-premises
-        deployedEnvironment = 'ONPREM';
-        providerType = 'on-premises';
-        detectionConfidence = 'low';
-        cloudProvider = 'on-premises';
-      }
-      
-      // STRICT VALIDATION: Remove cloudProvider if confidence is too low
-      // Only keep cloudProvider if we have high confidence
-      if (detectionConfidence !== 'high') {
-        // If LLM set a provider but we don't have high confidence, remove it
-        if (component.cloudProvider && component.cloudProvider !== 'on-premises') {
-          console.warn(`⚠️ Removing low-confidence cloud provider "${component.cloudProvider}" from component "${component.name}"`);
-          component.cloudProvider = 'on-premises';
-          cloudProvider = 'on-premises';
+          component.deployedEnvironment = component.cloudProvider === 'on-premises' ? 'ONPREM' : 'UNKNOWN';
         }
       }
       
-      // Update component with validated values
-      component.deployedEnvironment = deployedEnvironment;
-      component.providerType = providerType;
-      component.detectionConfidence = detectionConfidence;
-      component.cloudProvider = cloudProvider || 'on-premises';
+      // Ensure providerType exists (LLM should set this, but provide fallback)
+      if (!component.providerType) {
+        if (['aws', 'azure', 'gcp'].includes(String(component.cloudProvider || ''))) {
+          component.providerType = 'public-cloud';
+        } else if (component.cloudProvider === 'kubernetes') {
+          component.providerType = 'private-cloud'; // Default, LLM can override if EKS/AKS/GKE
+        } else {
+          component.providerType = 'on-premises';
+        }
+      }
       
-      // Remove cloudService if it was guessed without evidence
-      if (detectionConfidence === 'low' && component.cloudService && 
-          !cloudService.includes('aws') && !cloudService.includes('azure') && 
-          !cloudService.includes('gcp') && !cloudService.includes('google') &&
-          !cloudService.includes('amazon') && !cloudService.includes('microsoft')) {
-        console.warn(`⚠️ Removing unverified cloudService "${component.cloudService}" from component "${component.name}"`);
-        component.cloudService = undefined;
+      // Ensure detectionConfidence exists (LLM should set this, but provide fallback)
+      if (!component.detectionConfidence) {
+        component.detectionConfidence = component.cloudProvider && component.cloudProvider !== 'on-premises' ? 'medium' : 'low';
+      }
+      
+      // Ensure cloudProvider has a value
+      if (!component.cloudProvider) {
+        component.cloudProvider = 'on-premises';
+      }
+      
+      // Collect providers for metadata (trust LLM's classification)
+      if (component.cloudProvider && component.cloudProvider !== 'on-premises') {
+        detectedProviders.add(String(component.cloudProvider));
       }
     });
     
@@ -1011,17 +940,8 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     console.log('costEfficiencyScore:', parsed.costEfficiencyScore, 'type:', typeof parsed.costEfficiencyScore);
     console.log('complianceScore:', parsed.complianceScore, 'type:', typeof parsed.complianceScore);
 
-    // Prepare original file data for storage
-    let originalFileData: string | null = null;
-    if (file.type.startsWith('image/')) {
-      // For images, we already have the original base64 from earlier
-      const fileBuffer = await file.arrayBuffer();
-      originalFileData = Buffer.from(fileBuffer).toString('base64');
-    } else {
-      // For text files (IAC), read the content
-      const fileText = await file.text();
-      originalFileData = Buffer.from(fileText).toString('base64');
-    }
+    // Original file data is already stored above (originalFileData variable)
+    // No need to read the file again - we already have it
 
     // Create analysis object with enhanced data from both stages
     const analysis: ArchitectureAnalysis = {
@@ -1029,14 +949,14 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       timestamp: new Date(),
       fileName: file.name,
       fileType: fileType,
-      // Store original file data
-      originalFile: {
+      // Store original file data (if available)
+      originalFile: originalFileData ? {
         name: file.name,
         size: file.size,
         type: file.type,
         data: originalFileData,
         mimeType: file.type
-      },
+      } : undefined,
       appId,
       componentName,
       description,

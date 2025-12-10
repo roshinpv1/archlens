@@ -11,6 +11,14 @@ export interface IBlueprint extends Document {
   fileSize: number;
   fileType: string;
   fileUrl: string;
+  // Original file storage (for viewing/downloading)
+  originalFile?: {
+    name: string;
+    size: number;
+    type: string;
+    data: string; // Base64 encoded file data
+    mimeType: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -66,6 +74,14 @@ const BlueprintSchema = new Schema<IBlueprint>({
   fileSize: { type: Number, required: true },
   fileType: { type: String, required: true },
   fileUrl: { type: String, required: true },
+  // Original file storage
+  originalFile: {
+    name: { type: String },
+    size: { type: Number },
+    type: { type: String },
+    data: { type: String }, // Base64 encoded file data
+    mimeType: { type: String }
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   createdBy: { type: String, required: true },
