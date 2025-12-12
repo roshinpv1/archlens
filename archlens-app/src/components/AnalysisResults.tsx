@@ -731,43 +731,75 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                   {results.similarBlueprints.map((bp) => (
                     <div
                       key={bp.id}
-                      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-foreground text-sm">{bp.name}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          bp.score >= 0.8 ? 'bg-green-100 text-green-700' :
-                          bp.score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-orange-100 text-orange-700'
-                        }`}>
-                          {Math.round(bp.score * 100)}%
-                        </span>
+                      {/* Blueprint Image Preview */}
+                      <div className="relative w-full h-32 bg-muted border-b border-gray-200 overflow-hidden">
+                        <img
+                          src={`/api/blueprints/${bp.id}/file`}
+                          alt={bp.name || 'Blueprint diagram'}
+                          className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            setImageUrl(`/api/blueprints/${bp.id}/file`);
+                            setShowImageModal(true);
+                          }}
+                          onError={(e) => {
+                            // Hide image if it fails to load (e.g., not an image file)
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute top-2 right-2">
+                          <button
+                            onClick={() => {
+                              setImageUrl(`/api/blueprints/${bp.id}/file`);
+                              setShowImageModal(true);
+                            }}
+                            className="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
+                            title="View full size"
+                          >
+                            <Maximize2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="space-y-1 text-xs text-foreground-muted">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Type:</span>
-                          <span>{bp.type}</span>
+                      
+                      {/* Blueprint Details */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-foreground text-sm">{bp.name}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            bp.score >= 0.8 ? 'bg-green-100 text-green-700' :
+                            bp.score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-orange-100 text-orange-700'
+                          }`}>
+                            {Math.round(bp.score * 100)}%
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Category:</span>
-                          <span>{bp.category}</span>
+                        <div className="space-y-1 text-xs text-foreground-muted mb-3">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Type:</span>
+                            <span>{bp.type}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Category:</span>
+                            <span className="truncate" title={bp.category}>{bp.category}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Provider:</span>
+                            <span className="uppercase">{bp.cloudProvider}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Complexity:</span>
+                            <span>{bp.complexity}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Provider:</span>
-                          <span className="uppercase">{bp.cloudProvider}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Complexity:</span>
-                          <span>{bp.complexity}</span>
-                        </div>
+                        <button
+                          onClick={() => window.location.href = `/library?blueprint=${bp.id}`}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          View Blueprint
+                        </button>
                       </div>
-                      <button
-                        onClick={() => window.location.href = `/library?blueprint=${bp.id}`}
-                        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        View Blueprint
-                      </button>
                     </div>
                   ))}
                 </div>

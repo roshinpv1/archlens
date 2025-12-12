@@ -74,11 +74,33 @@ export function BlueprintViewer({
   const [editValues, setEditValues] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Update blueprint when prop changes
+  // Fetch full blueprint data when viewer opens (to get originalFile)
+  const fetchFullBlueprint = async () => {
+    try {
+      const response = await fetch(`/api/blueprints/${initialBlueprint.id}`);
+      if (response.ok) {
+        const fullBlueprint = await response.json();
+        setBlueprint(fullBlueprint);
+        setCurrentRating(fullBlueprint.rating);
+      }
+    } catch (error) {
+      console.error('Failed to fetch full blueprint:', error);
+      // Fallback to initial blueprint
+      setBlueprint(initialBlueprint);
+      setCurrentRating(initialBlueprint.rating);
+    }
+  };
+
+  // Update blueprint when prop changes or when viewer opens
   useEffect(() => {
-    setBlueprint(initialBlueprint);
-    setCurrentRating(initialBlueprint.rating);
-  }, [initialBlueprint]);
+    if (isOpen) {
+      // Fetch full blueprint data when viewer opens to get originalFile
+      fetchFullBlueprint();
+    } else {
+      setBlueprint(initialBlueprint);
+      setCurrentRating(initialBlueprint.rating);
+    }
+  }, [initialBlueprint, isOpen]);
 
   // Fetch analysis when component opens
   useEffect(() => {
@@ -655,6 +677,77 @@ export function BlueprintViewer({
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-500px)]">
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Blueprint Image Preview - Always show for architecture type, or if fileType indicates image */}
+              {(blueprint.type === 'architecture' || blueprint.fileType?.startsWith('image/')) && (
+                <div className="bg-secondary rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Image className="w-5 h-5" />
+                      Blueprint Diagram
+                    </h3>
+                    {onDownload && (
+                      <a
+                        href={`/api/blueprints/${blueprint.id}/download`}
+                        download={blueprint.fileName}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </a>
+                    )}
+                  </div>
+                  <div className="relative bg-muted rounded-lg overflow-hidden border border-border">
+                    {(blueprint as any).originalFile?.data ? (
+                      <img
+                        src={`data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`}
+                        alt={blueprint.fileName || 'Blueprint diagram'}
+                        className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => {
+                          const imageUrl = (blueprint as any).originalFile?.data 
+                            ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
+                            : `/api/blueprints/${blueprint.id}/file`;
+                          window.open(imageUrl, '_blank');
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src={`/api/blueprints/${blueprint.id}/file`}
+                        alt={blueprint.fileName || 'Blueprint diagram'}
+                        className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => {
+                          window.open(`/api/blueprints/${blueprint.id}/file`, '_blank');
+                        }}
+                        onError={(e) => {
+                          console.error('Failed to load blueprint image:', e);
+                          // Hide the entire image section if image fails to load
+                          const imageSection = (e.target as HTMLElement).closest('.bg-secondary');
+                          if (imageSection) {
+                            (imageSection as HTMLElement).style.display = 'none';
+                          }
+                        }}
+                      />
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={() => {
+                          const imageUrl = (blueprint as any).originalFile?.data 
+                            ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
+                            : `/api/blueprints/${blueprint.id}/file`;
+                          window.open(imageUrl, '_blank');
+                        }}
+                        className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
+                        title="View full size"
+                      >
+                        <Image className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Click on the image to view in full size
+                  </p>
+                </div>
+              )}
+
               {/* Description - Editable */}
               <div className="bg-secondary rounded-lg p-6">
                 <div className="flex items-center justify-between mb-3">
