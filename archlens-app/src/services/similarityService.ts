@@ -52,28 +52,16 @@ export class SimilarityService {
       // Search for similar blueprints
       const vectorStore = await getVectorStore();
       
-      // Search blueprint embeddings
+      // Only search actual blueprint embeddings (not analysis embeddings)
+      // Analysis embeddings are for finding similar analyses, not blueprints
       const blueprintSearchResult = await vectorStore.searchSimilarBlueprints(
         embeddingResult.embedding,
-        2, // Top 2 closest matches
+        3, // Search for top 3 actual blueprints
         0.7 // 70% similarity threshold
       );
 
-      // Search analysis embeddings
-      const analysisSearchResult = await vectorStore.searchSimilarAnalysis(
-        embeddingResult.embedding,
-        2, // Top 2 closest matches
-        0.7 // 70% similarity threshold
-      );
-
-      // Combine and deduplicate results
-      const allSimilarBlueprints = [
-        ...blueprintSearchResult,
-        ...analysisSearchResult
-      ];
-
-      // Remove duplicates based on blueprintId
-      const uniqueBlueprints = allSimilarBlueprints.reduce((acc, current) => {
+      // Remove duplicates based on blueprintId (in case of any duplicates)
+      const uniqueBlueprints = blueprintSearchResult.reduce((acc, current) => {
         const existing = acc.find(item => item.blueprint.id === current.blueprint.id);
         if (!existing) {
           acc.push(current);
@@ -90,7 +78,7 @@ export class SimilarityService {
         .sort((a, b) => b.score - a.score)
         .slice(0, 3);
 
-      console.log(`🔍 Found ${topSimilarBlueprints.length} similar blueprints (${blueprintSearchResult.length} from blueprints, ${analysisSearchResult.length} from analyses)`);
+      console.log(`🔍 Found ${topSimilarBlueprints.length} similar blueprints from ${blueprintSearchResult.length} blueprint results`);
 
       return {
         success: true,

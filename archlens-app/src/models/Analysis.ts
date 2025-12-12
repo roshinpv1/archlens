@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 // Define the interface for the Analysis document
 export interface IAnalysis extends Document {
   _id: string;
+  id?: string; // Custom ID field (e.g., "analysis-1765483803647")
   timestamp: Date;
   fileName: string;
   fileType: 'image' | 'iac' | 'text';
@@ -104,6 +105,8 @@ export interface IAnalysis extends Document {
 
 // Define the schema
 const AnalysisSchema = new Schema<IAnalysis>({
+  // Custom ID field for querying (separate from MongoDB _id)
+  id: { type: String, unique: true, sparse: true },
   timestamp: { type: Date, default: Date.now, required: true },
   fileName: { type: String, required: true },
   fileType: { type: String, enum: ['image', 'iac', 'text'], required: true },
@@ -187,20 +190,8 @@ const AnalysisSchema = new Schema<IAnalysis>({
   tags: [{ type: String }],
   status: { type: String, enum: ['completed', 'processing', 'failed'], default: 'completed' },
   
-  // Similar blueprints from vector search
-  similarBlueprints: [{
-    id: String,
-    score: Number,
-    blueprint: {
-      id: String,
-      name: String,
-      type: String,
-      category: String,
-      cloudProvider: String,
-      complexity: String,
-      tags: [String]
-    }
-  }]
+  // Similar blueprints from vector search - using Mixed type to avoid casting issues
+  similarBlueprints: { type: [Schema.Types.Mixed], default: [] }
 }, {
   timestamps: true,
   collection: 'analyses'
@@ -216,12 +207,12 @@ AnalysisSchema.index({ 'createdBy': 1 });
 // Export the model
 let Analysis: Model<IAnalysis>;
 
-try {
-  // Try to retrieve the existing model
-  Analysis = mongoose.model<IAnalysis>('Analysis');
-} catch {
-  // If the model doesn't exist, create it
-  Analysis = mongoose.model<IAnalysis>('Analysis', AnalysisSchema);
+// Delete the model from cache if it exists to ensure schema changes are picked up
+if (mongoose.models.Analysis) {
+  delete mongoose.models.Analysis;
 }
+
+// Create the model with the updated schema
+Analysis = mongoose.model<IAnalysis>('Analysis', AnalysisSchema);
 
 export default Analysis;

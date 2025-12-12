@@ -17,7 +17,6 @@ import {
   BarChart3,
   GitBranch
 } from 'lucide-react';
-import { BlueprintUploadModal } from './BlueprintUploadModal';
 import { BlueprintViewer } from './BlueprintViewer';
 import { BlueprintEditModal } from './BlueprintEditModal';
 import { BlueprintVersionManager } from './BlueprintVersionManager';
@@ -58,7 +57,6 @@ export function BlueprintManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
   const [showViewer, setShowViewer] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -120,31 +118,31 @@ export function BlueprintManager() {
   } | null>(null);
 
   // Fetch blueprints from API
-  useEffect(() => {
-    const fetchBlueprints = async () => {
-      try {
-        setLoading(true);
-        console.log('🔄 Fetching blueprints from API...');
-        
-        const response = await fetch('/api/blueprints');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Blueprints fetched successfully:', data.blueprints?.length || 0, 'blueprints');
-          setBlueprints(data.blueprints || []);
-        } else {
-          console.error('❌ Failed to fetch blueprints:', response.statusText);
-          // Fallback to empty array
-          setBlueprints([]);
-        }
-      } catch (error) {
-        console.error('❌ Error fetching blueprints:', error);
+  const fetchBlueprints = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching blueprints from API...');
+      
+      const response = await fetch('/api/blueprints');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Blueprints fetched successfully:', data.blueprints?.length || 0, 'blueprints');
+        setBlueprints(data.blueprints || []);
+      } else {
+        console.error('❌ Failed to fetch blueprints:', response.statusText);
         // Fallback to empty array
         setBlueprints([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('❌ Error fetching blueprints:', error);
+      // Fallback to empty array
+      setBlueprints([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBlueprints();
   }, []);
 
@@ -192,16 +190,7 @@ export function BlueprintManager() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleUpload = () => {
-    setShowUploadModal(true);
-  };
-
-  const handleUploadComplete = (newBlueprint: Blueprint) => {
-    // Add the new blueprint to the list
-    setBlueprints(prev => [newBlueprint, ...prev]);
-    setShowUploadModal(false);
-    console.log('✅ Blueprint uploaded successfully:', newBlueprint.name);
-  };
+  // Upload functionality removed - blueprints are now created via "Convert to Blueprint" from analysis results
 
   const refreshBlueprints = async () => {
     try {
@@ -424,13 +413,7 @@ export function BlueprintManager() {
             <BarChart3 className="w-4 h-4" />
             Analytics
           </button>
-          <button
-            onClick={handleUpload}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Blueprint
-          </button>
+          {/* Upload removed - use "Convert to Blueprint" from analysis results instead */}
         </div>
       </div>
 
@@ -613,22 +596,12 @@ export function BlueprintManager() {
             }
           </p>
           {!searchTerm && !filterType && !filterCategory && (
-            <button
-              onClick={handleUpload}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
-            >
-              Upload Blueprint
-            </button>
+            <p className="text-sm text-foreground-muted mt-2">
+              To create a blueprint, analyze an architecture first, then use the "Convert to Blueprint" button.
+            </p>
           )}
         </div>
       )}
-
-      {/* Upload Modal */}
-      <BlueprintUploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUpload={handleUploadComplete}
-      />
 
       {/* Blueprint Viewer Modal */}
       {selectedBlueprint && (
@@ -644,6 +617,11 @@ export function BlueprintManager() {
           onDownload={handleDownload}
           onRate={handleRate}
           onAnalyze={handleAnalyze}
+          onUpdate={(updatedBlueprint) => {
+            // Update the selected blueprint and refresh the list
+            setSelectedBlueprint(updatedBlueprint);
+            fetchBlueprints();
+          }}
         />
       )}
 

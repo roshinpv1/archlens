@@ -4,6 +4,7 @@ export interface IBlueprint extends Document {
   id: string;
   name: string;
   description: string;
+  creatorDescription?: string; // Additional details and context provided by the blueprint creator
   type: 'architecture' | 'iac' | 'template';
   category: 'e-commerce' | 'devops' | 'web-development' | 'data-science' | 'mobile' | 'ai-ml' | 'security' | 'infrastructure';
   tags: string[];
@@ -33,6 +34,16 @@ export interface IBlueprint extends Document {
     connections: number;
     estimatedCost: number;
     deploymentTime: string;
+    // Additional architecture metadata
+    architectureType?: string;
+    hybridCloudModel?: string;
+    primaryCloudProvider?: string;
+    primaryPurpose?: string;
+    environmentType?: string;
+    deploymentModel?: string;
+    // Extracted components and connections (full objects)
+    extractedComponents?: any[];
+    extractedConnections?: any[];
   };
   // Embedding-related fields
   embeddingId?: string;
@@ -59,6 +70,7 @@ const BlueprintSchema = new Schema<IBlueprint>({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, required: true },
+  creatorDescription: { type: String }, // Additional details from creator
   type: { 
     type: String, 
     required: true, 
@@ -99,7 +111,17 @@ const BlueprintSchema = new Schema<IBlueprint>({
     components: { type: Number, default: 0 },
     connections: { type: Number, default: 0 },
     estimatedCost: { type: Number, default: 0 },
-    deploymentTime: { type: String, default: 'Unknown' }
+    deploymentTime: { type: String, default: 'Unknown' },
+    // Additional architecture metadata
+    architectureType: { type: String },
+    hybridCloudModel: { type: String },
+    primaryCloudProvider: { type: String },
+    primaryPurpose: { type: String },
+    environmentType: { type: String },
+    deploymentModel: { type: String },
+    // Extracted components and connections (full objects)
+    extractedComponents: [{ type: Schema.Types.Mixed }],
+    extractedConnections: [{ type: Schema.Types.Mixed }]
   },
   // Embedding-related fields
   embeddingId: { type: String },

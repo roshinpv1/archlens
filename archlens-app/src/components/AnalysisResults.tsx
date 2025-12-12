@@ -15,10 +15,16 @@ import {
   Code,
   Search,
   Brain,
-  Loader2
+  Loader2,
+  BookOpen,
+  Image as ImageIcon,
+  Maximize2,
+  X,
+  ExternalLink
 } from "lucide-react";
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
 import BlueprintInsights from "./BlueprintInsights";
+import { ConvertToBlueprintModal } from "./ConvertToBlueprintModal";
 
 interface AnalysisResultsProps {
   results: ArchitectureAnalysis;
@@ -30,6 +36,9 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
   const [searchQuery, setSearchQuery] = useState('');
   const [searchAnswer, setSearchAnswer] = useState('');
   const [searching, setSearching] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(results, null, 2);
@@ -432,6 +441,13 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               <span>Export Data</span>
             </button>
             <button
+              onClick={() => setShowConvertModal(true)}
+              className="flex items-center justify-center space-x-2 px-4 py-2 border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all duration-200 text-sm font-medium"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Convert to Blueprint</span>
+            </button>
+            <button
               onClick={onNewAnalysis}
               className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
             >
@@ -580,6 +596,74 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
       <div className="min-h-[400px]">
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Image Preview - Show if file is an image */}
+            {results.fileType === 'image' && (results.originalFile || results.id) && (
+              <div className="bg-secondary rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5" />
+                    Architecture Diagram
+                  </h3>
+                  {results.id && (
+                    <a
+                      href={`/api/analysis/${results.id}/file`}
+                      download={results.fileName}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  )}
+                </div>
+                <div className="relative bg-muted rounded-lg overflow-hidden border border-border">
+                  {results.originalFile?.data ? (
+                    <img
+                      src={`data:${results.originalFile.mimeType || 'image/png'};base64,${results.originalFile.data}`}
+                      alt={results.fileName || 'Architecture diagram'}
+                      className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        setImageUrl(`data:${results.originalFile?.mimeType || 'image/png'};base64,${results.originalFile?.data}`);
+                        setShowImageModal(true);
+                      }}
+                    />
+                  ) : results.id ? (
+                    <img
+                      src={`/api/analysis/${results.id}/file`}
+                      alt={results.fileName || 'Architecture diagram'}
+                      className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        setImageUrl(`/api/analysis/${results.id}/file`);
+                        setShowImageModal(true);
+                      }}
+                      onError={(e) => {
+                        console.error('Failed to load image:', e);
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={() => {
+                        if (results.originalFile?.data) {
+                          setImageUrl(`data:${results.originalFile.mimeType || 'image/png'};base64,${results.originalFile.data}`);
+                        } else if (results.id) {
+                          setImageUrl(`/api/analysis/${results.id}/file`);
+                        }
+                        setShowImageModal(true);
+                      }}
+                      className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
+                      title="View full size"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Click on the image to view in full size
+                </p>
+              </div>
+            )}
+
             <div className="bg-secondary rounded-lg p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">Architecture Summary</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -627,6 +711,68 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                 </div>
               </div>
             </div>
+
+            {/* Assigned Similar Blueprints */}
+            {results.similarBlueprints && results.similarBlueprints.length > 0 && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <BookOpen className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Assigned Similar Blueprints</h3>
+                    <p className="text-sm text-foreground-muted">
+                      Top {results.similarBlueprints.length} closest matching blueprint{results.similarBlueprints.length !== 1 ? 's' : ''} found for this analysis
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {results.similarBlueprints.map((bp) => (
+                    <div
+                      key={bp.id}
+                      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-foreground text-sm">{bp.name}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          bp.score >= 0.8 ? 'bg-green-100 text-green-700' :
+                          bp.score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-orange-100 text-orange-700'
+                        }`}>
+                          {Math.round(bp.score * 100)}%
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-xs text-foreground-muted">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Type:</span>
+                          <span>{bp.type}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Category:</span>
+                          <span>{bp.category}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Provider:</span>
+                          <span className="uppercase">{bp.cloudProvider}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Complexity:</span>
+                          <span>{bp.complexity}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => window.location.href = `/library?blueprint=${bp.id}`}
+                        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View Blueprint
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -897,6 +1043,37 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
       {results.blueprintInsights && results.blueprintInsights.length > 0 && (
         <BlueprintInsights insights={results.blueprintInsights} />
       )}
+
+      {/* Full Size Image Modal */}
+      {showImageModal && imageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={imageUrl}
+              alt={results.fileName || 'Architecture diagram'}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Convert to Blueprint Modal */}
+      <ConvertToBlueprintModal
+        analysis={results}
+        isOpen={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        onSuccess={() => {
+          // Show success message or redirect
+          alert('Blueprint created successfully! You can find it in the Library section.');
+        }}
+      />
     </div>
   );
 }

@@ -46,15 +46,50 @@ export interface IBlueprintAnalysis extends Document {
     scalability: number;
     maintainability: number;
   };
-  recommendations: Array<{
-    component: string;
-    issue: string;
+  risks: Array<{
+    id?: string;
+    title?: string;
+    name?: string;
+    description: string;
+    severity?: string;
+    level?: string;
+    category?: string;
+    impact?: string;
+    recommendation?: string;
+    recommendations?: string[];
+    components?: string[];
+  }>;
+  complianceGaps: Array<{
+    id?: string;
+    framework: string;
+    requirement: string;
+    description: string;
+    severity?: string;
+    remediation: string;
+    components?: string[];
+  }>;
+  costIssues: Array<{
+    id?: string;
+    title: string;
+    description: string;
+    category?: string;
+    estimatedSavingsUSD?: number;
+    estimatedSavings?: number;
     recommendation: string;
-    priority: string;
-    impact: string;
-    effort: string;
+    components?: string[];
+    severity?: string;
+  }>;
+  recommendations: Array<{
+    component?: string;
+    issue: string;
+    recommendation?: string;
+    fix?: string;
+    priority?: string | number;
+    impact?: string;
+    effort?: string;
     sourceBlueprint?: string;
-    confidence: number;
+    confidence?: number;
+    category?: string;
   }>;
   insights: string[];
   bestPractices: string[];
@@ -163,27 +198,73 @@ const ScoresSchema = new Schema({
   maintainability: { type: Number, required: true, min: 0, max: 100 }
 }, { _id: false });
 
-const RecommendationSchema = new Schema({
-  component: { type: String, required: true },
-  issue: { type: String, required: true },
-  recommendation: { type: String, required: true },
-  priority: { 
+const RiskSchema = new Schema({
+  id: { type: String },
+  title: { type: String },
+  name: { type: String },
+  description: { type: String, required: true },
+  severity: { 
     type: String, 
-    required: true,
-    enum: ['high', 'medium', 'low']
+    enum: ['critical', 'high', 'medium', 'low']
+  },
+  level: { 
+    type: String, 
+    enum: ['critical', 'high', 'medium', 'low']
+  },
+  category: { type: String },
+  impact: { type: String },
+  recommendation: { type: String },
+  recommendations: [{ type: String }],
+  components: [{ type: String }]
+}, { _id: false });
+
+const ComplianceGapSchema = new Schema({
+  id: { type: String },
+  framework: { type: String, required: true },
+  requirement: { type: String, required: true },
+  description: { type: String, required: true },
+  severity: { 
+    type: String, 
+    enum: ['critical', 'high', 'medium', 'low']
+  },
+  remediation: { type: String, required: true },
+  components: [{ type: String }]
+}, { _id: false });
+
+const CostIssueSchema = new Schema({
+  id: { type: String },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String },
+  estimatedSavingsUSD: { type: Number },
+  estimatedSavings: { type: Number },
+  recommendation: { type: String, required: true },
+  components: [{ type: String }],
+  severity: { 
+    type: String, 
+    enum: ['critical', 'high', 'medium', 'low']
+  }
+}, { _id: false });
+
+const RecommendationSchema = new Schema({
+  component: { type: String },
+  issue: { type: String, required: true },
+  recommendation: { type: String },
+  fix: { type: String },
+  priority: { 
+    type: Schema.Types.Mixed, // Can be string or number
   },
   impact: { 
     type: String, 
-    required: true,
     enum: ['high', 'medium', 'low']
   },
   effort: { 
     type: String, 
-    required: true,
     enum: ['high', 'medium', 'low']
   },
   sourceBlueprint: { type: String },
-  confidence: { type: Number, required: true, min: 0, max: 1 }
+  confidence: { type: Number, min: 0, max: 1 },
+  category: { type: String }
 }, { _id: false });
 
 const BlueprintAnalysisSchema = new Schema<IBlueprintAnalysis>({
@@ -195,6 +276,9 @@ const BlueprintAnalysisSchema = new Schema<IBlueprintAnalysis>({
   technologyStack: [{ type: String }],
   componentComplexity: ComponentComplexitySchema,
   scores: ScoresSchema,
+  risks: [RiskSchema],
+  complianceGaps: [ComplianceGapSchema],
+  costIssues: [CostIssueSchema],
   recommendations: [RecommendationSchema],
   insights: [{ type: String }],
   bestPractices: [{ type: String }],

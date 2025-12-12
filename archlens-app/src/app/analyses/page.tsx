@@ -118,7 +118,38 @@ export default function AnalysesPage() {
       
       const analysisData = await response.json();
       console.log('Analysis data received:', analysisData);
+      console.log('Similar blueprints in response:', analysisData.similarBlueprints);
       
+      // Convert similarBlueprints from nested database format to flat UI format
+      const similarBlueprints = (analysisData.similarBlueprints || []).map((bp: any) => {
+        // Handle both nested format (from database) and flat format (from API)
+        if (bp.blueprint) {
+          // Nested format: { id, score, blueprint: { id, name, ... } }
+          return {
+            id: bp.blueprint.id || bp.id,
+            name: bp.blueprint.name || '',
+            type: bp.blueprint.type || '',
+            category: bp.blueprint.category || '',
+            cloudProvider: bp.blueprint.cloudProvider || '',
+            complexity: bp.blueprint.complexity || '',
+            tags: bp.blueprint.tags || [],
+            score: bp.score || 0
+          };
+        } else {
+          // Flat format: { id, name, type, ..., score }
+          return {
+            id: bp.id || '',
+            name: bp.name || '',
+            type: bp.type || '',
+            category: bp.category || '',
+            cloudProvider: bp.cloudProvider || '',
+            complexity: bp.complexity || '',
+            tags: bp.tags || [],
+            score: bp.score || 0
+          };
+        }
+      });
+
       // Convert the analysis data to ArchitectureAnalysis format
       const architectureAnalysis: ArchitectureAnalysis = {
         id: analysisData._id,
@@ -146,8 +177,13 @@ export default function AnalysesPage() {
         architectureDescription: analysisData.architectureDescription || '',
         processingTime: analysisData.processingTime || 0,
         llmProvider: analysisData.llmProvider || 'unknown',
-        llmModel: analysisData.llmModel || 'unknown'
+        llmModel: analysisData.llmModel || 'unknown',
+        similarBlueprints: similarBlueprints,
+        blueprintInsights: analysisData.blueprintInsights || []
       };
+      
+      console.log('Converted similarBlueprints:', similarBlueprints);
+      console.log('Final architectureAnalysis.similarBlueprints:', architectureAnalysis.similarBlueprints);
       
       setAnalysisResults(architectureAnalysis);
       setViewMode('analysis');

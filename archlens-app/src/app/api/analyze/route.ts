@@ -940,10 +940,68 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     console.log('costEfficiencyScore:', parsed.costEfficiencyScore, 'type:', typeof parsed.costEfficiencyScore);
     console.log('complianceScore:', parsed.complianceScore, 'type:', typeof parsed.complianceScore);
 
+    // Find and assign the closest 3 blueprints for the analysis BEFORE creating the analysis object
+    let similarBlueprints: Array<{
+      id: string;
+      score: number;
+      blueprint: {
+        id: string;
+        name: string;
+        type: string;
+        category: string;
+        cloudProvider: string;
+        complexity: string;
+        tags: string[];
+      };
+    }> = [];
+    try {
+      const similarityService = getSimilarityService();
+      const summary = parsed.summary || extractedData.summary || '';
+      const similarityResult = await similarityService.findSimilarBlueprintsForAnalysis({
+        components: finalComponents,
+        connections: finalConnections,
+        description: summary,
+        metadata: {
+          architectureType: parsed.architectureDescription || extractedData.summary || '',
+          cloudProviders: extractedData.metadata?.cloudProviders || [],
+          estimatedComplexity: 'Unknown',
+          primaryPurpose: summary,
+          environmentType: environment || 'Unknown'
+        }
+      });
+
+      if (similarityResult.success && similarityResult.similarBlueprints) {
+        // Limit to top 3 closest blueprints and assign them
+        similarBlueprints = similarityResult.similarBlueprints.slice(0, 3);
+        console.log(`✅ Found and assigned ${similarBlueprints.length} closest blueprints to analysis`);
+        if (similarBlueprints.length > 0) {
+          console.log(`📌 Assigned blueprints: ${similarBlueprints.map(bp => `${bp.blueprint.name} (score: ${bp.score.toFixed(3)})`).join(', ')}`);
+        }
+      } else {
+        console.warn(`⚠️ No similar blueprints found: ${similarityResult.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to find similar blueprints:', error);
+      // Don't fail the analysis if similarity search fails
+    }
+
+    // Format similarBlueprints to match the ArchitectureAnalysis type structure
+    const formattedSimilarBlueprints = similarBlueprints.map(bp => ({
+      id: bp.blueprint.id,
+      name: bp.blueprint.name,
+      type: bp.blueprint.type,
+      category: bp.blueprint.category,
+      cloudProvider: bp.blueprint.cloudProvider,
+      complexity: bp.blueprint.complexity,
+      tags: bp.blueprint.tags || [],
+      score: bp.score
+    }));
+
     // Original file data is already stored above (originalFileData variable)
     // No need to read the file again - we already have it
 
     // Create analysis object with enhanced data from both stages
+    // Include assigned blueprints in the analysis object
     const analysis: ArchitectureAnalysis = {
       id: `analysis-${Date.now()}`,
       timestamp: new Date(),
@@ -980,6 +1038,8 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       processingTime: Math.round((Date.now() - startTime) / 1000 * 100) / 100, // Convert to seconds with 2 decimal places
       llmProvider: llmClient.getConfig().provider,
       llmModel: llmClient.getConfig().model || 'unknown',
+      // Assigned closest 3 blueprints
+      similarBlueprints: formattedSimilarBlueprints,
       // Image optimization metadata (if applicable)
       ...(optimizationInfo && {
         imageOptimization: optimizationInfo
@@ -992,8 +1052,9 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     console.log('securityScore:', analysis.securityScore, 'type:', typeof analysis.securityScore);
     console.log('costEfficiencyScore:', analysis.costEfficiencyScore, 'type:', typeof analysis.costEfficiencyScore);
     console.log('complianceScore:', analysis.complianceScore, 'type:', typeof analysis.complianceScore);
+    console.log(`📌 Assigned ${formattedSimilarBlueprints.length} blueprints to analysis before save`);
 
-    // Save to database
+    // Save to database (with assigned blueprints)
     const savedAnalysis = await saveAnalysis(analysis);
 
     // Store architecture analysis embedding in vector store for future similarity searches
@@ -1053,114 +1114,35 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
       // Don't fail the analysis if embedding storage fails
     }
 
-    // Find similar blueprints for the analysis
-    let similarBlueprints: Array<{
-      id: string;
-      score: number;
-      blueprint: {
-        id: string;
-        name: string;
-        type: string;
-        category: string;
-        cloudProvider: string;
-        complexity: string;
-        tags: string[];
-      };
-    }> = [];
-    try {
-      const similarityService = getSimilarityService();
-      const similarityResult = await similarityService.findSimilarBlueprintsForAnalysis({
-        components: finalComponents,
-        connections: finalConnections,
-        description: analysis.summary,
-        metadata: {
-          architectureType: analysis.architectureDescription,
-          cloudProviders: analysis.metadata?.cloudProviders || [],
-          estimatedComplexity: 'Unknown',
-          primaryPurpose: analysis.summary,
-          environmentType: environment || 'Unknown'
-        }
-      });
+    // Note: Similar blueprints are already found and assigned above before creating the analysis object
 
-      if (similarityResult.success && similarityResult.similarBlueprints) {
-        similarBlueprints = similarityResult.similarBlueprints;
-        console.log(`✅ Found ${similarBlueprints.length} similar blueprints for analysis`);
-      } else {
-        console.warn(`⚠️ No similar blueprints found: ${similarityResult.error}`);
-      }
-    } catch (error) {
-      console.error('Failed to find similar blueprints:', error);
-      // Don't fail the analysis if similarity search fails
-    }
-
-    // Add blueprint insights to the analysis
+    // Add blueprint insights to the analysis (using the already found similarBlueprints)
     let blueprintInsights: any[] = [];
     try {
-      if (similarBlueprints.length > 0) {
+      if (formattedSimilarBlueprints.length > 0) {
         console.log('🔍 Generating blueprint insights for architecture analysis');
         
-        // Generate insights from similar blueprints
-        blueprintInsights = await Promise.all(
-          similarBlueprints.slice(0, 3).map(async (similarBlueprint) => {
-            try {
-              // Get blueprint analysis if available
-              const blueprintAnalysis = await blueprintAnalysisService.findSimilarBlueprints(
-                {
-                  blueprintId: similarBlueprint.blueprint.id,
-                  analysisId: `temp_${Date.now()}`,
-                  components: [],
-                  componentRelationships: [],
-                  architecturePatterns: [],
-                  technologyStack: [],
-                  componentComplexity: {
-                    totalComponents: 0,
-                    criticalComponents: 0,
-                    highCouplingComponents: 0,
-                    scalabilityBottlenecks: [],
-                    integrationPoints: 0
-                  },
-                  scores: {
-                    security: 0,
-                    resiliency: 0,
-                    costEfficiency: 0,
-                    compliance: 0,
-                    scalability: 0,
-                    maintainability: 0
-                  },
-                  recommendations: [],
-                  insights: [],
-                  bestPractices: [],
-                  industryStandards: [],
-                  createdAt: new Date(),
-                  updatedAt: new Date()
-                },
-                0.5 // Lower threshold for insights
-              );
-              
-              return {
-                blueprintId: similarBlueprint.blueprint.id,
-                blueprintName: similarBlueprint.blueprint.name,
-                similarityScore: similarBlueprint.score,
-                insights: [
-                  `Similar architecture pattern: ${similarBlueprint.blueprint.type}`,
-                  `Proven technology stack: ${similarBlueprint.blueprint.cloudProvider}`,
-                  `Complexity level: ${similarBlueprint.blueprint.complexity}`
-                ],
-                recommendations: [
-                  `Consider ${similarBlueprint.blueprint.category} patterns from this blueprint`,
-                  `Technology stack alignment: ${similarBlueprint.blueprint.cloudProvider}`,
-                  `Architecture complexity: ${similarBlueprint.blueprint.complexity}`
-                ]
-              };
-            } catch (error) {
-              console.error('Failed to generate blueprint insights:', error);
-              return null;
-            }
-          })
-        );
+        // Generate insights directly from the similar blueprints we already found
+        blueprintInsights = formattedSimilarBlueprints.slice(0, 3).map((similarBlueprint) => {
+          return {
+            blueprintId: similarBlueprint.id,
+            blueprintName: similarBlueprint.name,
+            similarityScore: similarBlueprint.score,
+            insights: [
+              `Similar architecture pattern: ${similarBlueprint.type}`,
+              `Proven technology stack: ${similarBlueprint.cloudProvider}`,
+              `Complexity level: ${similarBlueprint.complexity}`,
+              `Category: ${similarBlueprint.category}`
+            ],
+            recommendations: [
+              `Consider ${similarBlueprint.category} patterns from this blueprint`,
+              `Technology stack alignment: ${similarBlueprint.cloudProvider}`,
+              `Architecture complexity: ${similarBlueprint.complexity}`,
+              `Review this blueprint for ${similarBlueprint.type} architecture best practices`
+            ]
+          };
+        });
         
-        // Filter out null results
-        blueprintInsights = blueprintInsights.filter(insight => insight !== null);
         console.log(`✅ Generated ${blueprintInsights.length} blueprint insights`);
       }
     } catch (error) {
@@ -1171,7 +1153,7 @@ Return ONLY valid JSON with detailed analysis including risks, compliance gaps, 
     const finalAnalysis = {
       ...analysis,
       _id: savedAnalysis._id,
-      similarBlueprints,
+      // similarBlueprints are already included in analysis object
       blueprintInsights
     };
 

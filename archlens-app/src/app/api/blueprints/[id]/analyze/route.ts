@@ -1,85 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/services/analysisService';
-import { blueprintAnalysisService } from '@/services/blueprintAnalysisService';
-import { getSimilarityService } from '@/services/similarityService';
 import Blueprint from '@/models/Blueprint';
 import BlueprintAnalysis from '@/models/BlueprintAnalysis';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    await connectToDatabase();
-    
-    const resolvedParams = await params;
-    const blueprintId = resolvedParams.id;
-    
-    if (!blueprintId) {
-      return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
-    }
-    
-    // Get blueprint from database
-    const blueprint = await Blueprint.findOne({ id: blueprintId }).lean();
-    if (!blueprint) {
-      return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
-    }
-    
-    console.log(`🔍 Starting blueprint analysis for: ${blueprint.name}`);
-    
-    // Check if analysis already exists
-    const existingAnalysis = await BlueprintAnalysis.findOne({ blueprintId }).lean();
-    if (existingAnalysis) {
-      console.log(`📋 Analysis already exists for blueprint: ${blueprintId}`);
-      return NextResponse.json({
-        success: true,
-        analysis: existingAnalysis,
-        message: 'Analysis already exists'
-      });
-    }
-    
-    // Perform blueprint analysis
-    const analysis = await blueprintAnalysisService.analyzeBlueprint(blueprint);
-    
-    // Save analysis to database (use upsert to handle race conditions)
-    const savedAnalysis = await BlueprintAnalysis.findOneAndUpdate(
-      { blueprintId },
-      analysis,
-      { upsert: true, new: true }
-    );
-    console.log(`✅ Blueprint analysis saved: ${savedAnalysis.analysisId}`);
-    
-    // Find similar blueprints
-    const similarBlueprints = await blueprintAnalysisService.findSimilarBlueprints(analysis);
-    console.log(`🔍 Found ${similarBlueprints.length} similar blueprints`);
-    
-    // Generate recommendations
-    const recommendations = await blueprintAnalysisService.generateComponentRecommendations(
-      analysis, 
-      similarBlueprints
-    );
-    console.log(`💡 Generated ${recommendations.length} recommendations`);
-    
-    return NextResponse.json({
-      success: true,
-      analysis: savedAnalysis,
-      similarBlueprints,
-      recommendations,
-      message: 'Blueprint analysis completed successfully'
-    });
-    
-  } catch (error) {
-    console.error('❌ Blueprint analysis failed:', error);
-    return NextResponse.json(
-      { 
-        error: 'Blueprint analysis failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
-
+/**
+ * Get blueprint analysis
+ * GET /api/blueprints/[id]/analyze
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -93,25 +20,41 @@ export async function GET(
     if (!blueprintId) {
       return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
     }
-    
-    // Get analysis from database
-    const analysis = await BlueprintAnalysis.findOne({ blueprintId }).lean();
-    if (!analysis) {
-      return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
+
+    // Fetch blueprint
+    const blueprint = await Blueprint.findOne({ id: blueprintId }).lean();
+    if (!blueprint) {
+      return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
     }
+
+    // Fetch blueprint analysis
+    const analysis = await BlueprintAnalysis.findOne({ blueprintId }).lean();
     
-    // Get similar blueprints
-    const similarityService = getSimilarityService();
-    const similarBlueprints = await similarityService.findSimilarBlueprintsForAnalysis(analysis);
-    
+    if (!analysis) {
+      console.log(`⚠️ No analysis found for blueprint ${blueprintId}`);
+      return NextResponse.json({ 
+        success: false,
+        message: 'No analysis available for this blueprint',
+        analysis: null
+      });
+    }
+
+    console.log(`✅ Found analysis for blueprint ${blueprintId}:`, {
+      analysisId: analysis.analysisId,
+      components: analysis.components?.length || 0,
+      risks: analysis.risks?.length || 0,
+      complianceGaps: analysis.complianceGaps?.length || 0,
+      costIssues: analysis.costIssues?.length || 0,
+      recommendations: analysis.recommendations?.length || 0
+    });
+
     return NextResponse.json({
       success: true,
-      analysis,
-      similarBlueprints
+      analysis: analysis
     });
-    
+
   } catch (error) {
-    console.error('❌ Failed to fetch blueprint analysis:', error);
+    console.error('Error fetching blueprint analysis:', error);
     return NextResponse.json(
       { 
         error: 'Failed to fetch blueprint analysis',
@@ -121,3 +64,121 @@ export async function GET(
     );
   }
 }
+
+/**
+ * Run analysis for a blueprint
+ * POST /api/blueprints/[id]/analyze
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectToDatabase();
+    
+    const resolvedParams = await params;
+    const blueprintId = resolvedParams.id;
+    
+    if (!blueprintId) {
+      return NextResponse.json({ error: 'Blueprint ID is required' }, { status: 400 });
+    }
+
+    // Fetch blueprint
+    const blueprint = await Blueprint.findOne({ id: blueprintId }).lean();
+    if (!blueprint) {
+      return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
+    }
+
+    // Check if blueprint has the necessary data for analysis
+    if (!blueprint.originalFile || !blueprint.originalFile.data) {
+      return NextResponse.json(
+        { error: 'Blueprint file data is required for analysis' },
+        { status: 400 }
+      );
+    }
+
+    // Import the blueprint analysis service
+    const { blueprintAnalysisService } = await import('@/services/blueprintAnalysisService');
+    
+    // Convert blueprint to Blueprint type for service
+    const blueprintForAnalysis: any = {
+      id: blueprint.id,
+      name: blueprint.name,
+      description: blueprint.description,
+      type: blueprint.type,
+      category: blueprint.category,
+      complexity: blueprint.complexity,
+      cloudProviders: blueprint.cloudProviders || [],
+      tags: blueprint.tags || []
+    };
+    
+    // Generate analysis using the service
+    const analysisResult = await blueprintAnalysisService.analyzeBlueprint(
+      blueprintForAnalysis,
+      (blueprint.metadata as any)?.extractedComponents || [],
+      (blueprint.metadata as any)?.extractedConnections || []
+    );
+
+    if (!analysisResult) {
+      return NextResponse.json(
+        { error: 'Failed to generate blueprint analysis' },
+        { status: 500 }
+      );
+    }
+
+    // Save analysis to BlueprintAnalysis collection
+    const savedAnalysis = await BlueprintAnalysis.findOneAndUpdate(
+      { blueprintId: blueprintId },
+      {
+        blueprintId: blueprintId,
+        analysisId: analysisResult.analysisId,
+        components: analysisResult.components || [],
+        componentRelationships: analysisResult.componentRelationships || [],
+        architecturePatterns: analysisResult.architecturePatterns || [],
+        technologyStack: analysisResult.technologyStack || [],
+        componentComplexity: analysisResult.componentComplexity || {},
+        scores: analysisResult.scores || {},
+        risks: analysisResult.risks || [],
+        complianceGaps: analysisResult.complianceGaps || [],
+        costIssues: analysisResult.costIssues || [],
+        recommendations: analysisResult.recommendations || [],
+        insights: analysisResult.insights || [],
+        bestPractices: analysisResult.bestPractices || [],
+        industryStandards: analysisResult.industryStandards || [],
+        updatedAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    // Update blueprint with analysis metadata
+    await Blueprint.findOneAndUpdate(
+      { id: blueprintId },
+      {
+        hasAnalysis: true,
+        lastAnalysisId: analysisResult.analysisId,
+        lastAnalysisDate: new Date(),
+        analysisScores: analysisResult.scores,
+        componentCount: analysisResult.components?.length || 0,
+        architecturePatterns: analysisResult.architecturePatterns || [],
+        technologyStack: analysisResult.technologyStack || []
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      analysis: savedAnalysis,
+      message: 'Blueprint analysis completed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error running blueprint analysis:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to run blueprint analysis',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+

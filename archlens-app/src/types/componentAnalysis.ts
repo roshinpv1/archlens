@@ -52,6 +52,39 @@ export interface BlueprintComponentAnalysis {
     scalability: number;
     maintainability: number;
   };
+  risks?: Array<{
+    id?: string;
+    title?: string;
+    name?: string;
+    description: string;
+    severity?: string;
+    level?: string;
+    category?: string;
+    impact?: string;
+    recommendation?: string;
+    recommendations?: string[];
+    components?: string[];
+  }>;
+  complianceGaps?: Array<{
+    id?: string;
+    framework: string;
+    requirement: string;
+    description: string;
+    severity?: string;
+    remediation: string;
+    components?: string[];
+  }>;
+  costIssues?: Array<{
+    id?: string;
+    title: string;
+    description: string;
+    category?: string;
+    estimatedSavingsUSD?: number;
+    estimatedSavings?: number;
+    recommendation: string;
+    components?: string[];
+    severity?: string;
+  }>;
   recommendations: ComponentRecommendation[];
   insights: string[];
   bestPractices: string[];

@@ -6,6 +6,7 @@
 import { createLLMClientFromEnv } from '../lib/llm-factory';
 import { getEmbeddingService } from './embeddingService';
 import { getSimilarityService } from './similarityService';
+import { getChecklistItems } from './checklistService';
 import { 
   ComponentAnalysis, 
   BlueprintComponentAnalysis, 
@@ -34,8 +35,14 @@ export class BlueprintAnalysisService {
         throw new Error('LLM Client is not initialized');
       }
       
+      // Fetch active checklist items for evaluation criteria
+      console.log('Fetching active checklist items for blueprint evaluation...');
+      const activeChecklistItems = await getChecklistItems();
+      const enabledItems = activeChecklistItems.filter(item => item.enabled);
+      console.log(`Found ${enabledItems.length} active checklist items across ${new Set(enabledItems.map(item => item.category)).size} categories`);
+      
       // Generate analysis prompt with component focus (include extracted data if available)
-      const analysisPrompt = this.generateBlueprintAnalysisPrompt(blueprint, extractedComponents, extractedConnections);
+      const analysisPrompt = this.generateBlueprintAnalysisPrompt(blueprint, extractedComponents, extractedConnections, enabledItems);
       
       // Call LLM for analysis
       const analysisResult = await this.llmClient.callLLM(analysisPrompt, {
@@ -263,7 +270,8 @@ Scalability ${analysis.scores.scalability}, Maintainability ${analysis.scores.ma
   private generateBlueprintAnalysisPrompt(
     blueprint: Blueprint, 
     extractedComponents?: any[], 
-    extractedConnections?: any[]
+    extractedConnections?: any[],
+    checklistItems?: any[]
   ): string {
     // Format extracted components if available
     const extractedComponentsText = extractedComponents && extractedComponents.length > 0
@@ -331,6 +339,32 @@ ${extractedConnectionsText}
 - Compliance: Component adherence to standards
 - Scalability: Component horizontal/vertical scaling capability
 - Maintainability: Component complexity and modularity
+
+${checklistItems && checklistItems.length > 0 ? `
+**EVALUATION CRITERIA - Active Checklist Items:**
+${checklistItems.map((item: any) => `
+Category: ${item.category}
+Item: ${item.item}
+Description: ${item.description}
+Recommended Action: ${item.recommendedAction}
+Owner: ${item.owner}
+Priority: ${item.priority}
+`).join('\n')}
+
+**CHECKLIST EVALUATION INSTRUCTIONS:**
+1. Evaluate the blueprint architecture against each active checklist item above
+2. Identify which checklist items are properly implemented, partially implemented, or missing
+3. Generate specific risks, compliance gaps, cost issues, and recommendations based on the checklist evaluation
+4. For risks: Identify security, reliability, performance, cost, and compliance risks based on missing checklist items
+5. For compliance gaps: Map missing checklist items to compliance frameworks (SOC2, ISO27001, PCI-DSS, HIPAA, GDPR, CIS)
+6. For cost issues: Identify cost optimization opportunities based on checklist items
+7. For recommendations: Use the "issue" field to describe the checklist item that's missing/insufficient
+8. For recommendations: Use the "recommendation" field to provide the specific action from the checklist item
+9. Map recommendations to checklist categories (security, reliability, performance, cost, compliance)
+10. Provide realistic scores (0-100) based on compliance with the checklist items
+11. Focus on high-priority items first, then medium-priority items
+12. Count how many checklist items are fully implemented vs missing to calculate scores
+` : ''}
 
 **IMPORTANT: You MUST respond with ONLY valid JSON. Do not include any explanatory text, markdown formatting, or additional commentary. Return ONLY the JSON object as specified below.**
 
@@ -416,6 +450,42 @@ OTHER VALUES:
     "scalability": 75,
     "maintainability": 80
   },
+  "risks": [
+    {
+      "id": "risk1",
+      "title": "Security Risk",
+      "description": "Detailed risk description",
+      "level": "high|medium|low",
+      "severity": "high|medium|low",
+      "category": "security|reliability|performance|cost|compliance",
+      "impact": "Detailed impact description",
+      "recommendations": ["Recommendation 1", "Recommendation 2"],
+      "components": ["component1", "component2"]
+    }
+  ],
+  "complianceGaps": [
+    {
+      "id": "gap1",
+      "framework": "SOC2|ISO27001|PCI-DSS|HIPAA|GDPR|CIS",
+      "requirement": "Specific compliance requirement",
+      "description": "Detailed gap description",
+      "severity": "high|medium|low",
+      "remediation": "Specific steps to fix this compliance gap",
+      "components": ["component1", "component2"]
+    }
+  ],
+  "costIssues": [
+    {
+      "id": "cost1",
+      "title": "Cost Issue",
+      "description": "Detailed cost issue description",
+      "category": "overprovisioning|unused_resources|inefficient_services",
+      "estimatedSavingsUSD": 1000,
+      "recommendation": "How to optimize costs",
+      "components": ["component1", "component2"],
+      "severity": "high|medium|low"
+    }
+  ],
   "recommendations": [
     {
       "component": "component_name",
@@ -424,7 +494,8 @@ OTHER VALUES:
       "priority": "high|medium|low",
       "impact": "high|medium|low",
       "effort": "high|medium|low",
-      "confidence": 0.85
+      "confidence": 0.85,
+      "category": "security|reliability|performance|cost|compliance"
     }
   ],
   "insights": [
@@ -573,6 +644,9 @@ Find blueprints that share similar component architectures and technology patter
           scalability: 0,
           maintainability: 0
         },
+        risks: parsed.risks || [],
+        complianceGaps: parsed.complianceGaps || [],
+        costIssues: parsed.costIssues || [],
         recommendations: parsed.recommendations || [],
         insights: parsed.insights || [],
         bestPractices: parsed.bestPractices || [],

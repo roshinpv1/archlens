@@ -66,11 +66,43 @@ export default function Home() {
   };
 
   const handleViewAnalysis = (analysis: IAnalysis) => {
+    // Convert similarBlueprints from nested database format to flat UI format
+    const similarBlueprints = ((analysis as any).similarBlueprints || []).map((bp: any) => {
+      // Handle both nested format (from database) and flat format (from API)
+      if (bp.blueprint) {
+        // Nested format: { id, score, blueprint: { id, name, ... } }
+        return {
+          id: bp.blueprint.id || bp.id,
+          name: bp.blueprint.name || '',
+          type: bp.blueprint.type || '',
+          category: bp.blueprint.category || '',
+          cloudProvider: bp.blueprint.cloudProvider || '',
+          complexity: bp.blueprint.complexity || '',
+          tags: bp.blueprint.tags || [],
+          score: bp.score || 0
+        };
+      } else {
+        // Flat format: { id, name, type, ..., score }
+        return {
+          id: bp.id || '',
+          name: bp.name || '',
+          type: bp.type || '',
+          category: bp.category || '',
+          cloudProvider: bp.cloudProvider || '',
+          complexity: bp.complexity || '',
+          tags: bp.tags || [],
+          score: bp.score || 0
+        };
+      }
+    });
+
     // Convert IAnalysis to ArchitectureAnalysis format
     const architectureAnalysis = {
       ...analysis,
       id: analysis._id,
-      timestamp: new Date(analysis.timestamp)
+      timestamp: new Date(analysis.timestamp),
+      similarBlueprints: similarBlueprints,
+      blueprintInsights: (analysis as any).blueprintInsights || []
     } as unknown as ArchitectureAnalysis;
     
     setAnalysisResults(architectureAnalysis);

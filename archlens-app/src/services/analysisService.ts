@@ -45,7 +45,7 @@ export async function saveAnalysis(analysis: ArchitectureAnalysis): Promise<IAna
     console.log('connections type:', typeof analysis.connections, 'isArray:', Array.isArray(analysis.connections), 'length:', analysis.connections?.length);
     
     // Try direct object creation without Mongoose constructor
-    const documentData = {
+    const documentData: any = {
       timestamp: analysis.timestamp || new Date(),
       fileName: analysis.fileName,
       fileType: analysis.fileType,
@@ -72,8 +72,31 @@ export async function saveAnalysis(analysis: ArchitectureAnalysis): Promise<IAna
       llmProvider: analysis.llmProvider,
       llmModel: analysis.llmModel,
       tags: [],
-      status: 'completed'
+      status: 'completed',
+      // Save assigned similar blueprints (closest 3)
+      // Convert from ArchitectureAnalysis format (flat) to database format (nested blueprint object)
+      similarBlueprints: (analysis.similarBlueprints || []).map(bp => {
+        // Ensure all required fields are strings/arrays and handle missing values
+        return {
+          id: String(bp.id || ''),
+          score: typeof bp.score === 'number' ? bp.score : 0,
+          blueprint: {
+            id: String(bp.id || ''),
+            name: String(bp.name || ''),
+            type: String(bp.type || ''),
+            category: String(bp.category || ''),
+            cloudProvider: String(bp.cloudProvider || ''),
+            complexity: String(bp.complexity || ''),
+            tags: Array.isArray(bp.tags) ? bp.tags.map(t => String(t)) : []
+          }
+        };
+      })
     };
+    
+    // Save custom id field if it exists (for querying by custom ID)
+    if (analysis.id) {
+      documentData.id = analysis.id;
+    }
     
            console.log('🔍 Final document data before save:');
            console.log('documentData.components type:', typeof documentData.components, 'isArray:', Array.isArray(documentData.components));
@@ -82,6 +105,7 @@ export async function saveAnalysis(analysis: ArchitectureAnalysis): Promise<IAna
            console.log('securityScore:', documentData.securityScore, 'type:', typeof documentData.securityScore);
            console.log('costEfficiencyScore:', documentData.costEfficiencyScore, 'type:', typeof documentData.costEfficiencyScore);
            console.log('complianceScore:', documentData.complianceScore, 'type:', typeof documentData.complianceScore);
+           console.log('🔍 Assigned blueprints being saved:', documentData.similarBlueprints?.length || 0, 'blueprints');
     
     // Use direct create() instead of new + save()
     const savedAnalysis = await Analysis.create(documentData);
@@ -105,8 +129,29 @@ export async function getAnalysisById(id: string): Promise<IAnalysis | null> {
   await connectToDatabase();
   
   try {
-    const analysis = await Analysis.findById(id);
-    return analysis;
+    // Use .lean() to get a plain JavaScript object instead of Mongoose document
+    // This ensures all nested arrays and objects are properly accessible
+    
+    // Handle both MongoDB ObjectId and custom string IDs
+    let analysis;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    
+    if (isObjectId) {
+      // Try MongoDB ObjectId first
+      analysis = await Analysis.findById(id).lean();
+    }
+    
+    // If not found or not an ObjectId, try custom string ID field
+    if (!analysis) {
+      analysis = await Analysis.findOne({ id: id }).lean();
+    }
+    
+    // If still not found and it's an ObjectId, try _id as string
+    if (!analysis && isObjectId) {
+      analysis = await Analysis.findOne({ _id: id }).lean();
+    }
+    
+    return analysis as IAnalysis | null;
   } catch (error) {
     console.error('Error fetching analysis:', error);
     throw new Error('Failed to fetch analysis from database');
