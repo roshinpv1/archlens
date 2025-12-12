@@ -1,0 +1,61 @@
+graph TB
+    subgraph Frontend["FRONTEND LAYER<br/>Next.js 15 + React"]
+        UI[User Interface]
+        Pages[Dashboard<br/>Analyses<br/>Library<br/>Config]
+    end
+    
+    subgraph API["API LAYER<br/>Next.js API Routes"]
+        API1[POST /api/analyze]
+        API2[GET /api/blueprints]
+        API3[GET /api/analysis]
+        API4[POST /api/checklist]
+    end
+    
+    subgraph Services["SERVICE LAYER<br/>Business Logic"]
+        Svc1[Analysis Service]
+        Svc2[Blueprint Service]
+        Svc3[Embedding Service]
+        Svc4[Similarity Service]
+        Svc5[Image Optimizer]
+    end
+    
+    subgraph Data["DATA LAYER<br/>Persistence"]
+        DB1[(MongoDB<br/>Metadata)]
+        DB2[(Vector Store<br/>Qdrant/FAISS)]
+    end
+    
+    subgraph External["EXTERNAL SERVICES<br/>Third-Party APIs"]
+        Ext1[LLM Providers<br/>OpenAI, Anthropic, etc.]
+        Ext2[Embedding Providers<br/>Local, OpenAI, etc.]
+    end
+    
+    UI --> Pages
+    Pages --> API1
+    Pages --> API2
+    Pages --> API3
+    Pages --> API4
+    
+    API1 --> Svc1
+    API2 --> Svc2
+    API3 --> Svc1
+    API4 --> Svc1
+    
+    Svc1 --> Svc3
+    Svc1 --> Svc5
+    Svc1 --> DB1
+    Svc1 --> Ext1
+    
+    Svc2 --> Svc3
+    Svc2 --> DB1
+    Svc2 --> Ext1
+    
+    Svc3 --> Ext2
+    Svc3 --> Svc4
+    Svc4 --> DB2
+    
+    style Frontend fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style API fill:#fff4e1,stroke:#e65100,stroke-width:3px
+    style Services fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    style Data fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    style External fill:#ffe0e0,stroke:#b71c1c,stroke-width:3px
+

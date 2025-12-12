@@ -1,0 +1,61 @@
+graph TB
+    subgraph Frontend["Frontend - Next.js 15"]
+        UI[React UI Components]
+        Pages[Pages: Dashboard, Analyses, Library, Config]
+    end
+    
+    subgraph API["API Layer - Next.js API Routes"]
+        AnalyzeAPI[api/analyze]
+        BlueprintAPI[api/blueprints]
+        AnalysisAPI[api/analysis]
+        ChecklistAPI[api/checklist]
+    end
+    
+    subgraph Services["Service Layer"]
+        AnalysisService[Analysis Service]
+        BlueprintService[Blueprint Service]
+        EmbeddingService[Embedding Service]
+        SimilarityService[Similarity Service]
+        ImageOptimizer[Image Optimizer]
+    end
+    
+    subgraph Data["Data Storage"]
+        MongoDB[(MongoDB<br/>Metadata & Results)]
+        VectorStore[(Vector Store<br/>Qdrant/FAISS)]
+    end
+    
+    subgraph External["External Services"]
+        LLMClient[LLM Providers<br/>OpenAI, Anthropic, Gemini, etc.]
+        EmbeddingClient[Embedding Providers<br/>Local, OpenAI, Custom]
+    end
+    
+    UI --> Pages
+    Pages --> AnalyzeAPI
+    Pages --> BlueprintAPI
+    Pages --> AnalysisAPI
+    Pages --> ChecklistAPI
+    
+    AnalyzeAPI --> AnalysisService
+    BlueprintAPI --> BlueprintService
+    AnalysisAPI --> AnalysisService
+    ChecklistAPI --> AnalysisService
+    
+    AnalysisService --> LLMClient
+    AnalysisService --> EmbeddingService
+    AnalysisService --> ImageOptimizer
+    AnalysisService --> MongoDB
+    
+    BlueprintService --> LLMClient
+    BlueprintService --> EmbeddingService
+    BlueprintService --> MongoDB
+    
+    EmbeddingService --> EmbeddingClient
+    EmbeddingService --> SimilarityService
+    SimilarityService --> VectorStore
+    
+    style Frontend fill:#e1f5ff
+    style API fill:#fff4e1
+    style Services fill:#e8f5e9
+    style Data fill:#f3e5f5
+    style External fill:#ffe0e0
+

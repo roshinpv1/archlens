@@ -1,0 +1,48 @@
+graph TB
+    subgraph "Frontend"
+        UI[Next.js React UI]
+    end
+    
+    subgraph "API Layer"
+        API[Next.js API Routes]
+    end
+    
+    subgraph "Services"
+        Analysis[Analysis Service]
+        Blueprint[Blueprint Service]
+        Embedding[Embedding Service]
+        Similarity[Similarity Service]
+    end
+    
+    subgraph "Data Storage"
+        MongoDB[(MongoDB<br/>Metadata & Results)]
+        VectorDB[(Vector Store<br/>Qdrant/FAISS)]
+    end
+    
+    subgraph "External"
+        LLM[LLM Providers<br/>OpenAI, Anthropic, etc.]
+        Embed[Embedding Providers]
+    end
+    
+    UI --> API
+    API --> Analysis
+    API --> Blueprint
+    Analysis --> Embedding
+    Blueprint --> Embedding
+    Embedding --> Similarity
+    Analysis --> LLM
+    Blueprint --> LLM
+    Embedding --> Embed
+    Similarity --> VectorDB
+    Analysis --> MongoDB
+    Blueprint --> MongoDB
+    
+    style UI fill:#e1f5ff
+    style API fill:#fff4e1
+    style Analysis fill:#e8f5e9
+    style Blueprint fill:#e8f5e9
+    style MongoDB fill:#f3e5f5
+    style VectorDB fill:#f3e5f5
+    style LLM fill:#ffe0e0
+    style Embed fill:#ffe0e0
+

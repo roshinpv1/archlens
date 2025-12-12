@@ -134,13 +134,28 @@ CLOUD PROVIDER DETECTION RULES - FOLLOW THESE STRICTLY:
      * Set detectionConfidence to "low"
    - When in doubt, ALWAYS default to "on-premises" - NEVER assume a public cloud provider
 
-3. PROVIDER TYPE DETECTION:
-   - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named)
-   - "private-cloud": Private cloud infrastructure (OpenStack, VMware Cloud, etc. - only if explicitly named)
-   - "on-premises": Traditional on-premises infrastructure, self-hosted, or when no cloud provider is identified
-   - If no clear indication exists, default to "on-premises"
+3. DEPLOYMENT LOCATION WITHIN BOUNDARIES:
+   - CRITICAL: Check if the component is explicitly placed within a cloud provider boundary/block:
+     * AWS: Within VPC, AWS region boundary, AWS account boundary, or explicitly labeled AWS service
+     * Azure: Within Virtual Network, Azure region boundary, Azure subscription boundary, or explicitly labeled Azure service
+     * GCP: Within VPC, GCP project boundary, GCP region boundary, or explicitly labeled GCP service
+     * Kubernetes: Within cluster boundary, namespace, or explicitly labeled K8s resource
+   - If a component is NOT explicitly within any cloud provider boundary/block:
+     * DEFAULT to on-premises/private cloud deployment
+     * Set cloudProvider: "on-premises"
+     * Set deployedEnvironment: "ONPREM"
+     * Set providerType: "on-premises" or "private-cloud"
+     * Set detectionConfidence: "low"
+   - Components outside cloud boundaries (standalone, unlabeled, or in generic infrastructure areas) are ON-PREMISES by default
+   - Only assign a public cloud provider if the component is EXPLICITLY within that cloud's boundary or has explicit cloud service labels
 
-4. DETECTION PRIORITY ORDER:
+4. PROVIDER TYPE DETECTION:
+   - "public-cloud": AWS, Azure, GCP, or other public cloud services (only if explicitly named AND within cloud boundary)
+   - "private-cloud": Private cloud infrastructure (OpenStack, VMware Cloud, etc. - only if explicitly named)
+   - "on-premises": Traditional on-premises infrastructure, self-hosted, components outside cloud boundaries, or when no cloud provider is identified
+   - If no clear indication exists OR component is not within a cloud boundary, default to "on-premises"
+
+5. DETECTION PRIORITY ORDER:
    a) Component label/text with explicit provider/service name (HIGHEST PRIORITY)
    b) Resource type or configuration indicating provider
    c) Context clues from surrounding components
@@ -195,17 +210,18 @@ Hybrid & Multi-Cloud Patterns:
 - Patterns: hybrid, on-premises, private-cloud, multi-cloud, edge
 
 CRITICAL DETECTION RULES - FOLLOW IN ORDER:
-1. FIRST: Examine component LABELS and TEXT for explicit cloud provider/service names
-2. SECOND: Check for provider-specific naming conventions in text (e.g., "AWS S3", "Azure App Service")
-3. THIRD: Look for resource types or configuration patterns in text/code
-4. LAST RESORT: Only if no text/label exists, consider visual icons (with low confidence)
-5. DEFAULT: If no clear cloud provider is found in text/labels, mark as "on-premises"
-6. NEVER assume a cloud provider based solely on generic shapes or icons
-7. For each component, explicitly state your confidence level:
-   - HIGH: Explicit provider name in label/text
-   - MEDIUM: Strong indicators in text (service names, resource types)
-   - LOW: Only visual indicators (use sparingly)
-   - DEFAULT: No indicators found → mark as "on-premises"
+1. FIRST: Check if component is explicitly within a cloud provider boundary/block (VPC, region, account, subscription, project)
+2. SECOND: Examine component LABELS and TEXT for explicit cloud provider/service names
+3. THIRD: Check for provider-specific naming conventions in text (e.g., "AWS S3", "Azure App Service")
+4. FOURTH: Look for resource types or configuration patterns in text/code
+5. LAST RESORT: Only if no text/label exists, consider visual icons (with low confidence)
+6. DEFAULT: If component is NOT within a cloud boundary OR no clear cloud provider is found → mark as "on-premises"
+7. NEVER assume a cloud provider based solely on generic shapes or icons
+8. For each component, explicitly state your confidence level:
+   - HIGH: Component is within explicit cloud boundary AND has explicit provider name in label/text
+   - MEDIUM: Strong indicators in text (service names, resource types) AND within cloud boundary
+   - LOW: Only visual indicators or ambiguous location (use sparingly)
+   - DEFAULT: Component outside cloud boundaries or no indicators found → mark as "on-premises"
 
 COMPONENT CLASSIFICATION RULES - STRICT EVIDENCE REQUIRED:
 
@@ -234,7 +250,17 @@ ONLY classify if label/text contains EXPLICIT provider/service names:
 - Generic terms: "Server", "Database", "Load Balancer", "API Gateway" (without provider name)
 - Generic icons: Server icon, database icon, network icon (without text labels)
 - Ambiguous terms: "Cloud", "Storage", "Compute" (without provider context)
-- If label is unclear or missing → deployedEnvironment: "ONPREM" or "UNKNOWN", cloudProvider: "on-premises", detectionConfidence: "low"
+- Components NOT within any cloud provider boundary/block (VPC, region, account, etc.)
+- If label is unclear or missing OR component is outside cloud boundaries → deployedEnvironment: "ONPREM", cloudProvider: "on-premises", providerType: "on-premises", detectionConfidence: "low"
+
+DEPLOYMENT LOCATION DEFAULT RULE:
+- If a component's deployment location is NOT explicitly specified within a cloud provider boundary/block:
+  * It is considered ON-PREMISES or PRIVATE CLOUD by default
+  * Set cloudProvider: "on-premises"
+  * Set deployedEnvironment: "ONPREM"
+  * Set providerType: "on-premises"
+  * Set detectionConfidence: "low"
+- Only components EXPLICITLY within cloud boundaries (AWS VPC, Azure VNet, GCP VPC, etc.) or with explicit cloud service labels should be assigned to public cloud providers
 
 TERRAFORM CATEGORY CLASSIFICATION:
 Each component MUST be classified into one of these standard Terraform categories:
