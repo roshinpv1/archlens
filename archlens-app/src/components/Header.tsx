@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Cloud, Activity, CheckCircle, AlertCircle, XCircle, Settings, Bell, Home, BarChart3, Menu, X, Library } from "lucide-react";
+import { Activity, CheckCircle, AlertCircle, XCircle, Settings, Bell, Home, BarChart3, Menu, X, Library } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -66,12 +66,15 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Brand Section */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-active text-primary-foreground shadow-md">
-              <Cloud className="w-7 h-7" />
+            <div className="flex items-center justify-center">
+              <img 
+                src="/cloudarc-logo.svg" 
+                alt="CloudArc Logo" 
+                className="h-12 w-auto"
+              />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">CloudArc</h1>
-              <p className="text-sm text-foreground-muted font-medium">Enterprise Cloud Architecture Review</p>
+            <div className="hidden sm:block">
+              
             </div>
           </div>
           

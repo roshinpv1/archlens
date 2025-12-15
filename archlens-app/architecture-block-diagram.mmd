@@ -17,10 +17,11 @@ graph TB
         Svc3[Embedding Service]
         Svc4[Similarity Service]
         Svc5[Image Optimizer]
+        Svc6[Checklist Service]
     end
     
     subgraph Data["DATA LAYER<br/>Persistence"]
-        DB1[(MongoDB<br/>Metadata)]
+        DB1[(MongoDB<br/>Metadata & Checklist)]
         DB2[(Vector Store<br/>Qdrant/FAISS)]
     end
     
@@ -38,10 +39,11 @@ graph TB
     API1 --> Svc1
     API2 --> Svc2
     API3 --> Svc1
-    API4 --> Svc1
+    API4 --> Svc6
     
     Svc1 --> Svc3
     Svc1 --> Svc5
+    Svc1 --> Svc6
     Svc1 --> DB1
     Svc1 --> Ext1
     
@@ -52,6 +54,8 @@ graph TB
     Svc3 --> Ext2
     Svc3 --> Svc4
     Svc4 --> DB2
+    
+    Svc6 --> DB1
     
     style Frontend fill:#e1f5ff,stroke:#01579b,stroke-width:3px
     style API fill:#fff4e1,stroke:#e65100,stroke-width:3px

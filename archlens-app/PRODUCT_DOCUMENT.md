@@ -1,8 +1,8 @@
-# ArchLens - Product Overview
+# CloudArc - Product Overview
 
-## What is ArchLens?
+## What is CloudArc?
 
-ArchLens is an intelligent platform that helps organizations understand, improve, and manage their cloud architectures. Think of it as a smart assistant that analyzes your cloud infrastructure, identifies potential issues, and suggests improvements—all while learning from your organization's best practices.
+CloudArc is an intelligent platform that helps organizations understand, improve, and manage their cloud architectures. Think of it as a smart assistant that analyzes your cloud infrastructure, identifies potential issues, and suggests improvements—all while learning from your organization's best practices.
 
 ---
 
@@ -15,7 +15,7 @@ Organizations struggle with:
 - **Learning from past projects** - Hard to find similar architectures for reference
 - **Standardizing best practices** - No centralized knowledge base
 
-ArchLens solves these challenges by automatically analyzing architectures, finding issues, and providing actionable recommendations.
+CloudArc solves these challenges by automatically analyzing architectures, finding issues, and providing actionable recommendations.
 
 ---
 
@@ -24,7 +24,7 @@ ArchLens solves these challenges by automatically analyzing architectures, findi
 ### 1. **Automatic Architecture Analysis**
 
 **What it does:**
-Upload a diagram or infrastructure code, and ArchLens automatically analyzes it to identify security risks, compliance gaps, cost issues, and optimization opportunities.
+Upload a diagram or infrastructure code, and CloudArc automatically analyzes it to identify security risks, compliance gaps, cost issues, and optimization opportunities.
 
 **What you get:**
 - **Security Score** - How secure is your architecture? (0-100)
@@ -46,33 +46,37 @@ Instead of spending days manually reviewing architectures, get comprehensive ana
 ### 2. **Smart Blueprint Library**
 
 **What it does:**
-Create a searchable library of your organization's architecture blueprints. Each blueprint is automatically analyzed and made searchable.
+Create a searchable library of your organization's architecture blueprints. Each blueprint is automatically analyzed, made searchable, and includes visual diagrams you can view and download.
 
 **What you get:**
 - **Centralized Repository** - All your architecture blueprints in one place
+- **Visual Blueprints** - View and download actual blueprint images and diagrams
 - **Automatic Understanding** - The system extracts components, connections, and patterns automatically
 - **Rich Information** - Each blueprint includes analysis, scores, and recommendations
 - **Easy Organization** - Categorize by type, cloud provider, complexity, and tags
 - **Version Control** - Track changes and history
+- **Image Storage** - Original blueprint images stored for easy viewing and reference
 
 **Why it matters:**
-Build an institutional knowledge base. New team members can learn from past projects. Find proven patterns quickly when designing new architectures.
+Build an institutional knowledge base. New team members can learn from past projects. Find proven patterns quickly when designing new architectures. See visual examples of how architectures were implemented.
 
 ---
 
-### 3. **Find Similar Architectures**
+### 3. **Automatic Similar Architecture Discovery**
 
 **What it does:**
-When analyzing a new architecture, ArchLens automatically finds similar blueprints from your library that you can learn from.
+When analyzing a new architecture, CloudArc automatically finds and displays the top 3 most similar blueprints from your library. You can see the actual blueprint images and learn from proven solutions.
 
 **What you get:**
-- **Automatic Matching** - Similar architectures are found automatically during analysis
+- **Automatic Matching** - Top 3 similar blueprints are automatically found and assigned during analysis
+- **Visual Comparison** - See actual blueprint images side-by-side with your architecture
+- **Similarity Scores** - Understand how similar each blueprint is to your architecture
 - **Relevant Examples** - See how similar problems were solved before
 - **Best Practices** - Learn from proven architectures in your organization
-- **Comparison** - Compare your architecture with similar ones
+- **Instant Insights** - Get recommendations based on similar blueprints
 
 **Why it matters:**
-Don't reinvent the wheel. Learn from what worked before. Ensure consistency across projects.
+Don't reinvent the wheel. Learn from what worked before. See visual examples of similar architectures and apply proven patterns to your own.
 
 ---
 
@@ -116,19 +120,41 @@ Fix issues at the source. Understand not just that something is wrong, but exact
 
 ---
 
-### 6. **Multi-Cloud Support**
+### 6. **Multi-Cloud & On-Premises Support**
 
 **What it does:**
-Works with architectures across all major cloud providers—Amazon Web Services (AWS), Microsoft Azure, Google Cloud Platform (GCP), and Kubernetes.
+Works with architectures across all major cloud providers—Amazon Web Services (AWS), Microsoft Azure, Google Cloud Platform (GCP), Kubernetes, and on-premises/private cloud deployments.
 
 **What you get:**
-- **Provider Detection** - Automatically identifies which cloud providers you're using
+- **Intelligent Provider Detection** - Automatically identifies which cloud providers you're using
+- **On-Premises Recognition** - Intelligently detects on-premises and private cloud deployments
+- **Smart Defaults** - Components without explicit cloud specification are treated as on-premises/private cloud
 - **Provider-Specific Advice** - Recommendations tailored to each cloud provider's best practices
-- **Hybrid Cloud Support** - Understands architectures that span multiple clouds
-- **Consistent Analysis** - Same quality analysis regardless of cloud provider
+- **Hybrid Cloud Support** - Understands architectures that span multiple clouds or combine cloud and on-premises
+- **Consistent Analysis** - Same quality analysis regardless of deployment model
 
 **Why it matters:**
-Works with your existing infrastructure, no matter which cloud providers you use. Get provider-specific recommendations that actually apply to your setup.
+Works with your existing infrastructure, no matter which cloud providers you use or if you're running on-premises. Get provider-specific recommendations that actually apply to your setup. Perfect for hybrid and multi-cloud environments.
+
+---
+
+### 7. **Customizable Compliance Checklist**
+
+**What it does:**
+Define and manage your own evaluation criteria for architecture analysis. Use pre-built checklists or create custom ones tailored to your organization's needs.
+
+**What you get:**
+- **Pre-Built Checklists** - 100+ items covering security, compliance, performance, cost, and reliability
+- **Compliance Frameworks** - Built-in support for SOC 2, ISO 27001, PCI-DSS, HIPAA, GDPR, and CIS benchmarks
+- **Customizable Items** - Create, edit, and manage your own checklist items
+- **Category Organization** - Organize items by Security, Reliability, Performance, Cost, and Compliance
+- **Priority Management** - Assign priority levels (High, Medium, Low) to focus on what matters most
+- **Enable/Disable** - Turn items on or off without deleting them
+- **Automatic Evaluation** - Architectures are automatically evaluated against your enabled checklist items
+- **Gap Identification** - See exactly which checklist items your architecture doesn't meet
+
+**Why it matters:**
+Ensure your architectures meet your organization's specific requirements. Track compliance across all your architectures. Customize evaluation criteria to match your industry standards and best practices.
 
 ---
 
@@ -138,9 +164,10 @@ Works with your existing infrastructure, no matter which cloud providers you use
 
 1. **Upload** - Upload your architecture diagram or infrastructure code
 2. **Analyze** - The system automatically extracts components and analyzes them
-3. **Review** - Get scores, risks, recommendations, and similar blueprints
-4. **Improve** - Use recommendations to enhance your architecture
-5. **Track** - Save analysis for future reference and comparison
+3. **Review** - Get scores, risks, recommendations, and automatically matched similar blueprints
+4. **Compare** - View similar blueprint images and learn from proven solutions
+5. **Improve** - Use recommendations to enhance your architecture
+6. **Track** - Save analysis for future reference and comparison
 
 ### For Blueprint Management
 
@@ -153,9 +180,10 @@ Works with your existing infrastructure, no matter which cloud providers you use
 ### For Finding Similar Architectures
 
 1. **Analyze** - When you analyze a new architecture
-2. **Match** - The system automatically finds similar blueprints
-3. **Compare** - See how similar problems were solved
-4. **Learn** - Apply proven patterns to your architecture
+2. **Auto-Match** - The system automatically finds the top 3 most similar blueprints
+3. **Visual Compare** - See actual blueprint images alongside your architecture
+4. **Review Scores** - See similarity scores to understand how closely they match
+5. **Learn** - Apply proven patterns from similar blueprints to your architecture
 
 ---
 
@@ -199,7 +227,8 @@ Works with your existing infrastructure, no matter which cloud providers you use
 ### For Security Teams
 - **Security Assessment** - Comprehensive security analysis of architectures
 - **Risk Identification** - Find security risks before deployment
-- **Compliance Tracking** - Track compliance across all architectures
+- **Compliance Tracking** - Track compliance across all architectures using customizable checklists
+- **Checklist Management** - Configure evaluation criteria to match your security standards
 - **Audit Trail** - Complete history of architecture reviews
 
 ### For Cost Management Teams
@@ -228,20 +257,42 @@ Works with your existing infrastructure, no matter which cloud providers you use
 - **Scores at a Glance** - See security, cost, compliance, and resiliency scores
 - **Risk Summary** - Overview of identified risks
 - **Recommendations** - Prioritized list of improvements
-- **Similar Blueprints** - Related architectures you can learn from
+- **Similar Blueprints** - Top 3 most similar blueprints with images and similarity scores
+- **Blueprint Insights** - Recommendations based on similar blueprints
 
 ### Blueprint Viewer
 - **Complete Information** - Everything about a blueprint in one place
+- **Blueprint Images** - View and download actual blueprint diagrams
 - **Visual Scores** - Easy-to-understand score displays
 - **Component Details** - Detailed information about each component
 - **Recommendations** - Specific recommendations for improvement
 - **Ask Questions** - Natural language interface for getting answers
+- **Multiple Tabs** - Overview, Analysis, AI Search, Preview, and Versions
 
 ### Search Interface
 - **Natural Language** - Ask questions in plain English
 - **Instant Answers** - Get answers based on blueprint content
 - **Example Questions** - Suggested questions to get started
 - **Context-Aware** - Answers specific to the blueprint you're viewing
+
+---
+
+## 🆕 Latest Features
+
+### Automatic Blueprint Matching
+When you analyze an architecture, CloudArc automatically finds and displays the top 3 most similar blueprints from your library. See actual blueprint images, similarity scores, and get insights based on proven solutions.
+
+### Blueprint Image Display
+View and download actual blueprint diagrams and images. Blueprints are stored with their original images, making it easy to see visual examples of how architectures were implemented.
+
+### Enhanced Cloud Provider Detection
+Intelligent detection now includes on-premises and private cloud deployments. Components without explicit cloud specification are automatically treated as on-premises/private cloud, making the system perfect for hybrid environments.
+
+### Customizable Compliance Checklist
+Manage your own evaluation criteria with a comprehensive checklist system. Use pre-built checklists covering major compliance frameworks (SOC 2, ISO 27001, PCI-DSS, HIPAA, GDPR) or create custom items tailored to your organization.
+
+### Improved Similarity Search
+Advanced vector-based similarity matching ensures you find the most relevant blueprints. Automatic deduplication and smart ranking help you discover the best matches quickly.
 
 ---
 
@@ -311,7 +362,7 @@ Build institutional knowledge, standardize practices, and reduce risks across al
 ## 💡 Key Differentiators
 
 ### Intelligent, Not Just Automated
-ArchLens doesn't just run checks—it understands your architecture and provides contextual recommendations.
+CloudArc doesn't just run checks—it understands your architecture and provides contextual recommendations.
 
 ### Learning System
 The system learns from your organization's blueprints, getting smarter over time.
@@ -332,7 +383,7 @@ All data stays in your control. No sharing with third parties.
 
 ## 📈 Success Metrics
 
-Organizations using ArchLens typically see:
+Organizations using CloudArc typically see:
 - **80% reduction** in architecture review time
 - **60% improvement** in identifying security issues early
 - **40% reduction** in cloud costs through optimization
@@ -350,12 +401,18 @@ Upload a diagram or infrastructure code to see instant analysis.
 Check scores, risks, and recommendations to understand your architecture.
 
 ### Step 3: Build Your Blueprint Library
-Upload proven architectures to create your knowledge base.
+Upload proven architectures to create your knowledge base. Include images and diagrams for visual reference.
 
-### Step 4: Use AI Search
+### Step 4: Review Similar Blueprints
+When analyzing architectures, automatically see the top 3 most similar blueprints with images and insights.
+
+### Step 5: Use AI Search
 Ask questions about your blueprints to get instant answers.
 
-### Step 5: Apply Recommendations
+### Step 6: Configure Your Checklist
+Set up your compliance checklist to match your organization's requirements.
+
+### Step 7: Apply Recommendations
 Use the recommendations to improve your architectures.
 
 ---
@@ -375,12 +432,14 @@ Ready to transform how you manage cloud architectures?
 
 1. **Try It** - Upload your first architecture and see the analysis
 2. **Explore** - Browse the features and see what's possible
-3. **Build Your Library** - Start adding blueprints to your knowledge base
-4. **Ask Questions** - Use AI search to get answers about your architectures
+3. **Build Your Library** - Start adding blueprints with images to your knowledge base
+4. **See Similar Blueprints** - Notice how similar architectures are automatically found
+5. **Configure Checklist** - Set up your compliance and evaluation criteria
+6. **Ask Questions** - Use AI search to get answers about your architectures
 
 ---
 
-**ArchLens - Making Cloud Architecture Management Simple, Smart, and Secure**
+**CloudArc - Making Cloud Architecture Management Simple, Smart, and Secure**
 
 *Transform complex cloud architectures into clear insights and actionable recommendations.*
 

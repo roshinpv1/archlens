@@ -17,10 +17,11 @@ graph TB
         EmbeddingService[Embedding Service]
         SimilarityService[Similarity Service]
         ImageOptimizer[Image Optimizer]
+        ChecklistService[Checklist Service]
     end
     
     subgraph Data["Data Storage"]
-        MongoDB[(MongoDB<br/>Metadata & Results)]
+        MongoDB[(MongoDB<br/>Metadata, Results & Checklist)]
         VectorStore[(Vector Store<br/>Qdrant/FAISS)]
     end
     
@@ -38,16 +39,19 @@ graph TB
     AnalyzeAPI --> AnalysisService
     BlueprintAPI --> BlueprintService
     AnalysisAPI --> AnalysisService
-    ChecklistAPI --> AnalysisService
+    ChecklistAPI --> ChecklistService
     
     AnalysisService --> LLMClient
     AnalysisService --> EmbeddingService
     AnalysisService --> ImageOptimizer
+    AnalysisService --> ChecklistService
     AnalysisService --> MongoDB
     
     BlueprintService --> LLMClient
     BlueprintService --> EmbeddingService
     BlueprintService --> MongoDB
+    
+    ChecklistService --> MongoDB
     
     EmbeddingService --> EmbeddingClient
     EmbeddingService --> SimilarityService
