@@ -28,7 +28,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { BlueprintEditModal } from './BlueprintEditModal';
 import { BlueprintVersionManager } from './BlueprintVersionManager';
-import { BlueprintSearch } from './BlueprintSearch';
 import { BlueprintAnalytics } from './BlueprintAnalytics';
 import { BlueprintAnalysisResults } from './BlueprintAnalysisResults';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
@@ -40,23 +39,6 @@ interface ComponentRelationship {
   target: string;
   relationship: 'depends_on' | 'communicates_with' | 'scales_with' | 'integrates_with';
   strength?: number;
-}
-
-interface SearchFilters {
-  search: string;
-  type: BlueprintType | '';
-  category: BlueprintCategory | '';
-  complexity: BlueprintComplexity | '';
-  cloudProvider: string;
-  tags: string[];
-  minRating: number;
-  isPublic: boolean | null;
-  sortBy: 'name' | 'createdAt' | 'downloadCount' | 'rating';
-  sortOrder: 'asc' | 'desc';
-  dateRange: {
-    start: string;
-    end: string;
-  };
 }
 
 export function BlueprintManager() {
@@ -71,25 +53,8 @@ export function BlueprintManager() {
   const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
   const [showVersionManager, setShowVersionManager] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'analytics'>('list');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
-    search: '',
-    type: '',
-    category: '',
-    complexity: '',
-    cloudProvider: '',
-    tags: [],
-    minRating: 0,
-    isPublic: null,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    dateRange: {
-      start: '',
-      end: ''
-    }
-  });
   const [isAnalysisResultsOpen, setIsAnalysisResultsOpen] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<{
     blueprintId: string;
@@ -372,11 +337,6 @@ export function BlueprintManager() {
   };
 
 
-  const handleSearchFiltersChange = (filters: SearchFilters) => {
-    setSearchFilters(filters);
-    // Apply filters to blueprints
-    // This would typically trigger an API call with the filters
-  };
 
   if (loading) {
     return (
@@ -510,36 +470,12 @@ export function BlueprintManager() {
         </div>
       </div>
 
-      {/* Tabs and Toolbar */}
+      {/* Toolbar */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Tabs */}
-          <div className="flex border-b border-border lg:border-b-0">
-            <button
-              onClick={() => setActiveTab('list')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'list'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-foreground-muted hover:text-foreground'
-              }`}
-            >
-              Blueprints
-            </button>
-            <button
-              onClick={() => setActiveTab('search')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'search'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-foreground-muted hover:text-foreground'
-              }`}
-            >
-              Advanced Search
-            </button>
-          </div>
 
           {/* Toolbar */}
-          {activeTab === 'list' && (
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
@@ -596,13 +532,12 @@ export function BlueprintManager() {
                 </button>
               </div>
             </div>
-          )}
         </div>
 
         {/* Expandable Filters */}
-        {activeTab === 'list' && showFilters && (
+        {showFilters && (
           <div className="mt-4 pt-4 border-t border-border">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Type</label>
                 <select
@@ -628,31 +563,11 @@ export function BlueprintManager() {
                   <option value="DevOps">DevOps</option>
                   <option value="Web Development">Web Development</option>
                   <option value="Data Analytics">Data Analytics</option>
+                  <option value="IoT">IoT</option>
+                  <option value="Mobile">Mobile</option>
+                  <option value="AI/ML">AI/ML</option>
                   <option value="Security">Security</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Cloud Provider</label>
-                <select
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">All Providers</option>
-                  <option value="AWS">AWS</option>
-                  <option value="Azure">Azure</option>
-                  <option value="GCP">GCP</option>
-                  <option value="Kubernetes">Kubernetes</option>
-                  <option value="On-Premises">On-Premises</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Complexity</label>
-                <select
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">All Levels</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -673,13 +588,6 @@ export function BlueprintManager() {
           </div>
         )}
       </div>
-
-      {activeTab === 'search' && (
-        <BlueprintSearch
-          onFiltersChange={handleSearchFiltersChange}
-          initialFilters={searchFilters}
-        />
-      )}
 
       {/* Blueprints Display */}
       {viewMode === 'grid' ? (

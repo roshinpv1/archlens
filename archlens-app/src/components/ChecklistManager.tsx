@@ -47,87 +47,41 @@ export function ChecklistManager() {
     enabled: true
   });
 
-  // Mock data for demonstration
+  // Fetch checklist items from API
   useEffect(() => {
-    const mockItems: ChecklistItem[] = [
-      {
-        id: '1',
-        item: 'Network segmentation',
-        description: 'Implement proper network segmentation to isolate different tiers and environments',
-        category: 'security',
-        recommendedAction: 'Implement VPC/VNet per environment; use subnets, NSGs, security groups, private endpoints and service endpoints',
-        owner: 'Network Team',
-        priority: 'high',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      },
-      {
-        id: '2',
-        item: 'Encryption at rest',
-        description: 'Ensure all data is encrypted at rest using appropriate encryption methods',
-        category: 'security',
-        recommendedAction: 'Enforce provider-managed or customer-managed KMS encryption for storage, DBs, buckets. Audit key policies',
-        owner: 'Security Team',
-        priority: 'high',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      },
-      {
-        id: '3',
-        item: 'Strong authentication',
-        description: 'Implement strong authentication mechanisms for all user access',
-        category: 'security',
-        recommendedAction: 'Enforce MFA for all accounts, require FIDO2/2FA for admins. Remove unused root/owner keys',
-        owner: 'Security Team',
-        priority: 'high',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      },
-      {
-        id: '4',
-        item: 'Backup and recovery',
-        description: 'Implement comprehensive backup and disaster recovery procedures',
-        category: 'reliability',
-        recommendedAction: 'Set up automated backups with RTO/RPO targets. Test restore procedures regularly',
-        owner: 'DevOps Team',
-        priority: 'high',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      },
-      {
-        id: '5',
-        item: 'Resource monitoring',
-        description: 'Implement comprehensive monitoring and alerting for all resources',
-        category: 'performance',
-        recommendedAction: 'Set up monitoring for CPU, memory, disk, network. Configure alerts for thresholds',
-        owner: 'DevOps Team',
-        priority: 'medium',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      },
-      {
-        id: '6',
-        item: 'Cost optimization',
-        description: 'Implement cost optimization strategies and monitoring',
-        category: 'cost',
-        recommendedAction: 'Use reserved instances, spot instances, auto-scaling. Monitor and optimize costs regularly',
-        owner: 'Finance Team',
-        priority: 'medium',
-        enabled: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
+    const fetchChecklistItems = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/checklist');
+        if (response.ok) {
+          const data = await response.json();
+          // Map API response to ChecklistItem format
+          const items: ChecklistItem[] = data.map((item: any) => ({
+            id: item._id || item.id,
+            item: item.item,
+            description: item.description || '',
+            category: item.category,
+            recommendedAction: item.recommendedAction || '',
+            owner: item.owner || '',
+            priority: item.priority || 'medium',
+            enabled: item.enabled !== undefined ? item.enabled : true,
+            createdAt: new Date(item.createdAt),
+            updatedAt: new Date(item.updatedAt || item.createdAt)
+          }));
+          setChecklistItems(items);
+        } else {
+          console.error('Failed to fetch checklist items');
+          setChecklistItems([]);
+        }
+      } catch (error) {
+        console.error('Error fetching checklist items:', error);
+        setChecklistItems([]);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
     
-    setTimeout(() => {
-      setChecklistItems(mockItems);
-      setLoading(false);
-    }, 1000);
+    fetchChecklistItems();
   }, []);
 
   const filteredItems = checklistItems.filter(item => {

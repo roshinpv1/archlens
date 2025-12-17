@@ -236,10 +236,29 @@ export function BlueprintAnalytics() {
                   <td className="py-3 text-sm text-foreground">{stat.uploads}</td>
                   <td className="py-3 text-sm text-foreground">{stat.downloads}</td>
                   <td className="py-3">
-                    <div className="flex items-center gap-1">
-                      <Activity className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600">+{Math.floor(Math.random() * 20)}%</span>
-                    </div>
+                    {index > 0 && analytics.monthlyStats[index - 1] ? (
+                      <div className="flex items-center gap-1">
+                        {stat.downloads > analytics.monthlyStats[index - 1].downloads ? (
+                          <>
+                            <Activity className="w-4 h-4 text-green-500" />
+                            <span className="text-sm text-green-600">
+                              +{Math.round(((stat.downloads - analytics.monthlyStats[index - 1].downloads) / analytics.monthlyStats[index - 1].downloads) * 100)}%
+                            </span>
+                          </>
+                        ) : stat.downloads < analytics.monthlyStats[index - 1].downloads ? (
+                          <>
+                            <Activity className="w-4 h-4 text-red-500" />
+                            <span className="text-sm text-red-600">
+                              {Math.round(((stat.downloads - analytics.monthlyStats[index - 1].downloads) / analytics.monthlyStats[index - 1].downloads) * 100)}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-foreground-muted">—</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-foreground-muted">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

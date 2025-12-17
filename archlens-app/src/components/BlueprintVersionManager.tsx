@@ -72,67 +72,27 @@ export function BlueprintVersionManager({
   const fetchVersions = async () => {
     setLoading(true);
     try {
-      // Mock data - in production, fetch from API
-      const mockVersions: BlueprintVersion[] = [
-        {
-          id: 'v1',
-          version: '1.2.0',
-          description: 'Latest stable release with performance improvements',
-          createdAt: new Date('2024-01-15'),
-          createdBy: 'John Doe',
-          isCurrent: true,
-          fileSize: 2048576,
-          fileName: 'blueprint-v1.2.0.tf',
-          fileType: 'text/plain',
-          downloadCount: 45,
-          changes: [
-            'Added support for multi-region deployment',
-            'Improved error handling',
-            'Updated documentation'
-          ],
-          isStable: true
-        },
-        {
-          id: 'v2',
-          version: '1.1.0',
-          description: 'Previous stable release',
-          createdAt: new Date('2024-01-10'),
-          createdBy: 'John Doe',
-          isCurrent: false,
-          fileSize: 1987654,
-          fileName: 'blueprint-v1.1.0.tf',
-          fileType: 'text/plain',
-          downloadCount: 32,
-          changes: [
-            'Added monitoring configuration',
-            'Fixed security vulnerabilities',
-            'Updated dependencies'
-          ],
-          isStable: true
-        },
-        {
-          id: 'v3',
-          version: '1.0.0',
-          description: 'Initial release',
-          createdAt: new Date('2024-01-05'),
-          createdBy: 'John Doe',
-          isCurrent: false,
-          fileSize: 1854321,
-          fileName: 'blueprint-v1.0.0.tf',
-          fileType: 'text/plain',
-          downloadCount: 28,
-          changes: [
-            'Initial blueprint implementation',
-            'Basic infrastructure setup',
-            'Core functionality'
-          ],
-          isStable: true
-        }
-      ];
+      // Version management is not yet implemented in the backend
+      // For now, show only the current blueprint version
+      const currentVersion: BlueprintVersion = {
+        id: blueprint.id,
+        version: blueprint.version || '1.0.0',
+        description: blueprint.description || 'Current version',
+        createdAt: new Date(blueprint.createdAt),
+        createdBy: blueprint.createdBy || 'Unknown',
+        isCurrent: true,
+        fileSize: blueprint.fileSize || 0,
+        fileName: blueprint.fileName || '',
+        fileType: blueprint.fileType || '',
+        downloadCount: blueprint.downloadCount || 0,
+        changes: [],
+        isStable: true
+      };
       
-      setVersions(mockVersions);
+      setVersions([currentVersion]);
     } catch (error) {
       console.error('Error fetching versions:', error);
+      setVersions([]);
     } finally {
       setLoading(false);
     }
