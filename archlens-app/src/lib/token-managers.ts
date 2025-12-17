@@ -34,7 +34,7 @@ export class ApigeeTokenManager {
     try {
       // Prepare OAuth 2.0 client credentials request
       const credentials = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
-      
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {

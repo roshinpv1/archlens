@@ -15,9 +15,17 @@ import {
   Copy,
   X,
   BarChart3,
-  GitBranch
+  GitBranch,
+  Grid3x3,
+  List,
+  Filter,
+  RefreshCw,
+  Cloud,
+  Layers,
+  TrendingUp,
+  Code
 } from 'lucide-react';
-import { BlueprintViewer } from './BlueprintViewer';
+import { useRouter } from 'next/navigation';
 import { BlueprintEditModal } from './BlueprintEditModal';
 import { BlueprintVersionManager } from './BlueprintVersionManager';
 import { BlueprintSearch } from './BlueprintSearch';
@@ -52,18 +60,20 @@ interface SearchFilters {
 }
 
 export function BlueprintManager() {
+  const router = useRouter();
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
-  const [showViewer, setShowViewer] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBlueprint, setEditingBlueprint] = useState<Blueprint | null>(null);
   const [showVersionManager, setShowVersionManager] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'search' | 'analytics'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilters, setShowFilters] = useState(false);
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     search: '',
     type: '',
@@ -211,8 +221,8 @@ export function BlueprintManager() {
   };
 
   const handleView = (blueprint: Blueprint) => {
-    setSelectedBlueprint(blueprint);
-    setShowViewer(true);
+    // Navigate to blueprint detail page instead of opening modal
+    router.push(`/blueprints/${blueprint.id}`);
   };
 
   const handleDownload = async (blueprint: Blueprint) => {
@@ -387,100 +397,282 @@ export function BlueprintManager() {
     );
   }
 
+  // Calculate statistics
+  const stats = {
+    total: blueprints.length,
+    architecture: blueprints.filter(b => b.type === 'architecture').length,
+    iac: blueprints.filter(b => b.type === 'iac').length,
+    template: blueprints.filter(b => b.type === 'template').length,
+    totalDownloads: blueprints.reduce((sum, b) => sum + (b.downloadCount || 0), 0),
+    avgRating: blueprints.length > 0 
+      ? (blueprints.reduce((sum, b) => sum + (b.rating || 0), 0) / blueprints.length).toFixed(1)
+      : '0.0'
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Blueprint Library</h2>
-          <p className="text-foreground-muted">
-            Manage and organize your architecture blueprints and IAC templates
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={refreshBlueprints}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
-            title="Refresh blueprints"
-          >
-            <Search className="w-4 h-4" />
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowAnalytics(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Analytics
-          </button>
-          {/* Upload removed - use "Convert to Blueprint" from analysis results instead */}
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-6 border border-primary/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Blueprint Library</h2>
+            <p className="text-foreground-muted text-lg">
+              Manage and organize your architecture blueprints and IAC templates
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refreshBlueprints}
+              className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-secondary border border-border text-foreground rounded-lg transition-colors"
+              title="Refresh blueprints"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowAnalytics(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors shadow-sm"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border">
-        <button
-          onClick={() => setActiveTab('list')}
-          className={`px-6 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'list'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-foreground-muted hover:text-foreground'
-          }`}
-        >
-          Blueprints
-        </button>
-        <button
-          onClick={() => setActiveTab('search')}
-          className={`px-6 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'search'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-foreground-muted hover:text-foreground'
-          }`}
-        >
-          Advanced Search
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'list' && (
-        <>
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search blueprints..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Layers className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex gap-2">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                <option value="architecture">Architecture</option>
-                <option value="iac">IAC</option>
-                <option value="template">Template</option>
-              </select>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 bg-surface border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">All Categories</option>
-                <option value="E-commerce">E-commerce</option>
-                <option value="DevOps">DevOps</option>
-                <option value="Web Development">Web Development</option>
-              </select>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.total}</div>
+              <div className="text-xs text-foreground-muted">Total</div>
             </div>
           </div>
-        </>
-      )}
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.architecture}</div>
+              <div className="text-xs text-foreground-muted">Architecture</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <Code className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.iac}</div>
+              <div className="text-xs text-foreground-muted">IAC</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.template}</div>
+              <div className="text-xs text-foreground-muted">Templates</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <Download className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.totalDownloads}</div>
+              <div className="text-xs text-foreground-muted">Downloads</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Star className="w-5 h-5 text-yellow-600 fill-yellow-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-foreground">{stats.avgRating}</div>
+              <div className="text-xs text-foreground-muted">Avg Rating</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs and Toolbar */}
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Tabs */}
+          <div className="flex border-b border-border lg:border-b-0">
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'list'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-foreground-muted hover:text-foreground'
+              }`}
+            >
+              Blueprints
+            </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'search'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-foreground-muted hover:text-foreground'
+              }`}
+            >
+              Advanced Search
+            </button>
+          </div>
+
+          {/* Toolbar */}
+          {activeTab === 'list' && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground-muted w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search blueprints..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              
+              {/* Filters Toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+                  showFilters || filterType || filterCategory
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-surface border-border text-foreground hover:bg-secondary'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+                {(filterType || filterCategory) && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-primary-foreground/20 rounded text-xs">
+                    {[filterType, filterCategory].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-surface text-primary shadow-sm'
+                      : 'text-foreground-muted hover:text-foreground'
+                  }`}
+                  title="Grid view"
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-surface text-primary shadow-sm'
+                      : 'text-foreground-muted hover:text-foreground'
+                  }`}
+                  title="List view"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Expandable Filters */}
+        {activeTab === 'list' && showFilters && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Type</label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">All Types</option>
+                  <option value="architecture">Architecture</option>
+                  <option value="iac">IAC</option>
+                  <option value="template">Template</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">All Categories</option>
+                  <option value="E-commerce">E-commerce</option>
+                  <option value="DevOps">DevOps</option>
+                  <option value="Web Development">Web Development</option>
+                  <option value="Data Analytics">Data Analytics</option>
+                  <option value="Security">Security</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Cloud Provider</label>
+                <select
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">All Providers</option>
+                  <option value="AWS">AWS</option>
+                  <option value="Azure">Azure</option>
+                  <option value="GCP">GCP</option>
+                  <option value="Kubernetes">Kubernetes</option>
+                  <option value="On-Premises">On-Premises</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Complexity</label>
+                <select
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">All Levels</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+            {(filterType || filterCategory) && (
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setFilterType('');
+                    setFilterCategory('');
+                  }}
+                  className="text-sm text-primary hover:text-primary-hover flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" />
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {activeTab === 'search' && (
         <BlueprintSearch
@@ -489,101 +681,285 @@ export function BlueprintManager() {
         />
       )}
 
-      {/* Blueprints Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredBlueprints.map((blueprint) => (
-          <div key={blueprint.id} className="blueprint-card bg-surface border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                {getFileIcon(blueprint.type)}
-              </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <h3 className="font-semibold text-foreground truncate" title={blueprint.name}>{blueprint.name}</h3>
-                <p className="text-sm text-foreground-muted line-clamp-2" title={blueprint.description}>{blueprint.description}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getComplexityColor(blueprint.complexity)}`}>
-                  {blueprint.complexity} complexity
-                </span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium whitespace-nowrap">
-                  v{blueprint.version}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-1 overflow-hidden">
-                {blueprint.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap truncate max-w-20" title={tag}>
-                    {tag}
+      {/* Blueprints Display */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredBlueprints.map((blueprint) => (
+            <div 
+              key={blueprint.id} 
+              className="group bg-surface border border-border rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            >
+              {/* Image Preview */}
+              <div className="relative h-48 bg-gradient-to-br from-primary/10 via-primary/5 to-muted overflow-hidden">
+                {(blueprint as any).originalFile?.data || blueprint.fileType?.startsWith('image/') ? (
+                  <img
+                    src={(blueprint as any).originalFile?.data 
+                      ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
+                      : `/api/blueprints/${blueprint.id}/file`}
+                    alt={blueprint.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center">
+                      {getFileIcon(blueprint.type)}
+                    </div>
+                  </div>
+                )}
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={() => handleView(blueprint)}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-300"
+                  >
+                    <Eye className="w-4 h-4 inline mr-2" />
+                    View Details
+                  </button>
+                </div>
+                {/* Type Badge */}
+                <div className="absolute top-3 left-3">
+                  <span className="px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
+                    {blueprint.type}
                   </span>
-                ))}
-                {blueprint.tags.length > 3 && (
-                  <span className="px-2 py-1 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap">
-                    +{blueprint.tags.length - 3}
-                  </span>
+                </div>
+                {/* Rating Badge */}
+                {blueprint.rating > 0 && (
+                  <div className="absolute top-3 right-3">
+                    <span className="px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-lg flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      {blueprint.rating}
+                    </span>
+                  </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-foreground-muted overflow-hidden">
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                  <Download className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{blueprint.downloadCount}</span>
+              {/* Card Content */}
+              <div className="p-5">
+                <div className="mb-3">
+                  <h3 className="font-semibold text-foreground text-lg mb-1 line-clamp-1" title={blueprint.name}>
+                    {blueprint.name}
+                  </h3>
+                  <p className="text-sm text-foreground-muted line-clamp-2" title={blueprint.description}>
+                    {blueprint.description || 'No description available'}
+                  </p>
                 </div>
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                  <Star className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{blueprint.rating}</span>
-                </div>
-                <div className="flex items-center gap-1 whitespace-nowrap min-w-0">
-                  <Calendar className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{formatDate(blueprint.createdAt)}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 overflow-hidden">
-              <button
-                onClick={() => handleView(blueprint)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors min-w-0"
-              >
-                <Eye className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">View</span>
-              </button>
-              <button
-                onClick={() => handleDownload(blueprint)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors min-w-0"
-              >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Download</span>
-              </button>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => handleVersionManager(blueprint)}
-                  className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  title="Version Management"
-                >
-                  <GitBranch className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleEdit(blueprint)}
-                  className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                  title="Edit"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(blueprint)}
-                  className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Tags and Metadata */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getComplexityColor(blueprint.complexity)}`}>
+                      {blueprint.complexity} complexity
+                    </span>
+                    {blueprint.cloudProviders && blueprint.cloudProviders.length > 0 && (
+                      <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1">
+                        <Cloud className="w-3 h-3" />
+                        {blueprint.cloudProviders[0]}
+                      </span>
+                    )}
+                    <span className="px-2.5 py-1 bg-muted text-foreground-muted rounded-full text-xs font-medium whitespace-nowrap">
+                      v{blueprint.version}
+                    </span>
+                  </div>
+
+                  {blueprint.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {blueprint.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="px-2 py-0.5 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap" title={tag}>
+                          {tag}
+                        </span>
+                      ))}
+                      {blueprint.tags.length > 3 && (
+                        <span className="px-2 py-0.5 bg-muted text-foreground-muted rounded text-xs whitespace-nowrap">
+                          +{blueprint.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 text-xs text-foreground-muted pt-2 border-t border-border">
+                    <div className="flex items-center gap-1">
+                      <Download className="w-3 h-3" />
+                      <span>{blueprint.downloadCount || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>{formatDate(blueprint.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleView(blueprint)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleDownload(blueprint)}
+                    className="px-3 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleVersionManager(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                      title="Version Management"
+                    >
+                      <GitBranch className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredBlueprints.map((blueprint) => (
+            <div 
+              key={blueprint.id} 
+              className="bg-surface border border-border rounded-xl p-5 hover:shadow-lg transition-all duration-200"
+            >
+              <div className="flex items-start gap-5">
+                {/* Thumbnail */}
+                <div className="w-32 h-32 bg-gradient-to-br from-primary/10 via-primary/5 to-muted rounded-lg overflow-hidden flex-shrink-0">
+                  {(blueprint as any).originalFile?.data || blueprint.fileType?.startsWith('image/') ? (
+                    <img
+                      src={(blueprint as any).originalFile?.data 
+                        ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
+                        : `/api/blueprints/${blueprint.id}/file`}
+                      alt={blueprint.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      {getFileIcon(blueprint.type)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground text-lg mb-1" title={blueprint.name}>
+                        {blueprint.name}
+                      </h3>
+                      <p className="text-sm text-foreground-muted line-clamp-2 mb-3" title={blueprint.description}>
+                        {blueprint.description || 'No description available'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      {blueprint.rating > 0 && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
+                          <Star className="w-4 h-4 fill-yellow-600" />
+                          {blueprint.rating}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 flex-wrap mb-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getComplexityColor(blueprint.complexity)}`}>
+                      {blueprint.complexity} complexity
+                    </span>
+                    {blueprint.cloudProviders && blueprint.cloudProviders.length > 0 && (
+                      <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center gap-1">
+                        <Cloud className="w-3 h-3" />
+                        {blueprint.cloudProviders[0]}
+                      </span>
+                    )}
+                    <span className="px-2.5 py-1 bg-muted text-foreground-muted rounded-full text-xs font-medium">
+                      v{blueprint.version}
+                    </span>
+                    <span className="text-xs text-foreground-muted flex items-center gap-1">
+                      <Download className="w-3 h-3" />
+                      {blueprint.downloadCount || 0} downloads
+                    </span>
+                    <span className="text-xs text-foreground-muted flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(blueprint.createdAt)}
+                    </span>
+                  </div>
+
+                  {blueprint.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {blueprint.tags.map((tag) => (
+                        <span key={tag} className="px-2 py-0.5 bg-muted text-foreground-muted rounded text-xs" title={tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleView(blueprint)}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors text-sm font-medium"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Details
+                    </button>
+                    <button
+                      onClick={() => handleDownload(blueprint)}
+                      className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary-hover text-foreground rounded-lg transition-colors text-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </button>
+                    <button
+                      onClick={() => handleVersionManager(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                      title="Version Management"
+                    >
+                      <GitBranch className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(blueprint)}
+                      className="p-2 text-foreground-muted hover:text-error hover:bg-error-light rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {filteredBlueprints.length === 0 && (
         <div className="text-center py-12">
@@ -601,28 +977,6 @@ export function BlueprintManager() {
             </p>
           )}
         </div>
-      )}
-
-      {/* Blueprint Viewer Modal */}
-      {selectedBlueprint && (
-        <BlueprintViewer
-          blueprint={selectedBlueprint}
-          isOpen={showViewer}
-          onClose={() => {
-            setShowViewer(false);
-            setSelectedBlueprint(null);
-          }}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onDownload={handleDownload}
-          onRate={handleRate}
-          onAnalyze={handleAnalyze}
-          onUpdate={(updatedBlueprint) => {
-            // Update the selected blueprint and refresh the list
-            setSelectedBlueprint(updatedBlueprint);
-            fetchBlueprints();
-          }}
-        />
       )}
 
       {/* Blueprint Edit Modal */}

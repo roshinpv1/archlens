@@ -47,6 +47,7 @@ interface BlueprintViewerProps {
   onRate?: (blueprint: Blueprint, rating: number) => void;
   onAnalyze?: (blueprint: Blueprint) => void;
   onUpdate?: (blueprint: Blueprint) => void; // Callback when blueprint is updated
+  asPage?: boolean; // If true, render as page content instead of modal
 }
 
 export function BlueprintViewer({ 
@@ -58,7 +59,8 @@ export function BlueprintViewer({
   onDownload, 
   onRate,
   onAnalyze,
-  onUpdate
+  onUpdate,
+  asPage = false
 }: BlueprintViewerProps) {
   const [blueprint, setBlueprint] = useState<Blueprint>(initialBlueprint);
   const [currentRating, setCurrentRating] = useState(initialBlueprint.rating);
@@ -73,6 +75,10 @@ export function BlueprintViewer({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Image modal state
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // Fetch full blueprint data when viewer opens (to get originalFile)
   const fetchFullBlueprint = async () => {
@@ -354,9 +360,18 @@ export function BlueprintViewer({
 
   if (!isOpen) return null;
 
+  // Render as page or modal based on asPage prop
+  const wrapperClass = asPage 
+    ? 'w-full' 
+    : 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto';
+  
+  const contentClass = asPage
+    ? 'bg-surface border border-border rounded-xl shadow-lg w-full overflow-hidden'
+    : 'bg-surface border border-border rounded-xl shadow-xl w-full max-w-7xl my-8 overflow-hidden';
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-7xl my-8 overflow-hidden">
+    <div className={wrapperClass}>
+      <div className={contentClass}>
         {/* Header - Similar to AnalysisResults */}
         <div className="bg-surface border-b border-border rounded-t-xl p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
@@ -526,13 +541,15 @@ export function BlueprintViewer({
                   <span>Delete</span>
                 </button>
               )}
-              <button
-                onClick={onClose}
-                className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
-              >
-                <X className="w-4 h-4" />
-                <span>Close</span>
-              </button>
+              {!asPage && (
+                <button
+                  onClick={onClose}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Close</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -703,10 +720,9 @@ export function BlueprintViewer({
                         alt={blueprint.fileName || 'Blueprint diagram'}
                         className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => {
-                          const imageUrl = (blueprint as any).originalFile?.data 
-                            ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
-                            : `/api/blueprints/${blueprint.id}/file`;
-                          window.open(imageUrl, '_blank');
+                          const url = `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`;
+                          setImageUrl(url);
+                          setShowImageModal(true);
                         }}
                       />
                     ) : (
@@ -715,7 +731,8 @@ export function BlueprintViewer({
                         alt={blueprint.fileName || 'Blueprint diagram'}
                         className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => {
-                          window.open(`/api/blueprints/${blueprint.id}/file`, '_blank');
+                          setImageUrl(`/api/blueprints/${blueprint.id}/file`);
+                          setShowImageModal(true);
                         }}
                         onError={(e) => {
                           console.error('Failed to load blueprint image:', e);
@@ -730,10 +747,11 @@ export function BlueprintViewer({
                     <div className="absolute top-2 right-2">
                       <button
                         onClick={() => {
-                          const imageUrl = (blueprint as any).originalFile?.data 
+                          const url = (blueprint as any).originalFile?.data 
                             ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
                             : `/api/blueprints/${blueprint.id}/file`;
-                          window.open(imageUrl, '_blank');
+                          setImageUrl(url);
+                          setShowImageModal(true);
                         }}
                         className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
                         title="View full size"
@@ -1551,6 +1569,26 @@ export function BlueprintViewer({
           )}
         </div>
       </div>
+
+      {/* Full Size Image Modal */}
+      {showImageModal && imageUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 p-4" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={imageUrl}
+              alt={blueprint.fileName || 'Blueprint diagram'}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
