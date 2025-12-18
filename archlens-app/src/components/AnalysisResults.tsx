@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   Maximize2,
   X,
-  ExternalLink
+  ExternalLink,
+  FileDown
 } from "lucide-react";
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
 import BlueprintInsights from "./BlueprintInsights";
@@ -33,13 +34,40 @@ interface AnalysisResultsProps {
 }
 
 export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'risks' | 'recommendations' | 'json' | 'terraform' | 'search'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'components' | 'security' | 'resiliency' | 'cost' | 'risks' | 'recommendations' | 'json' | 'terraform' | 'search'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchAnswer, setSearchAnswer] = useState('');
   const [searching, setSearching] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  const downloadPDF = async () => {
+    try {
+      setDownloadingPDF(true);
+      const response = await fetch(`/api/analysis/${results.id}/pdf`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
+        throw new Error(errorData.error || 'Failed to generate PDF');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `architecture-analysis-${results.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert(`Failed to download PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(results, null, 2);
@@ -356,6 +384,9 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'components', label: 'Components', icon: Target },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'resiliency', label: 'Resiliency', icon: CheckCircle },
+    { id: 'cost', label: 'Cost Efficiency', icon: DollarSign },
     { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle },
     { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
     { id: 'json', label: 'JSON Export', icon: FileText },
@@ -434,6 +465,23 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
             )}
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            <button
+              onClick={downloadPDF}
+              disabled={downloadingPDF}
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
+            >
+              {downloadingPDF ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Generating PDF...</span>
+                </>
+              ) : (
+                <>
+                  <FileDown className="w-4 h-4" />
+                  <span>Download PDF Report</span>
+                </>
+              )}
+            </button>
             <button
               onClick={downloadJSON}
               className="flex items-center justify-center space-x-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary hover:border-border-hover transition-all duration-200 text-sm font-medium"
@@ -578,7 +626,7 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'components' | 'risks' | 'recommendations' | 'json')}
+                onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
                     ? 'border-primary text-primary'
@@ -844,6 +892,452 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            {/* Security Score */}
+            <div className="bg-secondary rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Security Analysis</h3>
+                    <p className="text-sm text-foreground-muted">Comprehensive security assessment</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-4xl font-bold ${getScoreColor(results.securityScore)}`}>
+                    {results.securityScore}
+                  </div>
+                  <div className="text-sm text-foreground-muted">/100</div>
+                </div>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 mt-4">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    results.securityScore >= 80 ? 'bg-success' :
+                    results.securityScore >= 60 ? 'bg-warning' : 'bg-error'
+                  }`}
+                  style={{ width: `${results.securityScore}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Security Risks */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Security Risks & Vulnerabilities</h3>
+              {results.risks && Array.isArray(results.risks) ? (
+                (() => {
+                  const securityRisks = results.risks.filter(risk => 
+                    risk.category === 'security' || 
+                    (risk.title && risk.title.toLowerCase().includes('security')) ||
+                    (risk.description && risk.description.toLowerCase().includes('security'))
+                  );
+                  return securityRisks.length > 0 ? (
+                    <div className="space-y-4">
+                      {securityRisks.map((risk) => (
+                        <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-red-500">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-foreground">{risk.title || 'Security Risk'}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || risk.severity || 'medium')}`}>
+                              {(risk.level || risk.severity || 'medium').toString().toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
+                          {risk.impact && (
+                            <div className="mb-3">
+                              <span className="text-sm font-medium text-foreground">Impact: </span>
+                              <span className="text-sm text-muted-foreground">{risk.impact}</span>
+                            </div>
+                          )}
+                          {risk.components && risk.components.length > 0 && (
+                            <div className="mb-3">
+                              <span className="text-sm font-medium text-foreground">Affected Components: </span>
+                              <span className="text-sm text-muted-foreground">{risk.components.join(', ')}</span>
+                            </div>
+                          )}
+                          {risk.recommendations && Array.isArray(risk.recommendations) && risk.recommendations.length > 0 && (
+                            <div className="space-y-2">
+                              <h5 className="font-medium text-foreground">Recommendations:</h5>
+                              <ul className="list-disc list-inside space-y-1">
+                                {risk.recommendations.map((rec, index) => (
+                                  <li key={index} className="text-sm text-muted-foreground">
+                                    {typeof rec === 'string' ? rec : String(rec)}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                      No specific security risks identified
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No security risks identified
+                </div>
+              )}
+            </div>
+
+            {/* Security Recommendations */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Security Recommendations</h3>
+              {results.recommendations && Array.isArray(results.recommendations) ? (
+                (() => {
+                  const securityRecs = results.recommendations.filter(rec => rec.category === 'security');
+                  return securityRecs.length > 0 ? (
+                    <div className="space-y-4">
+                      {securityRecs.map((rec) => (
+                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-foreground">{rec.issue || 'Security Issue'}</h4>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
+                                {(rec.impact || 'medium').toString().toUpperCase()}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
+                                {rec.effort || 'medium'} effort
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span>Priority: {rec.priority || 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                      No specific security recommendations available
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No security recommendations available
+                </div>
+              )}
+            </div>
+
+            {/* Compliance Gaps (Security-related) */}
+            {results.complianceGaps && Array.isArray(results.complianceGaps) && results.complianceGaps.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Security Compliance Gaps</h3>
+                <div className="space-y-4">
+                  {results.complianceGaps.map((gap) => (
+                    <div key={gap.id || `gap-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-yellow-500">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-foreground">{gap.requirement || 'Compliance Requirement'}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">Framework: {gap.framework || 'N/A'}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(gap.severity || 'medium')}`}>
+                          {(gap.severity || 'medium').toString().toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground mb-3">{gap.description || 'No description available'}</p>
+                      <div className="space-y-2">
+                        <h5 className="font-medium text-foreground">Remediation:</h5>
+                        <p className="text-sm text-muted-foreground">{gap.remediation || 'No remediation provided'}</p>
+                      </div>
+                      {gap.components && gap.components.length > 0 && (
+                        <div className="mt-3">
+                          <span className="text-sm font-medium text-foreground">Affected Components: </span>
+                          <span className="text-sm text-muted-foreground">{gap.components.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'resiliency' && (
+          <div className="space-y-6">
+            {/* Resiliency Score */}
+            <div className="bg-secondary rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Resiliency Analysis</h3>
+                    <p className="text-sm text-foreground-muted">Fault tolerance and availability assessment</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-4xl font-bold ${getScoreColor(results.resiliencyScore)}`}>
+                    {results.resiliencyScore}
+                  </div>
+                  <div className="text-sm text-foreground-muted">/100</div>
+                </div>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 mt-4">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    results.resiliencyScore >= 80 ? 'bg-success' :
+                    results.resiliencyScore >= 60 ? 'bg-warning' : 'bg-error'
+                  }`}
+                  style={{ width: `${results.resiliencyScore}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Resiliency Risks */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Resiliency Risks & Single Points of Failure</h3>
+              {results.risks && Array.isArray(results.risks) ? (
+                (() => {
+                  const resiliencyRisks = results.risks.filter(risk => 
+                    risk.category === 'reliability' || 
+                    (risk.title && (risk.title.toLowerCase().includes('availability') || risk.title.toLowerCase().includes('resiliency') || risk.title.toLowerCase().includes('fault'))) ||
+                    (risk.description && (risk.description.toLowerCase().includes('single point of failure') || risk.description.toLowerCase().includes('availability')))
+                  );
+                  return resiliencyRisks.length > 0 ? (
+                    <div className="space-y-4">
+                      {resiliencyRisks.map((risk) => (
+                        <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-blue-500">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-foreground">{risk.title || 'Resiliency Risk'}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || risk.severity || 'medium')}`}>
+                              {(risk.level || risk.severity || 'medium').toString().toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
+                          {risk.impact && (
+                            <div className="mb-3">
+                              <span className="text-sm font-medium text-foreground">Impact: </span>
+                              <span className="text-sm text-muted-foreground">{risk.impact}</span>
+                            </div>
+                          )}
+                          {risk.components && risk.components.length > 0 && (
+                            <div className="mb-3">
+                              <span className="text-sm font-medium text-foreground">Affected Components: </span>
+                              <span className="text-sm text-muted-foreground">{risk.components.join(', ')}</span>
+                            </div>
+                          )}
+                          {risk.recommendations && Array.isArray(risk.recommendations) && risk.recommendations.length > 0 && (
+                            <div className="space-y-2">
+                              <h5 className="font-medium text-foreground">Recommendations:</h5>
+                              <ul className="list-disc list-inside space-y-1">
+                                {risk.recommendations.map((rec, index) => (
+                                  <li key={index} className="text-sm text-muted-foreground">
+                                    {typeof rec === 'string' ? rec : String(rec)}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                      No specific resiliency risks identified
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No resiliency risks identified
+                </div>
+              )}
+            </div>
+
+            {/* Resiliency Recommendations */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Resiliency Recommendations</h3>
+              {results.recommendations && Array.isArray(results.recommendations) ? (
+                (() => {
+                  const resiliencyRecs = results.recommendations.filter(rec => rec.category === 'reliability');
+                  return resiliencyRecs.length > 0 ? (
+                    <div className="space-y-4">
+                      {resiliencyRecs.map((rec) => (
+                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-foreground">{rec.issue || 'Resiliency Issue'}</h4>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
+                                {(rec.impact || 'medium').toString().toUpperCase()}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
+                                {rec.effort || 'medium'} effort
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span>Priority: {rec.priority || 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                      No specific resiliency recommendations available
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No resiliency recommendations available
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'cost' && (
+          <div className="space-y-6">
+            {/* Cost Efficiency Score */}
+            <div className="bg-secondary rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Cost Efficiency Analysis</h3>
+                    <p className="text-sm text-foreground-muted">Resource optimization and cost savings</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-4xl font-bold ${getScoreColor(results.costEfficiencyScore)}`}>
+                    {results.costEfficiencyScore}
+                  </div>
+                  <div className="text-sm text-foreground-muted">/100</div>
+                </div>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 mt-4">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    results.costEfficiencyScore >= 80 ? 'bg-success' :
+                    results.costEfficiencyScore >= 60 ? 'bg-warning' : 'bg-error'
+                  }`}
+                  style={{ width: `${results.costEfficiencyScore}%` }}
+                ></div>
+              </div>
+              {results.estimatedSavingsUSD > 0 && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-600" />
+                    <div>
+                      <div className="text-sm text-green-800 font-medium">Potential Savings</div>
+                      <div className="text-2xl font-bold text-green-900">
+                        ${results.estimatedSavingsUSD.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Cost Issues */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Cost Optimization Opportunities</h3>
+              {results.costIssues && Array.isArray(results.costIssues) && results.costIssues.length > 0 ? (
+                <div className="space-y-4">
+                  {results.costIssues.map((issue) => (
+                    <div key={issue.id || `cost-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-yellow-500">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{issue.title || 'Cost Issue'}</h4>
+                          {issue.category && (
+                            <p className="text-sm text-muted-foreground mt-1">Category: {issue.category}</p>
+                          )}
+                        </div>
+                        {(issue.estimatedSavingsUSD || issue.estimatedSavings) && (
+                          <div className="text-right ml-4">
+                            <div className="text-lg font-bold text-green-600">
+                              ${((issue.estimatedSavingsUSD || issue.estimatedSavings || 0)).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Potential Savings</div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground mb-3">{issue.description || 'No description available'}</p>
+                      {issue.recommendation && (
+                        <div className="space-y-2">
+                          <h5 className="font-medium text-foreground">Recommendation:</h5>
+                          <p className="text-sm text-muted-foreground">{issue.recommendation}</p>
+                        </div>
+                      )}
+                      {issue.components && issue.components.length > 0 && (
+                        <div className="mt-3">
+                          <span className="text-sm font-medium text-foreground">Affected Components: </span>
+                          <span className="text-sm text-muted-foreground">{issue.components.join(', ')}</span>
+                        </div>
+                      )}
+                      {issue.severity && (
+                        <div className="mt-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(issue.severity)}`}>
+                            {issue.severity.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No cost optimization opportunities identified
+                </div>
+              )}
+            </div>
+
+            {/* Cost Recommendations */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Cost Optimization Recommendations</h3>
+              {results.recommendations && Array.isArray(results.recommendations) ? (
+                (() => {
+                  const costRecs = results.recommendations.filter(rec => rec.category === 'cost');
+                  return costRecs.length > 0 ? (
+                    <div className="space-y-4">
+                      {costRecs.map((rec) => (
+                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-foreground">{rec.issue || 'Cost Issue'}</h4>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
+                                {(rec.impact || 'medium').toString().toUpperCase()}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
+                                {rec.effort || 'medium'} effort
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span>Priority: {rec.priority || 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                      No specific cost optimization recommendations available
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
+                  No cost optimization recommendations available
+                </div>
+              )}
             </div>
           </div>
         )}

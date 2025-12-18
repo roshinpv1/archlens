@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Upload, AlertCircle, CheckCircle, FileText, ImageIcon, Code } from "lucide-react";
 import { AnalysisRequest, AnalysisProgress, ComplianceFramework } from "@/types/architecture";
+import { AnalysisOptionsModal } from "./AnalysisOptionsModal";
 
 interface EvaluationModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysisOptions, setShowAnalysisOptions] = useState(false);
+  const [selectedReviewOptions, setSelectedReviewOptions] = useState<string[]>([]);
   
   // Form fields
   const [appId, setAppId] = useState("");
@@ -107,8 +110,23 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     if (!selectedFile || !appId.trim() || !componentName.trim()) return;
+    
+    // Show analysis options modal first
+    setShowAnalysisOptions(true);
+  };
+
+  const handleAnalysisOptionsConfirm = async (options: string[]) => {
+    setSelectedReviewOptions(options);
+    setShowAnalysisOptions(false);
+    
+    // Now proceed with analysis
+    await performAnalysis(options);
+  };
+
+  const performAnalysis = async (reviewOptions: string[]) => {
+    if (!selectedFile) return;
 
     setIsAnalyzing(true);
     setError(null);
@@ -157,6 +175,8 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
       if (request.metadata?.version) {
         formData.append('version', request.metadata.version);
       }
+      // Add review options
+      formData.append('reviewOptions', JSON.stringify(reviewOptions));
 
       onAnalysisStart({
         stage: "processing",
@@ -228,7 +248,8 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <>
+      <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
       
@@ -472,6 +493,14 @@ export function EvaluationModal({ isOpen, onClose, onAnalysisStart, onAnalysisCo
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Analysis Options Modal */}
+      <AnalysisOptionsModal
+        isOpen={showAnalysisOptions}
+        onClose={() => setShowAnalysisOptions(false)}
+        onConfirm={handleAnalysisOptionsConfirm}
+      />
+    </>
   );
 }

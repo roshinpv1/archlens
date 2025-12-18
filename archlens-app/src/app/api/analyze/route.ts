@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string;
     const environment = formData.get('environment') as string;
     const version = formData.get('version') as string;
+    const reviewOptionsJson = formData.get('reviewOptions') as string;
+    const reviewOptions: string[] = reviewOptionsJson ? JSON.parse(reviewOptionsJson) : [];
 
     // Debug: Log the received form data
     console.log('📝 Received form data:');
@@ -642,10 +644,34 @@ Content: ${fileContent}`;
     const enabledItems = activeChecklistItems.filter(item => item.enabled);
     console.log(`Found ${enabledItems.length} active checklist items across ${new Set(enabledItems.map(item => item.category)).size} categories`);
     
+    // Import review options mapping
+    const { ARCHITECTURE_REVIEW_OPTIONS } = await import('@/lib/architectureReviewOptions');
+    
+    // Map review option IDs to their details
+    const selectedReviewOptionsDetails = reviewOptions
+      .map(id => ARCHITECTURE_REVIEW_OPTIONS.find(opt => opt.id === id))
+      .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
+    
+    // Build review criteria section
+    const reviewCriteriaSection = selectedReviewOptionsDetails.length > 0 ? `
+ARCHITECTURE REVIEW CRITERIA - Please evaluate the architecture against these selected criteria:
+
+${selectedReviewOptionsDetails.map(opt => `
+${opt.name.toUpperCase()}:
+- ${opt.description}
+- Evaluate: ${opt.category === 'functional' ? 'Are all business capabilities represented? Are end-to-end flows visible? Is responsibility clear per component?' :
+  opt.category === 'structural' ? 'Is there clear separation of concerns? Are components loosely coupled? Is there a single "god" component?' :
+  opt.category === 'operational' ? 'Does it support horizontal scaling? Are services stateless? Is asynchronous processing included?' :
+  'Is it easy to add/change components? Is the blast radius small? Are extension points clear?'}
+`).join('\n')}
+` : '';
+
     // STAGE 2: Comprehensive analysis
     const analysisPrompt = `Analyze this architecture and provide comprehensive security, risk, and compliance assessment with enhanced cloud provider awareness.
 
 Context: App "${componentName}" in ${environment} environment.
+
+${reviewCriteriaSection}
 
 ENHANCED CLOUD PROVIDER CONTEXT:
 - Primary Cloud Provider: ${extractedData.metadata?.primaryCloudProvider || 'unknown'}
@@ -717,15 +743,80 @@ Priority: ${item.priority}
 `).join('\n')}
 
 INSTRUCTIONS:
-1. Evaluate the architecture against each active checklist item above
-2. Identify which checklist items are properly implemented, partially implemented, or missing
-3. Generate specific risks, compliance gaps, and recommendations based on the checklist evaluation
-4. For recommendations, use the "issue" field to describe the checklist item that's missing/insufficient
-5. For recommendations, use the "fix" field to provide the specific action from the checklist item
-6. Map recommendations to checklist categories (security, reliability, performance, cost, compliance)
-7. Provide realistic scores (0-100) based on compliance with the checklist items
-8. Focus on high-priority items first, then medium-priority items
-9. Count how many checklist items are fully implemented vs missing to calculate scores
+1. FIRST: Evaluate the architecture against the ARCHITECTURE REVIEW CRITERIA listed above (if any are selected)
+   - For each selected review criterion, assess whether the architecture meets the requirements
+   - Identify specific gaps or issues related to each criterion
+   - Note strengths and weaknesses for each criterion
+   - This applies to cloud, non-cloud, and hybrid architectures
+
+2. SECOND: Evaluate the architecture against each active checklist item above
+   - Identify which checklist items are properly implemented, partially implemented, or missing
+   - Generate specific risks, compliance gaps, and recommendations based on the checklist evaluation
+
+3. Generate comprehensive analysis that includes DETAILED SECTIONS for each category:
+
+   SECURITY ANALYSIS (detailed):
+   - Authentication & Authorization: Evaluate IAM policies, RBAC, MFA, service accounts, API keys
+   - Data Protection: Encryption in transit (TLS/SSL), encryption at rest (KMS/managed keys), key management
+   - Network Security: Firewall rules, security groups, network segmentation, private endpoints, VPNs
+   - Access Control: Least privilege, zero trust, service-to-service authentication
+   - Security Monitoring: Logging, audit trails, threat detection, security alerts
+   - Vulnerability Management: Patch management, dependency scanning, container security
+   - Provide specific security risks, vulnerabilities, and recommendations
+   - Calculate securityScore (0-100) based on security posture
+
+   RESILIENCY ANALYSIS (detailed):
+   - High Availability: Multi-AZ/region deployments, load balancing, health checks
+   - Fault Tolerance: Redundancy, failover mechanisms, circuit breakers, retry logic
+   - Disaster Recovery: Backup strategies, RTO/RPO, data replication, recovery procedures
+   - Auto-scaling: Horizontal/vertical scaling, capacity planning, resource limits
+   - Monitoring & Alerting: Health checks, metrics, alarms, incident response
+   - Graceful Degradation: Fallback mechanisms, caching, rate limiting
+   - Provide specific resiliency risks, single points of failure, and recommendations
+   - Calculate resiliencyScore (0-100) based on fault tolerance and availability
+
+   COST EFFICIENCY ANALYSIS (detailed):
+   - Resource Optimization: Right-sizing, reserved instances, spot/preemptible instances
+   - Unused Resources: Orphaned resources, idle instances, unattached storage
+   - Inefficient Services: Over-provisioned services, inefficient data transfer, storage optimization
+   - Cost Monitoring: Cost allocation, budgets, alerts, cost visibility
+   - Architecture Patterns: Cost-effective patterns, serverless where appropriate
+   - Provide specific cost issues with estimated savings (in USD)
+   - Calculate costEfficiencyScore (0-100) based on cost optimization opportunities
+
+   RISK & ISSUES ANALYSIS (detailed):
+   - Security Risks: Vulnerabilities, misconfigurations, compliance gaps
+   - Operational Risks: Single points of failure, scalability bottlenecks, performance issues
+   - Business Risks: Data loss, service disruption, compliance violations
+   - Technical Debt: Outdated components, deprecated services, maintenance issues
+   - Provide detailed risk descriptions with severity, impact, and affected components
+   - Include recommendations for each risk
+
+   - Architecture review findings based on selected criteria (functional coverage, modularity, scalability, performance, reliability, security, data architecture, maintainability, diagram quality)
+   - Specific risks, compliance gaps, and recommendations based on both review criteria and checklist items
+   - For recommendations, use the "issue" field to describe what's missing/insufficient
+   - For recommendations, use the "fix" field to provide specific actionable steps
+   - Map recommendations to appropriate categories (security, reliability, performance, cost, compliance, architecture-quality)
+
+4. Provide realistic scores (0-100) based on:
+   - Compliance with the selected architecture review criteria
+   - Compliance with the checklist items
+   - Overall architecture quality and best practices
+
+5. Focus on high-priority items first, then medium-priority items
+
+6. Count how many review criteria are met vs missing, and how many checklist items are fully implemented vs missing to calculate scores
+
+7. For each architecture review criterion, provide specific feedback:
+   - Functional Coverage: Assess if all business capabilities are represented, end-to-end flows are visible, and responsibilities are clear
+   - Modularity & Structure: Evaluate separation of concerns, component coupling, and whether there's a "god" component
+   - Scalability: Check for horizontal scaling support, stateless services, and asynchronous processing
+   - Performance: Identify critical paths, caching layers, and synchronous dependencies
+   - Reliability & Availability: Look for single points of failure, redundancy, failover mechanisms, and graceful degradation
+   - Security: Verify authentication/authorization, encryption in transit and at rest, and network boundaries
+   - Data Architecture: Assess data ownership, consistency models, and data flows
+   - Maintainability & Extensibility: Evaluate ease of changes, blast radius, and extension points
+   - Diagram Quality: Assess clarity, readability, consistency, abstraction level, and audience appropriateness
 
 CLOUD PROVIDER-SPECIFIC ANALYSIS:
 - For AWS: Focus on IAM policies, VPC security, S3 bucket policies, CloudTrail logging, Config rules
