@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import { Blueprint, BlueprintType, BlueprintCategory, BlueprintComplexity } from '@/types/blueprint';
 import { formatDate } from '@/utils/dateUtils';
+import { InteractiveDiagramViewer } from './InteractiveDiagramViewer';
+import { ComponentAnalysis } from '@/types/componentAnalysis';
 
 interface BlueprintViewerProps {
   blueprint: Blueprint;
@@ -713,55 +715,55 @@ export function BlueprintViewer({
                       </a>
                     )}
                   </div>
-                  <div className="relative bg-muted rounded-lg overflow-hidden border border-border">
+                  <div className="relative bg-muted rounded-lg overflow-hidden border border-border" style={{ minHeight: '600px' }}>
                     {(blueprint as any).originalFile?.data ? (
-                      <img
-                        src={`data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`}
-                        alt={blueprint.fileName || 'Blueprint diagram'}
-                        className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => {
-                          const url = `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`;
-                          setImageUrl(url);
-                          setShowImageModal(true);
-                        }}
+                      <InteractiveDiagramViewer
+                        imageUrl={`data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`}
+                        imageAlt={blueprint.fileName || 'Blueprint diagram'}
+                        components={((blueprint.metadata?.extractedComponents || []) as any[]).map((comp: any) => ({
+                          name: comp.name || comp.id || 'Unknown',
+                          type: (comp.type || 'service') as any,
+                          technology: comp.technology || comp.cloudService || '',
+                          criticality: (comp.criticality || 'medium') as any,
+                          dependencies: comp.dependencies || [],
+                          scalability: (comp.scalability || 'both') as any,
+                          securityLevel: (comp.securityLevel || 'medium') as any,
+                          costImpact: (comp.costImpact || 'medium') as any,
+                          performanceCharacteristics: comp.performanceCharacteristics || {
+                            latency: 'medium' as const,
+                            throughput: 'medium' as const,
+                            availability: 99
+                          },
+                          description: comp.description || ''
+                        }))}
+                        className="h-[600px]"
                       />
                     ) : (
-                      <img
-                        src={`/api/blueprints/${blueprint.id}/file`}
-                        alt={blueprint.fileName || 'Blueprint diagram'}
-                        className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => {
-                          setImageUrl(`/api/blueprints/${blueprint.id}/file`);
-                          setShowImageModal(true);
-                        }}
-                        onError={(e) => {
-                          console.error('Failed to load blueprint image:', e);
-                          // Hide the entire image section if image fails to load
-                          const imageSection = (e.target as HTMLElement).closest('.bg-secondary');
-                          if (imageSection) {
-                            (imageSection as HTMLElement).style.display = 'none';
-                          }
-                        }}
+                      <InteractiveDiagramViewer
+                        imageUrl={`/api/blueprints/${blueprint.id}/file`}
+                        imageAlt={blueprint.fileName || 'Blueprint diagram'}
+                        components={((blueprint.metadata?.extractedComponents || []) as any[]).map((comp: any) => ({
+                          name: comp.name || comp.id || 'Unknown',
+                          type: (comp.type || 'service') as any,
+                          technology: comp.technology || comp.cloudService || '',
+                          criticality: (comp.criticality || 'medium') as any,
+                          dependencies: comp.dependencies || [],
+                          scalability: (comp.scalability || 'both') as any,
+                          securityLevel: (comp.securityLevel || 'medium') as any,
+                          costImpact: (comp.costImpact || 'medium') as any,
+                          performanceCharacteristics: comp.performanceCharacteristics || {
+                            latency: 'medium' as const,
+                            throughput: 'medium' as const,
+                            availability: 99
+                          },
+                          description: comp.description || ''
+                        }))}
+                        className="h-[600px]"
                       />
                     )}
-                    <div className="absolute top-2 right-2">
-                      <button
-                        onClick={() => {
-                          const url = (blueprint as any).originalFile?.data 
-                            ? `data:${(blueprint as any).originalFile.mimeType || 'image/png'};base64,${(blueprint as any).originalFile.data}`
-                            : `/api/blueprints/${blueprint.id}/file`;
-                          setImageUrl(url);
-                          setShowImageModal(true);
-                        }}
-                        className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
-                        title="View full size"
-                      >
-                        <Image className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Click on the image to view in full size
+                    Interactive diagram: Zoom, pan, and click components for details
                   </p>
                 </div>
               )}

@@ -25,6 +25,7 @@ import {
 import { ArchitectureAnalysis, RiskLevel } from "@/types/architecture";
 import BlueprintInsights from "./BlueprintInsights";
 import { ConvertToBlueprintModal } from "./ConvertToBlueprintModal";
+import { InteractiveDiagramViewer } from "./InteractiveDiagramViewer";
 
 interface AnalysisResultsProps {
   results: ArchitectureAnalysis;
@@ -615,48 +616,60 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                     </a>
                   )}
                 </div>
-                <div className="relative bg-muted rounded-lg overflow-hidden border border-border">
+                <div className="relative bg-muted rounded-lg overflow-hidden border border-border" style={{ minHeight: '600px' }}>
                   {results.originalFile?.data ? (
-                    <img
-                      src={`data:${results.originalFile.mimeType || 'image/png'};base64,${results.originalFile.data}`}
-                      alt={results.fileName || 'Architecture diagram'}
-                      className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => {
-                        setImageUrl(`data:${results.originalFile?.mimeType || 'image/png'};base64,${results.originalFile?.data}`);
-                        setShowImageModal(true);
+                    <InteractiveDiagramViewer
+                      imageUrl={`data:${results.originalFile.mimeType || 'image/png'};base64,${results.originalFile.data}`}
+                      imageAlt={results.fileName || 'Architecture diagram'}
+                      components={(results.components || []).map((comp: any) => ({
+                        name: comp.name || comp.id || 'Unknown',
+                        type: (comp.type || 'service') as any,
+                        technology: comp.technology || comp.cloudService || '',
+                        criticality: (comp.criticality || 'medium') as any,
+                        dependencies: comp.dependencies || [],
+                        scalability: (comp.scalability || 'both') as any,
+                        securityLevel: (comp.securityLevel || 'medium') as any,
+                        costImpact: (comp.costImpact || 'medium') as any,
+                        performanceCharacteristics: comp.performanceCharacteristics || {
+                          latency: 'medium' as const,
+                          throughput: 'medium' as const,
+                          availability: 99
+                        },
+                        description: comp.description || ''
+                      }))}
+                      onComponentClick={(component) => {
+                        console.log('Component clicked:', component);
+                        setActiveTab('components');
                       }}
+                      className="h-[600px]"
                     />
                   ) : results.id ? (
-                    <img
-                      src={`/api/analysis/${results.id}/file`}
-                      alt={results.fileName || 'Architecture diagram'}
-                      className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => {
-                        setImageUrl(`/api/analysis/${results.id}/file`);
-                        setShowImageModal(true);
+                    <InteractiveDiagramViewer
+                      imageUrl={`/api/analysis/${results.id}/file`}
+                      imageAlt={results.fileName || 'Architecture diagram'}
+                      components={(results.components || []).map((comp: any) => ({
+                        name: comp.name || comp.id || 'Unknown',
+                        type: (comp.type || 'service') as any,
+                        technology: comp.technology || comp.cloudService || '',
+                        criticality: (comp.criticality || 'medium') as any,
+                        dependencies: comp.dependencies || [],
+                        scalability: (comp.scalability || 'both') as any,
+                        securityLevel: (comp.securityLevel || 'medium') as any,
+                        costImpact: (comp.costImpact || 'medium') as any,
+                        performanceCharacteristics: comp.performanceCharacteristics || {
+                          latency: 'medium' as const,
+                          throughput: 'medium' as const,
+                          availability: 99
+                        },
+                        description: comp.description || ''
+                      }))}
+                      onComponentClick={(component) => {
+                        console.log('Component clicked:', component);
+                        setActiveTab('components');
                       }}
-                      onError={(e) => {
-                        console.error('Failed to load image:', e);
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+                      className="h-[600px]"
                     />
                   ) : null}
-                  <div className="absolute top-2 right-2">
-                    <button
-                      onClick={() => {
-                        if (results.originalFile?.data) {
-                          setImageUrl(`data:${results.originalFile.mimeType || 'image/png'};base64,${results.originalFile.data}`);
-                        } else if (results.id) {
-                          setImageUrl(`/api/analysis/${results.id}/file`);
-                        }
-                        setShowImageModal(true);
-                      }}
-                      className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
-                      title="View full size"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
                   Click on the image to view in full size
