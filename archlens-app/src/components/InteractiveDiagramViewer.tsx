@@ -16,14 +16,26 @@ import {
   Activity,
   HardDrive,
   MessageSquare,
-  Globe
+  Globe,
+  Eye,
+  EyeOff,
+  GitBranch
 } from 'lucide-react';
 import { ComponentAnalysis } from '@/types/componentAnalysis';
+
+interface Connection {
+  source: string;
+  target: string;
+  type?: string;
+  protocol?: string;
+  description?: string;
+}
 
 interface InteractiveDiagramViewerProps {
   imageUrl: string;
   imageAlt?: string;
   components?: ComponentAnalysis[];
+  connections?: Connection[];
   onComponentClick?: (component: ComponentAnalysis) => void;
   className?: string;
 }
@@ -82,6 +94,7 @@ export function InteractiveDiagramViewer({
   imageUrl,
   imageAlt = 'Architecture diagram',
   components = [],
+  connections = [],
   onComponentClick,
   className = ''
 }: InteractiveDiagramViewerProps) {
@@ -90,6 +103,8 @@ export function InteractiveDiagramViewer({
   const [componentOverlays, setComponentOverlays] = useState<ComponentOverlay[]>([]);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showAllHighlights, setShowAllHighlights] = useState(true);
+  const [showConnections, setShowConnections] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
 
   // Calculate component overlay positions when image loads
@@ -174,8 +189,73 @@ export function InteractiveDiagramViewer({
     }
   };
 
+  const renderConnections = () => {
+    if (!showConnections || !imageRef.current || connections.length === 0 || componentOverlays.length === 0) return null;
+
+    const img = imageRef.current;
+    const imgWidth = img.naturalWidth || 1;
+    const imgHeight = img.naturalHeight || 1;
+
+    if (imgWidth === 1 || imgHeight === 1) return null;
+
+    // Create a map of component names to their overlay positions
+    const componentMap = new Map<string, ComponentOverlay>();
+    componentOverlays.forEach(overlay => {
+      componentMap.set(overlay.component.name, overlay);
+    });
+
+    return (
+      <svg
+        className="absolute inset-0 pointer-events-none"
+        style={{ width: '100%', height: '100%', zIndex: 1 }}
+      >
+        <defs>
+          <marker
+            id="arrowhead-primary"
+            markerWidth="10"
+            markerHeight="10"
+            refX="9"
+            refY="3"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <polygon
+              points="0 0, 10 3, 0 6"
+              fill="rgba(179, 30, 48, 0.7)"
+            />
+          </marker>
+        </defs>
+        {connections.map((connection, index) => {
+          const sourceOverlay = componentMap.get(connection.source);
+          const targetOverlay = componentMap.get(connection.target);
+
+          if (!sourceOverlay || !targetOverlay) return null;
+
+          const sourceX = (sourceOverlay.x / imgWidth) * 100;
+          const sourceY = (sourceOverlay.y / imgHeight) * 100;
+          const targetX = (targetOverlay.x / imgWidth) * 100;
+          const targetY = (targetOverlay.y / imgHeight) * 100;
+
+          return (
+            <line
+              key={`connection-${index}`}
+              x1={`${sourceX}%`}
+              y1={`${sourceY}%`}
+              x2={`${targetX}%`}
+              y2={`${targetY}%`}
+              stroke="rgba(179, 30, 48, 0.5)"
+              strokeWidth="2"
+              strokeDasharray="4,4"
+              markerEnd="url(#arrowhead-primary)"
+            />
+          );
+        })}
+      </svg>
+    );
+  };
+
   const renderOverlays = () => {
-    if (!imageRef.current || componentOverlays.length === 0) return null;
+    if (!imageRef.current || componentOverlays.length === 0 || !showAllHighlights) return null;
 
     const img = imageRef.current;
     const imgWidth = img.naturalWidth || 1;
@@ -196,10 +276,10 @@ export function InteractiveDiagramViewer({
           key={`${overlay.component.name}-${index}`}
           className={`absolute border-2 rounded-lg cursor-pointer transition-all ${
             isSelected
-              ? 'border-primary bg-primary/20 shadow-lg'
+              ? 'border-primary bg-primary/30 shadow-lg ring-2 ring-primary/50'
               : isHovered
-              ? 'border-primary/50 bg-primary/10 shadow-md'
-              : 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10'
+              ? 'border-primary/70 bg-primary/20 shadow-md ring-1 ring-primary/30'
+              : 'border-primary/50 bg-primary/10 hover:border-primary/70 hover:bg-primary/15'
           }`}
           style={{
             left: `${x}%`,
@@ -398,6 +478,7 @@ export function InteractiveDiagramViewer({
                       draggable={false}
                       style={{ display: 'block', userSelect: 'none' }}
                     />
+                    {imageLoaded && renderConnections()}
                     {imageLoaded && componentOverlays.length > 0 && (
                       <div className="absolute inset-0" style={{ pointerEvents: 'auto' }}>
                         {renderOverlays()}
@@ -490,6 +571,46 @@ export function InteractiveDiagramViewer({
                   <Maximize2 className="w-4 h-4" />
                 </button>
               </div>
+              
+              {/* Highlight Toggle Controls */}
+              {components.length > 0 && (
+                <div className="bg-surface border border-border rounded-lg p-1 flex flex-col gap-1 shadow-lg">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setShowAllHighlights(!showAllHighlights);
+                    }}
+                    className={`p-2 rounded transition-colors ${
+                      showAllHighlights 
+                        ? 'bg-primary/10 text-primary hover:bg-primary/20' 
+                        : 'hover:bg-muted text-foreground'
+                    }`}
+                    title={showAllHighlights ? "Hide Component Highlights" : "Show Component Highlights"}
+                    type="button"
+                  >
+                    {showAllHighlights ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                  {connections.length > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setShowConnections(!showConnections);
+                      }}
+                      className={`p-2 rounded transition-colors ${
+                        showConnections 
+                          ? 'bg-primary/10 text-primary hover:bg-primary/20' 
+                          : 'hover:bg-muted text-foreground'
+                      }`}
+                      title={showConnections ? "Hide Connections" : "Show Connections"}
+                      type="button"
+                    >
+                      <GitBranch className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Component Count */}
@@ -520,6 +641,9 @@ export function InteractiveDiagramViewer({
                   draggable={false}
                   style={{ display: 'block', userSelect: 'none', maxWidth: '100%', maxHeight: '100%' }}
                 />
+                
+                {/* Connections */}
+                {imageLoaded && renderConnections()}
                 
                 {/* Component Overlays */}
                 {imageLoaded && componentOverlays.length > 0 && (

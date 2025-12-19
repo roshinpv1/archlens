@@ -189,17 +189,17 @@ export default function Home() {
               {/* Dashboard Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                  <h1 className="text-4xl font-bold text-foreground tracking-tight bg-gradient-to-r from-foreground to-foreground-muted bg-clip-text">
                     CloudArc Dashboard
                   </h1>
-                  <p className="text-lg text-foreground-muted mt-1">
+                  <p className="text-lg text-foreground-muted mt-2 font-medium">
                     Enterprise cloud architecture analysis and monitoring
                   </p>
                 </div>
                 
                 <button
                   onClick={() => setShowEvaluationModal(true)}
-                  className="flex items-center space-x-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="flex items-center space-x-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-2xl font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                 >
                   <Plus className="w-5 h-5" />
                   <span>New Evaluation</span>
@@ -207,16 +207,16 @@ export default function Home() {
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex items-center space-x-1 bg-muted rounded-xl p-1 mb-8 w-fit">
-                <button className="flex items-center space-x-2 px-4 py-2 bg-surface text-foreground rounded-lg shadow-sm font-medium">
+              <div className="flex items-center space-x-2 bg-muted/50 backdrop-blur-sm rounded-2xl p-1.5 mb-8 w-fit border border-border/50">
+                <button className="flex items-center space-x-2 px-5 py-2.5 bg-surface text-foreground rounded-xl shadow-md font-semibold text-sm transition-all duration-300 hover:shadow-lg">
                   <BarChart3 className="w-4 h-4" />
                   <span>Overview</span>
                 </button>
-                <button className="flex items-center space-x-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-surface/50 rounded-lg transition-colors">
+                <button className="flex items-center space-x-2 px-5 py-2.5 text-foreground-muted hover:text-foreground hover:bg-surface/70 rounded-xl transition-all duration-300 font-semibold text-sm">
                   <TrendingUp className="w-4 h-4" />
                   <span>Analytics</span>
                 </button>
-                <button className="flex items-center space-x-2 px-4 py-2 text-foreground-muted hover:text-foreground hover:bg-surface/50 rounded-lg transition-colors">
+                <button className="flex items-center space-x-2 px-5 py-2.5 text-foreground-muted hover:text-foreground hover:bg-surface/70 rounded-xl transition-all duration-300 font-semibold text-sm">
                   <History className="w-4 h-4" />
                   <span>Reports</span>
                 </button>
@@ -226,7 +226,10 @@ export default function Home() {
               <div className="space-y-8">
                 {/* Statistics Section */}
                 <section>
-                  <h2 className="text-xl font-semibold text-foreground mb-6">System Overview</h2>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-primary rounded-full"></div>
+                    System Overview
+                  </h2>
                   <DashboardStats />
                 </section>
 

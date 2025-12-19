@@ -61,7 +61,7 @@ export function Header() {
 
 
   return (
-    <header className="bg-surface border-b border-border shadow-sm">
+    <header className="bg-surface/80 backdrop-blur-md border-b border-border/50 shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Brand Section */}
@@ -70,7 +70,7 @@ export function Header() {
               <img 
                 src="/cloudarc-logo.svg" 
                 alt="CloudArc Logo" 
-                className="h-12 w-auto"
+                className="h-12 w-auto transition-transform duration-300 hover:scale-105"
               />
             </div>
             <div className="hidden sm:block">
@@ -79,25 +79,28 @@ export function Header() {
           </div>
           
           {/* Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden md:flex items-center space-x-2">
             <Link
               href="/"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm relative group ${
                 pathname === '/'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary/80'
               }`}
             >
-              <Home className="w-4 h-4" />
-              <span>Dashboard</span>
+              {pathname === '/' && (
+                <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-hover rounded-xl opacity-90"></span>
+              )}
+              <Home className={`w-4 h-4 relative z-10 ${pathname === '/' ? 'text-primary-foreground' : ''}`} />
+              <span className="relative z-10">Dashboard</span>
             </Link>
             
             <Link
               href="/analyses"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm relative group ${
                 pathname === '/analyses'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary/80'
               }`}
             >
               <BarChart3 className="w-4 h-4" />
@@ -106,26 +109,32 @@ export function Header() {
             
             <Link
               href="/library"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm relative group ${
                 pathname.startsWith('/library')
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary/80'
               }`}
             >
-              <Library className="w-4 h-4" />
-              <span>Library</span>
+              {pathname.startsWith('/library') && (
+                <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-hover rounded-xl opacity-90"></span>
+              )}
+              <Library className={`w-4 h-4 relative z-10 ${pathname.startsWith('/library') ? 'text-primary-foreground' : ''}`} />
+              <span className="relative z-10">Library</span>
             </Link>
             
             <Link
               href="/configuration"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-semibold text-sm relative group ${
                 pathname.startsWith('/configuration')
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-secondary/80'
               }`}
             >
-              <Settings className="w-4 h-4" />
-              <span>Configuration</span>
+              {pathname.startsWith('/configuration') && (
+                <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-hover rounded-xl opacity-90"></span>
+              )}
+              <Settings className={`w-4 h-4 relative z-10 ${pathname.startsWith('/configuration') ? 'text-primary-foreground' : ''}`} />
+              <span className="relative z-10">Configuration</span>
             </Link>
           </nav>
           

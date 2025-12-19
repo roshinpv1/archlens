@@ -397,78 +397,84 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-foreground">Analysis Results</h2>
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-foreground-muted">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
-                  <span className="font-medium">{results.fileName}</span>
+      <div className="bg-surface border border-border rounded-2xl p-8 shadow-lg relative overflow-hidden group">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary-hover to-primary"></div>
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between space-y-6 lg:space-y-0">
+          <div className="space-y-5 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-primary rounded-full"></div>
+                <h2 className="text-4xl font-bold text-foreground tracking-tight">Analysis Results</h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-foreground-muted">
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-success-light/50 rounded-lg border border-success/20">
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                  <span className="font-semibold text-foreground">{results.fileName}</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-secondary rounded-lg">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{new Date(results.timestamp).toLocaleString()}</span>
+                  <span className="font-medium">{new Date(results.timestamp).toLocaleString()}</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-secondary rounded-lg">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
-                  <span>Processed with {(results.llmProvider || 'unknown').toString().toUpperCase()}</span>
+                  <span className="font-medium">Processed with {(results.llmProvider || 'unknown').toString().toUpperCase()}</span>
                 </div>
               </div>
             </div>
             
             {/* Application Metadata */}
-            {(results.appId || results.componentName) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-muted rounded-lg">
-                {results.appId && (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">App ID</div>
-                    <div className="text-sm font-semibold text-foreground">{results.appId}</div>
-                  </div>
-                )}
-                {results.componentName && (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">Component</div>
-                    <div className="text-sm font-semibold text-foreground">{results.componentName}</div>
-                  </div>
-                )}
-                {results.environment && (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">Environment</div>
-                    <div className="text-sm font-semibold text-foreground">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        results.environment === 'production' ? 'bg-error-light text-error' :
-                        results.environment === 'staging' ? 'bg-warning-light text-warning' :
-                        'bg-info-light text-info'
-                      }`}>
-                        {(results.environment || 'unknown').toString().charAt(0).toUpperCase() + (results.environment || 'unknown').toString().slice(1)}
-                      </span>
+            {(results.appId || results.componentName || results.environment || results.version || results.processingTime) && (
+              <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl border border-border/50 backdrop-blur-sm p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                  {results.appId && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-foreground-muted uppercase tracking-wider">App ID</div>
+                      <div className="text-lg font-bold text-foreground bg-surface px-3 py-2 rounded-lg border border-border/50">{results.appId}</div>
                     </div>
+                  )}
+                  {results.componentName && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-foreground-muted uppercase tracking-wider">Component</div>
+                      <div className="text-lg font-bold text-foreground bg-surface px-3 py-2 rounded-lg border border-border/50">{results.componentName}</div>
+                    </div>
+                  )}
+                  {results.environment && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-foreground-muted uppercase tracking-wider">Environment</div>
+                      <div className="text-lg font-bold text-foreground">
+                        <span className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold shadow-md ${
+                          results.environment === 'production' ? 'bg-error-light text-error border-2 border-error/30' :
+                          results.environment === 'staging' ? 'bg-warning-light text-warning border-2 border-warning/30' :
+                          'bg-info-light text-info border-2 border-info/30'
+                        }`}>
+                          {(results.environment || 'unknown').toString().charAt(0).toUpperCase() + (results.environment || 'unknown').toString().slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {results.version && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-foreground-muted uppercase tracking-wider">Version</div>
+                      <div className="text-lg font-bold text-foreground font-mono bg-surface px-3 py-2 rounded-lg border border-border/50">{results.version}</div>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-foreground-muted uppercase tracking-wider">Processing Time</div>
+                    <div className="text-lg font-bold text-foreground bg-surface px-3 py-2 rounded-lg border border-border/50">{results.processingTime}s</div>
                   </div>
-                )}
-                {results.version && (
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">Version</div>
-                    <div className="text-sm font-semibold text-foreground font-mono">{results.version}</div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <div className="text-xs font-medium text-foreground-muted uppercase tracking-wide">Processing Time</div>
-                  <div className="text-sm font-semibold text-foreground">{results.processingTime}s</div>
                 </div>
               </div>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:ml-6">
             <button
               onClick={downloadPDF}
               disabled={downloadingPDF}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
+              className="flex items-center justify-center space-x-2 px-5 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 text-sm font-semibold shadow-lg shadow-red-600/20 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-95"
             >
               {downloadingPDF ? (
                 <>
@@ -483,22 +489,15 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               )}
             </button>
             <button
-              onClick={downloadJSON}
-              className="flex items-center justify-center space-x-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary hover:border-border-hover transition-all duration-200 text-sm font-medium"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export Data</span>
-            </button>
-            <button
               onClick={() => setShowConvertModal(true)}
-              className="flex items-center justify-center space-x-2 px-4 py-2 border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all duration-200 text-sm font-medium"
+              className="flex items-center justify-center space-x-2 px-5 py-3 border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 text-primary rounded-xl transition-all duration-300 text-sm font-semibold hover:shadow-md hover:-translate-y-0.5 active:scale-95"
             >
               <BookOpen className="w-4 h-4" />
               <span>Convert to Blueprint</span>
             </button>
             <button
               onClick={onNewAnalysis}
-              className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
+              className="flex items-center justify-center space-x-2 px-5 py-3 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl transition-all duration-300 text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95"
             >
               <RefreshCw className="w-4 h-4" />
               <span>New Analysis</span>
@@ -509,7 +508,9 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
 
       {/* Score Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-success/5 rounded-full blur-3xl group-hover:bg-success/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-success-light rounded-lg flex items-center justify-center">
               <Shield className="w-5 h-5 text-success" />
@@ -534,9 +535,12 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               style={{ width: `${results.securityScore}%` }}
             ></div>
           </div>
+          </div>
         </div>
 
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-info/5 rounded-full blur-3xl group-hover:bg-info/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-info-light rounded-lg flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-info" />
@@ -561,9 +565,12 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               style={{ width: `${results.resiliencyScore}%` }}
             ></div>
           </div>
+          </div>
         </div>
 
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-3xl group-hover:bg-warning/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-warning-light rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-warning" />
@@ -588,9 +595,12 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               style={{ width: `${results.costEfficiencyScore}%` }}
             ></div>
           </div>
+          </div>
         </div>
 
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-primary-light rounded-lg flex items-center justify-center">
               <Shield className="w-5 h-5 text-primary" />
@@ -615,26 +625,31 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
               style={{ width: `${results.complianceScore}%` }}
             ></div>
           </div>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border">
-        <nav className="flex space-x-8">
+      <div className="bg-surface border border-border rounded-2xl p-2 shadow-sm">
+        <nav className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                onClick={() => setActiveTab(tab.id as 'overview' | 'components' | 'security' | 'resiliency' | 'cost' | 'risks' | 'recommendations' | 'json' | 'terraform' | 'search')}
+                className={`flex items-center space-x-2 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all duration-300 relative group ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : 'text-foreground-muted hover:text-foreground hover:bg-secondary/80'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary to-primary-hover rounded-xl opacity-90"></span>
+                )}
+                <Icon className={`w-4 h-4 relative z-10 ${isActive ? 'text-primary-foreground' : ''}`} />
+                <span className="relative z-10">{tab.label}</span>
               </button>
             );
           })}
@@ -685,6 +700,13 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                         },
                         description: comp.description || ''
                       }))}
+                      connections={(results.connections || []).map((conn: any) => ({
+                        source: conn.source || conn.from || conn.sourceComponent || '',
+                        target: conn.target || conn.to || conn.targetComponent || '',
+                        type: conn.type || conn.connectionType || '',
+                        protocol: conn.protocol || '',
+                        description: conn.description || ''
+                      })).filter((conn: any) => conn.source && conn.target)}
                       onComponentClick={(component) => {
                         console.log('Component clicked:', component);
                         setActiveTab('components');
@@ -711,908 +733,66 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                         },
                         description: comp.description || ''
                       }))}
+                      connections={(results.connections || []).map((conn: any) => ({
+                        source: conn.source || conn.from || conn.sourceComponent || '',
+                        target: conn.target || conn.to || conn.targetComponent || '',
+                        type: conn.type || conn.connectionType || '',
+                        protocol: conn.protocol || '',
+                        description: conn.description || ''
+                      })).filter((conn: any) => conn.source && conn.target)}
                       onComponentClick={(component) => {
                         console.log('Component clicked:', component);
                         setActiveTab('components');
                       }}
                       className="h-[600px]"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-foreground-muted">
+                      <p>No diagram available</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Click on the image to view in full size
-                </p>
               </div>
             )}
+          </div>
+          )}
 
-            <div className="bg-secondary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Architecture Summary</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {results.summary}
-              </p>
-            </div>
-            
-            <div className="bg-secondary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Architecture Description</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {results.architectureDescription}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-secondary rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">Key Statistics</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Components Found:</span>
-                    <span className="font-medium text-foreground">{results.components.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Connections:</span>
-                    <span className="font-medium text-foreground">{results.connections.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Risks Identified:</span>
-                    <span className="font-medium text-foreground">{results.risks.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Recommendations:</span>
-                    <span className="font-medium text-foreground">{results.recommendations.length}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-secondary rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-3">Potential Savings</h3>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
-                    ${results.estimatedSavingsUSD}
-                  </div>
-                  <p className="text-muted-foreground">Estimated monthly savings</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Assigned Similar Blueprints */}
-            {results.similarBlueprints && results.similarBlueprints.length > 0 && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">Assigned Similar Blueprints</h3>
-                    <p className="text-sm text-foreground-muted">
-                      Top {results.similarBlueprints.length} closest matching blueprint{results.similarBlueprints.length !== 1 ? 's' : ''} found for this analysis
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {results.similarBlueprints.map((bp) => (
-                    <div
-                      key={bp.id}
-                      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      {/* Blueprint Image Preview */}
-                      <div className="relative w-full h-32 bg-muted border-b border-gray-200 overflow-hidden">
-                        <img
-                          src={`/api/blueprints/${bp.id}/file`}
-                          alt={bp.name || 'Blueprint diagram'}
-                          className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => {
-                            setImageUrl(`/api/blueprints/${bp.id}/file`);
-                            setShowImageModal(true);
-                          }}
-                          onError={(e) => {
-                            // Hide image if it fails to load (e.g., not an image file)
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        <div className="absolute top-2 right-2">
-                          <button
-                            onClick={() => {
-                              setImageUrl(`/api/blueprints/${bp.id}/file`);
-                              setShowImageModal(true);
-                            }}
-                            className="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
-                            title="View full size"
-                          >
-                            <Maximize2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      {/* Blueprint Details */}
-                      <div className="p-4">
+          {/* Components Tab */}
+          {activeTab === 'components' && (
+              <div className="space-y-6">
+                <div className="bg-surface border border-border rounded-xl p-6">
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Architecture Components</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(results.components || []).map((comp: any, idx: number) => (
+                      <div key={comp.id || idx} className="bg-secondary rounded-lg p-4 border border-border hover:shadow-md transition-all">
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-foreground text-sm">{bp.name}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            bp.score >= 0.8 ? 'bg-green-100 text-green-700' :
-                            bp.score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-orange-100 text-orange-700'
-                          }`}>
-                            {Math.round(bp.score * 100)}%
-                          </span>
+                          <h4 className="font-semibold text-foreground">{comp.name || comp.id || 'Unknown Component'}</h4>
                         </div>
-                        <div className="space-y-1 text-xs text-foreground-muted mb-3">
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Type:</span>
-                            <span>{bp.type}</span>
+                        <div className="space-y-1 text-sm">
+                          <div>
+                            <span className="text-foreground-muted">Type:</span>
+                            <span className="ml-2 text-foreground">{comp.type || 'N/A'}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Category:</span>
-                            <span className="truncate" title={bp.category}>{bp.category}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Provider:</span>
-                            <span className="uppercase">{bp.cloudProvider}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Complexity:</span>
-                            <span>{bp.complexity}</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => window.location.href = `/library?blueprint=${bp.id}`}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View Blueprint
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'components' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {results.components.map((component) => (
-                <div key={component.id} className="bg-secondary rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-foreground">{component.name}</h4>
-                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                      {component.type}
-                    </span>
-                  </div>
-                  {component.cloudService && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {component.cloudService}
-                    </p>
-                  )}
-                  {component.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {component.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'security' && (
-          <div className="space-y-6">
-            {/* Security Score */}
-            <div className="bg-secondary rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Security Analysis</h3>
-                    <p className="text-sm text-foreground-muted">Comprehensive security assessment</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-4xl font-bold ${getScoreColor(results.securityScore)}`}>
-                    {results.securityScore}
-                  </div>
-                  <div className="text-sm text-foreground-muted">/100</div>
-                </div>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 mt-4">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    results.securityScore >= 80 ? 'bg-success' :
-                    results.securityScore >= 60 ? 'bg-warning' : 'bg-error'
-                  }`}
-                  style={{ width: `${results.securityScore}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Security Risks */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Security Risks & Vulnerabilities</h3>
-              {results.risks && Array.isArray(results.risks) ? (
-                (() => {
-                  const securityRisks = results.risks.filter(risk => 
-                    risk.category === 'security' || 
-                    (risk.title && risk.title.toLowerCase().includes('security')) ||
-                    (risk.description && risk.description.toLowerCase().includes('security'))
-                  );
-                  return securityRisks.length > 0 ? (
-                    <div className="space-y-4">
-                      {securityRisks.map((risk) => (
-                        <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-red-500">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-semibold text-foreground">{risk.title || 'Security Risk'}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || risk.severity || 'medium')}`}>
-                              {(risk.level || risk.severity || 'medium').toString().toUpperCase()}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
-                          {risk.impact && (
-                            <div className="mb-3">
-                              <span className="text-sm font-medium text-foreground">Impact: </span>
-                              <span className="text-sm text-muted-foreground">{risk.impact}</span>
+                          {comp.cloudProvider && (
+                            <div>
+                              <span className="text-foreground-muted">Provider:</span>
+                              <span className="ml-2 text-foreground">{comp.cloudProvider}</span>
                             </div>
                           )}
-                          {risk.components && risk.components.length > 0 && (
-                            <div className="mb-3">
-                              <span className="text-sm font-medium text-foreground">Affected Components: </span>
-                              <span className="text-sm text-muted-foreground">{risk.components.join(', ')}</span>
-                            </div>
-                          )}
-                          {risk.recommendations && Array.isArray(risk.recommendations) && risk.recommendations.length > 0 && (
-                            <div className="space-y-2">
-                              <h5 className="font-medium text-foreground">Recommendations:</h5>
-                              <ul className="list-disc list-inside space-y-1">
-                                {risk.recommendations.map((rec, index) => (
-                                  <li key={index} className="text-sm text-muted-foreground">
-                                    {typeof rec === 'string' ? rec : String(rec)}
-                                  </li>
-                                ))}
-                              </ul>
+                          {comp.cloudService && (
+                            <div>
+                              <span className="text-foreground-muted">Service:</span>
+                              <span className="ml-2 text-foreground">{comp.cloudService}</span>
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                      No specific security risks identified
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No security risks identified
-                </div>
-              )}
-            </div>
-
-            {/* Security Recommendations */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Security Recommendations</h3>
-              {results.recommendations && Array.isArray(results.recommendations) ? (
-                (() => {
-                  const securityRecs = results.recommendations.filter(rec => rec.category === 'security');
-                  return securityRecs.length > 0 ? (
-                    <div className="space-y-4">
-                      {securityRecs.map((rec) => (
-                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-semibold text-foreground">{rec.issue || 'Security Issue'}</h4>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
-                                {(rec.impact || 'medium').toString().toUpperCase()}
-                              </span>
-                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
-                                {rec.effort || 'medium'} effort
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Priority: {rec.priority || 1}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                      No specific security recommendations available
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No security recommendations available
-                </div>
-              )}
-            </div>
-
-            {/* Compliance Gaps (Security-related) */}
-            {results.complianceGaps && Array.isArray(results.complianceGaps) && results.complianceGaps.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">Security Compliance Gaps</h3>
-                <div className="space-y-4">
-                  {results.complianceGaps.map((gap) => (
-                    <div key={gap.id || `gap-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-yellow-500">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-foreground">{gap.requirement || 'Compliance Requirement'}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">Framework: {gap.framework || 'N/A'}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(gap.severity || 'medium')}`}>
-                          {(gap.severity || 'medium').toString().toUpperCase()}
-                        </span>
                       </div>
-                      <p className="text-muted-foreground mb-3">{gap.description || 'No description available'}</p>
-                      <div className="space-y-2">
-                        <h5 className="font-medium text-foreground">Remediation:</h5>
-                        <p className="text-sm text-muted-foreground">{gap.remediation || 'No remediation provided'}</p>
-                      </div>
-                      {gap.components && gap.components.length > 0 && (
-                        <div className="mt-3">
-                          <span className="text-sm font-medium text-foreground">Affected Components: </span>
-                          <span className="text-sm text-muted-foreground">{gap.components.join(', ')}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'resiliency' && (
-          <div className="space-y-6">
-            {/* Resiliency Score */}
-            <div className="bg-secondary rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Resiliency Analysis</h3>
-                    <p className="text-sm text-foreground-muted">Fault tolerance and availability assessment</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-4xl font-bold ${getScoreColor(results.resiliencyScore)}`}>
-                    {results.resiliencyScore}
-                  </div>
-                  <div className="text-sm text-foreground-muted">/100</div>
-                </div>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 mt-4">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    results.resiliencyScore >= 80 ? 'bg-success' :
-                    results.resiliencyScore >= 60 ? 'bg-warning' : 'bg-error'
-                  }`}
-                  style={{ width: `${results.resiliencyScore}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Resiliency Risks */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Resiliency Risks & Single Points of Failure</h3>
-              {results.risks && Array.isArray(results.risks) ? (
-                (() => {
-                  const resiliencyRisks = results.risks.filter(risk => 
-                    risk.category === 'reliability' || 
-                    (risk.title && (risk.title.toLowerCase().includes('availability') || risk.title.toLowerCase().includes('resiliency') || risk.title.toLowerCase().includes('fault'))) ||
-                    (risk.description && (risk.description.toLowerCase().includes('single point of failure') || risk.description.toLowerCase().includes('availability')))
-                  );
-                  return resiliencyRisks.length > 0 ? (
-                    <div className="space-y-4">
-                      {resiliencyRisks.map((risk) => (
-                        <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-blue-500">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-semibold text-foreground">{risk.title || 'Resiliency Risk'}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || risk.severity || 'medium')}`}>
-                              {(risk.level || risk.severity || 'medium').toString().toUpperCase()}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
-                          {risk.impact && (
-                            <div className="mb-3">
-                              <span className="text-sm font-medium text-foreground">Impact: </span>
-                              <span className="text-sm text-muted-foreground">{risk.impact}</span>
-                            </div>
-                          )}
-                          {risk.components && risk.components.length > 0 && (
-                            <div className="mb-3">
-                              <span className="text-sm font-medium text-foreground">Affected Components: </span>
-                              <span className="text-sm text-muted-foreground">{risk.components.join(', ')}</span>
-                            </div>
-                          )}
-                          {risk.recommendations && Array.isArray(risk.recommendations) && risk.recommendations.length > 0 && (
-                            <div className="space-y-2">
-                              <h5 className="font-medium text-foreground">Recommendations:</h5>
-                              <ul className="list-disc list-inside space-y-1">
-                                {risk.recommendations.map((rec, index) => (
-                                  <li key={index} className="text-sm text-muted-foreground">
-                                    {typeof rec === 'string' ? rec : String(rec)}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                      No specific resiliency risks identified
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No resiliency risks identified
-                </div>
-              )}
-            </div>
-
-            {/* Resiliency Recommendations */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Resiliency Recommendations</h3>
-              {results.recommendations && Array.isArray(results.recommendations) ? (
-                (() => {
-                  const resiliencyRecs = results.recommendations.filter(rec => rec.category === 'reliability');
-                  return resiliencyRecs.length > 0 ? (
-                    <div className="space-y-4">
-                      {resiliencyRecs.map((rec) => (
-                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-semibold text-foreground">{rec.issue || 'Resiliency Issue'}</h4>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
-                                {(rec.impact || 'medium').toString().toUpperCase()}
-                              </span>
-                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
-                                {rec.effort || 'medium'} effort
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Priority: {rec.priority || 1}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                      No specific resiliency recommendations available
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No resiliency recommendations available
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'cost' && (
-          <div className="space-y-6">
-            {/* Cost Efficiency Score */}
-            <div className="bg-secondary rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">Cost Efficiency Analysis</h3>
-                    <p className="text-sm text-foreground-muted">Resource optimization and cost savings</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-4xl font-bold ${getScoreColor(results.costEfficiencyScore)}`}>
-                    {results.costEfficiencyScore}
-                  </div>
-                  <div className="text-sm text-foreground-muted">/100</div>
-                </div>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 mt-4">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    results.costEfficiencyScore >= 80 ? 'bg-success' :
-                    results.costEfficiencyScore >= 60 ? 'bg-warning' : 'bg-error'
-                  }`}
-                  style={{ width: `${results.costEfficiencyScore}%` }}
-                ></div>
-              </div>
-              {results.estimatedSavingsUSD > 0 && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-green-600" />
-                    <div>
-                      <div className="text-sm text-green-800 font-medium">Potential Savings</div>
-                      <div className="text-2xl font-bold text-green-900">
-                        ${results.estimatedSavingsUSD.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Cost Issues */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Cost Optimization Opportunities</h3>
-              {results.costIssues && Array.isArray(results.costIssues) && results.costIssues.length > 0 ? (
-                <div className="space-y-4">
-                  {results.costIssues.map((issue) => (
-                    <div key={issue.id || `cost-${Math.random()}`} className="bg-secondary rounded-lg p-4 border-l-4 border-yellow-500">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">{issue.title || 'Cost Issue'}</h4>
-                          {issue.category && (
-                            <p className="text-sm text-muted-foreground mt-1">Category: {issue.category}</p>
-                          )}
-                        </div>
-                        {(issue.estimatedSavingsUSD || issue.estimatedSavings) && (
-                          <div className="text-right ml-4">
-                            <div className="text-lg font-bold text-green-600">
-                              ${((issue.estimatedSavingsUSD || issue.estimatedSavings || 0)).toLocaleString()}
-                            </div>
-                            <div className="text-xs text-muted-foreground">Potential Savings</div>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-muted-foreground mb-3">{issue.description || 'No description available'}</p>
-                      {issue.recommendation && (
-                        <div className="space-y-2">
-                          <h5 className="font-medium text-foreground">Recommendation:</h5>
-                          <p className="text-sm text-muted-foreground">{issue.recommendation}</p>
-                        </div>
-                      )}
-                      {issue.components && issue.components.length > 0 && (
-                        <div className="mt-3">
-                          <span className="text-sm font-medium text-foreground">Affected Components: </span>
-                          <span className="text-sm text-muted-foreground">{issue.components.join(', ')}</span>
-                        </div>
-                      )}
-                      {issue.severity && (
-                        <div className="mt-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(issue.severity)}`}>
-                            {issue.severity.toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No cost optimization opportunities identified
-                </div>
-              )}
-            </div>
-
-            {/* Cost Recommendations */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">Cost Optimization Recommendations</h3>
-              {results.recommendations && Array.isArray(results.recommendations) ? (
-                (() => {
-                  const costRecs = results.recommendations.filter(rec => rec.category === 'cost');
-                  return costRecs.length > 0 ? (
-                    <div className="space-y-4">
-                      {costRecs.map((rec) => (
-                        <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="font-semibold text-foreground">{rec.issue || 'Cost Issue'}</h4>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
-                                {(rec.impact || 'medium').toString().toUpperCase()}
-                              </span>
-                              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
-                                {rec.effort || 'medium'} effort
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Priority: {rec.priority || 1}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                      No specific cost optimization recommendations available
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="text-center text-muted-foreground py-8 bg-secondary rounded-lg">
-                  No cost optimization recommendations available
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'risks' && (
-          <div className="space-y-4">
-            {results.risks && Array.isArray(results.risks) ? (
-              results.risks.map((risk) => (
-                <div key={risk.id || `risk-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="font-semibold text-foreground">{risk.title || 'Unknown Risk'}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(risk.level || 'medium')}`}>
-                      {(risk.level || 'medium').toString().toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground mb-3">{risk.description || 'No description available'}</p>
-                  <div className="space-y-2">
-                    <h5 className="font-medium text-foreground">Recommendations:</h5>
-                    <ul className="list-disc list-inside space-y-1">
-                      {risk.recommendations && Array.isArray(risk.recommendations) ? (
-                        risk.recommendations.map((rec, index) => (
-                          <li key={index} className="text-sm text-muted-foreground">
-                            {typeof rec === 'string' ? rec : String(rec)}
-                          </li>
-                        ))
-                      ) : (
-                        <li className="text-sm text-muted-foreground">No recommendations available</li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No risks identified
-              </div>
-            )}
-
-            {results.complianceGaps && Array.isArray(results.complianceGaps) && results.complianceGaps.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Compliance Gaps</h3>
-                <div className="space-y-4">
-                  {results.complianceGaps.map((gap) => (
-                    <div key={gap.id || `gap-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-semibold text-foreground">{gap.requirement || 'Unknown Requirement'}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(gap.severity || 'medium')}`}>
-                          {(gap.severity || 'medium').toString().toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground mb-3">{gap.description || 'No description available'}</p>
-                      <div className="space-y-2">
-                        <h5 className="font-medium text-foreground">Remediation:</h5>
-                        <p className="text-sm text-muted-foreground">{gap.remediation || 'No remediation provided'}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'recommendations' && (
-          <div className="space-y-4">
-            {results.recommendations && Array.isArray(results.recommendations) ? (
-              results.recommendations.map((rec) => (
-                <div key={rec.id || `rec-${Math.random()}`} className="bg-secondary rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <h4 className="font-semibold text-foreground">{rec.issue || 'Unknown Issue'}</h4>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(rec.impact || 'medium')}`}>
-                        {(rec.impact || 'medium').toString().toUpperCase()}
-                      </span>
-                      <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">
-                        {rec.effort || 'medium'} effort
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground mb-3">{rec.fix || 'No fix provided'}</p>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <span>Priority: {rec.priority || 1}</span>
-                    <span>Category: {rec.category || 'security'}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No recommendations available
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'json' && (
-          <div className="bg-secondary rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">JSON Export</h3>
-              <button
-                onClick={downloadJSON}
-                className="flex items-center space-x-2 px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-            </div>
-            <pre className="bg-muted rounded-lg p-4 overflow-auto text-sm text-foreground">
-              {JSON.stringify(results, null, 2)}
-            </pre>
-          </div>
-        )}
-
-        {activeTab === 'terraform' && (
-          <div className="bg-secondary rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Terraform Export</h3>
-                <p className="text-sm text-foreground-muted mt-1">
-                  Terraform configuration generated from architecture analysis. Components are organized by Terraform category.
-                </p>
-              </div>
-              <button
-                onClick={downloadTerraform}
-                className="flex items-center space-x-2 px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download</span>
-              </button>
-            </div>
-            <div className="bg-muted rounded-lg p-4 overflow-auto max-h-[600px]">
-              <pre className="text-sm text-foreground font-mono whitespace-pre-wrap">
-                {generateTerraformCode()}
-              </pre>
-            </div>
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This is a generated Terraform configuration based on the architecture analysis. 
-                You may need to:
-              </p>
-              <ul className="text-sm text-blue-800 mt-2 list-disc list-inside space-y-1">
-                <li>Update provider configurations (regions, credentials, project IDs)</li>
-                <li>Adjust resource configurations to match your requirements</li>
-                <li>Add missing dependencies and relationships between resources</li>
-                <li>Review and update instance types, AMIs, and other specific settings</li>
-                <li>Add variables and modules for better organization</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'search' && (
-          <div className="bg-secondary rounded-lg p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                <Brain className="w-5 h-5" />
-                AI-Powered Architecture Search
-              </h3>
-              <p className="text-sm text-foreground-muted">
-                Ask questions about this architecture analysis and get intelligent answers based on components, risks, recommendations, and scores.
-              </p>
-            </div>
-            
-            {/* Search Input */}
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="e.g., What are the security risks? What components are critical? What are the cost optimization recommendations?"
-                className="flex-1 px-4 py-2 bg-surface border border-border rounded-lg text-foreground placeholder-foreground-muted focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <button
-                onClick={handleSearch}
-                disabled={searching || !searchQuery.trim()}
-                className="px-6 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {searching ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-4 h-4" />
-                    Search
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Search Results */}
-            {searchAnswer && (
-              <div className="bg-muted rounded-lg p-6 border border-border">
-                <div className="flex items-start gap-3 mb-4">
-                  <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-foreground mb-2">Answer</h4>
-                    <div 
-                      className="text-foreground markdown-content prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: searchAnswer }}
-                    />
+                    ))}
                   </div>
                 </div>
               </div>
             )}
-
-            {/* Example Questions */}
-            {!searchAnswer && (
-              <div className="bg-muted rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-foreground mb-3">Example Questions:</h4>
-                <div className="space-y-2">
-                  {[
-                    "What are the security risks in this architecture?",
-                    "Which components are most critical?",
-                    "What are the cost optimization recommendations?",
-                    "What compliance gaps exist?",
-                    "What is the security score and what are the main concerns?",
-                    "What are the top recommendations for improving this architecture?",
-                    "Which components are in the networking category?",
-                    "What are the resiliency concerns?"
-                  ].map((question, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setSearchQuery(question);
-                        handleSearch();
-                      }}
-                      className="w-full text-left px-3 py-2 bg-surface hover:bg-muted rounded-lg text-sm text-foreground transition-colors"
-                    >
-                      {question}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* Blueprint Insights */}
-      {results.blueprintInsights && results.blueprintInsights.length > 0 && (
-        <BlueprintInsights insights={results.blueprintInsights} />
-      )}
-
-      {/* Full Size Image Modal */}
-      {showImageModal && imageUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4" onClick={() => setShowImageModal(false)}>
-          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowImageModal(false)}
-              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors backdrop-blur-sm"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={imageUrl}
-              alt={results.fileName || 'Architecture diagram'}
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Convert to Blueprint Modal */}
-      <ConvertToBlueprintModal
-        analysis={results}
-        isOpen={showConvertModal}
-        onClose={() => setShowConvertModal(false)}
-        onSuccess={() => {
-          // Show success message or redirect
-          alert('Blueprint created successfully! You can find it in the Library section.');
-        }}
-      />
     </div>
   );
 }

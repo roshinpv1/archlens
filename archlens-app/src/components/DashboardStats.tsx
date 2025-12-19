@@ -96,7 +96,9 @@ export function DashboardStats() {
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Analyses */}
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-info-light rounded-lg flex items-center justify-center">
               <Database className="w-5 h-5 text-info" />
@@ -110,10 +112,13 @@ export function DashboardStats() {
           <div className="text-sm text-foreground-muted mt-1">
             {stats.recentAnalyses} in last 30 days
           </div>
+          </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-success/5 rounded-full blur-3xl group-hover:bg-success/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-success-light rounded-lg flex items-center justify-center">
               <Activity className="w-5 h-5 text-success" />
@@ -130,10 +135,13 @@ export function DashboardStats() {
               'No data available'
             }
           </div>
+          </div>
         </div>
 
         {/* Risk Summary */}
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-error/5 rounded-full blur-3xl group-hover:bg-error/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-error-light rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-error" />
@@ -147,10 +155,13 @@ export function DashboardStats() {
           <div className="text-sm text-error mt-1">
             {highRisks} high severity
           </div>
+          </div>
         </div>
 
         {/* Average Security Score */}
-        <div className="bg-surface border border-border rounded-xl p-6 hover:shadow-md transition-all">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-300"></div>
+          <div className="relative z-10">
           <div className="flex items-center space-x-3 mb-4">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getScoreBackground(stats.averageScores.avgSecurity)}`}>
               <Shield className={`w-5 h-5 ${getScoreColor(stats.averageScores.avgSecurity)}`} />
@@ -164,13 +175,14 @@ export function DashboardStats() {
             {Math.round(stats.averageScores.avgSecurity)}
           </div>
           <div className="text-sm text-foreground-muted mt-1">/100</div>
+          </div>
         </div>
       </div>
 
       {/* Detailed Scores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Resilience Score */}
-        <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
           <div className="flex items-center space-x-3 mb-4">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getScoreBackground(stats.averageScores.avgResilience)}`}>
               <TrendingUp className={`w-4 h-4 ${getScoreColor(stats.averageScores.avgResilience)}`} />
@@ -198,7 +210,7 @@ export function DashboardStats() {
         </div>
 
         {/* Cost Efficiency */}
-        <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
           <div className="flex items-center space-x-3 mb-4">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getScoreBackground(stats.averageScores.avgCostEfficiency)}`}>
               <DollarSign className={`w-4 h-4 ${getScoreColor(stats.averageScores.avgCostEfficiency)}`} />
@@ -226,7 +238,7 @@ export function DashboardStats() {
         </div>
 
         {/* Compliance Score */}
-        <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="bg-surface border border-border rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
           <div className="flex items-center space-x-3 mb-4">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getScoreBackground(stats.averageScores.avgCompliance)}`}>
               <Target className={`w-4 h-4 ${getScoreColor(stats.averageScores.avgCompliance)}`} />
