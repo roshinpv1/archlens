@@ -63,7 +63,21 @@ export function ConvertToBlueprintModal({
 
     try {
       // Extract analysis ID (could be MongoDB _id or custom id)
-      const analysisId = (analysis as any)._id || analysis.id;
+      // Priority: _id (MongoDB ObjectId) > id (custom string ID)
+      const analysisId = (analysis as any)._id?.toString() || analysis.id;
+      
+      if (!analysisId) {
+        setError('Analysis ID is missing. Cannot convert to blueprint.');
+        setIsConverting(false);
+        return;
+      }
+      
+      console.log('🔄 Converting analysis to blueprint:', {
+        analysisId,
+        hasId: !!analysis.id,
+        has_id: !!(analysis as any)._id,
+        analysisKeys: Object.keys(analysis)
+      });
       
       const response = await fetch(`/api/analysis/${analysisId}/convert-to-blueprint`, {
         method: 'POST',
@@ -89,16 +103,21 @@ export function ConvertToBlueprintModal({
       const data = await response.json();
       console.log('✅ Blueprint created:', data);
       
-      onSuccess();
-      onClose();
-      
-      // Reset form
-      setName(analysis.componentName || `Blueprint from ${analysis.fileName}`);
-      setDescription(analysis.summary || analysis.architectureDescription || '');
-      setCreatorDescription('');
-      setCategory(BlueprintCategory.OTHER);
-      setTags([]);
-      setIsPublic(true);
+      // Show success message
+      if (data.success && data.blueprint) {
+        // Reset form
+        setName(analysis.componentName || `Blueprint from ${analysis.fileName}`);
+        setDescription(analysis.summary || analysis.architectureDescription || '');
+        setCreatorDescription('');
+        setCategory(BlueprintCategory.OTHER);
+        setTags([]);
+        setIsPublic(true);
+        
+        onSuccess();
+        onClose();
+      } else {
+        throw new Error(data.error || 'Blueprint creation failed');
+      }
       
     } catch (err) {
       console.error('❌ Failed to convert to blueprint:', err);

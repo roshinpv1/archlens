@@ -660,9 +660,52 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
       <div className="min-h-[400px]">
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Summary Section */}
+            {results.summary && (
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Summary
+                </h3>
+                <div className="bg-secondary rounded-lg p-4 border border-border">
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{results.summary}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Architecture Description */}
+            {results.architectureDescription && (
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-4">Architecture Description</h3>
+                <div className="bg-secondary rounded-lg p-4 border border-border">
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{results.architectureDescription}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-surface border border-border rounded-xl p-4">
+                <div className="text-sm text-foreground-muted mb-1">Components</div>
+                <div className="text-2xl font-bold text-foreground">{results.components?.length || 0}</div>
+              </div>
+              <div className="bg-surface border border-border rounded-xl p-4">
+                <div className="text-sm text-foreground-muted mb-1">Connections</div>
+                <div className="text-2xl font-bold text-foreground">{results.connections?.length || 0}</div>
+              </div>
+              <div className="bg-surface border border-border rounded-xl p-4">
+                <div className="text-sm text-foreground-muted mb-1">Risks</div>
+                <div className="text-2xl font-bold text-foreground">{results.risks?.length || 0}</div>
+              </div>
+              <div className="bg-surface border border-border rounded-xl p-4">
+                <div className="text-sm text-foreground-muted mb-1">Recommendations</div>
+                <div className="text-2xl font-bold text-foreground">{results.recommendations?.length || 0}</div>
+              </div>
+            </div>
+
             {/* Image Preview - Show if file is an image */}
             {results.fileType === 'image' && (results.originalFile || results.id) && (
-              <div className="bg-secondary rounded-lg p-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <ImageIcon className="w-5 h-5" />
@@ -759,9 +802,10 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
 
           {/* Components Tab */}
           {activeTab === 'components' && (
-              <div className="space-y-6">
-                <div className="bg-surface border border-border rounded-xl p-6">
-                  <h3 className="text-xl font-semibold text-foreground mb-4">Architecture Components</h3>
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-foreground mb-4">Architecture Components</h3>
+                {results.components && results.components.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {(results.components || []).map((comp: any, idx: number) => (
                       <div key={comp.id || idx} className="bg-secondary rounded-lg p-4 border border-border hover:shadow-md transition-all">
@@ -785,14 +829,431 @@ export function AnalysisResults({ results, onNewAnalysis }: AnalysisResultsProps
                               <span className="ml-2 text-foreground">{comp.cloudService}</span>
                             </div>
                           )}
+                          {comp.description && (
+                            <div className="mt-2 text-xs text-foreground-muted line-clamp-2">
+                              {comp.description}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <div className="text-center py-12 text-foreground-muted">
+                    <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No components found in this analysis.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Shield className="w-6 h-6 text-success" />
+                  <h3 className="text-xl font-semibold text-foreground">Security Analysis</h3>
+                </div>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-foreground-muted">Security Score</span>
+                    <span className={`text-2xl font-bold ${getScoreColor(results.securityScore)}`}>
+                      {results.securityScore}/100
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        results.securityScore >= 80 ? 'bg-success' :
+                        results.securityScore >= 60 ? 'bg-warning' : 'bg-error'
+                      }`}
+                      style={{ width: `${results.securityScore}%` }}
+                    ></div>
+                  </div>
+                </div>
+                {results.complianceGaps && results.complianceGaps.length > 0 ? (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground">Compliance Gaps</h4>
+                    {results.complianceGaps.map((gap: any, idx: number) => (
+                      <div key={gap.id || idx} className="bg-secondary rounded-lg p-4 border border-border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h5 className="font-semibold text-foreground">{gap.framework || 'Compliance Framework'}</h5>
+                            <p className="text-sm text-foreground-muted mt-1">{gap.requirement || gap.description}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                            gap.severity === 'critical' ? 'bg-error-light text-error' :
+                            gap.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                            gap.severity === 'medium' ? 'bg-warning-light text-warning' :
+                            'bg-info-light text-info'
+                          }`}>
+                            {gap.severity || 'Medium'}
+                          </span>
+                        </div>
+                        {gap.description && (
+                          <p className="text-sm text-foreground-muted mt-2">{gap.description}</p>
+                        )}
+                        {gap.remediation && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-sm font-medium text-foreground mb-1">Remediation:</p>
+                            <p className="text-sm text-foreground-muted">{gap.remediation}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-foreground-muted">
+                    <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No security issues identified.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Resiliency Tab */}
+          {activeTab === 'resiliency' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <CheckCircle className="w-6 h-6 text-info" />
+                  <h3 className="text-xl font-semibold text-foreground">Resiliency Analysis</h3>
+                </div>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-foreground-muted">Resiliency Score</span>
+                    <span className={`text-2xl font-bold ${getScoreColor(results.resiliencyScore)}`}>
+                      {results.resiliencyScore}/100
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        results.resiliencyScore >= 80 ? 'bg-success' :
+                        results.resiliencyScore >= 60 ? 'bg-warning' : 'bg-error'
+                      }`}
+                      style={{ width: `${results.resiliencyScore}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Architecture Description</h4>
+                  <div className="bg-secondary rounded-lg p-4 border border-border">
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                      {results.architectureDescription || results.summary || 'No resiliency analysis available.'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Cost Efficiency Tab */}
+          {activeTab === 'cost' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <DollarSign className="w-6 h-6 text-warning" />
+                  <h3 className="text-xl font-semibold text-foreground">Cost Efficiency Analysis</h3>
+                </div>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-foreground-muted">Cost Efficiency Score</span>
+                    <span className={`text-2xl font-bold ${getScoreColor(results.costEfficiencyScore)}`}>
+                      {results.costEfficiencyScore}/100
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        results.costEfficiencyScore >= 80 ? 'bg-success' :
+                        results.costEfficiencyScore >= 60 ? 'bg-warning' : 'bg-error'
+                      }`}
+                      style={{ width: `${results.costEfficiencyScore}%` }}
+                    ></div>
+                  </div>
+                </div>
+                {results.estimatedSavingsUSD > 0 && (
+                  <div className="mb-6 p-4 bg-success-light/20 border border-success/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground">Estimated Savings</span>
+                      <span className="text-2xl font-bold text-success">
+                        ${results.estimatedSavingsUSD.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {results.costIssues && results.costIssues.length > 0 ? (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground">Cost Optimization Opportunities</h4>
+                    {results.costIssues.map((issue: any, idx: number) => (
+                      <div key={issue.id || idx} className="bg-secondary rounded-lg p-4 border border-border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-foreground">{issue.title || 'Cost Issue'}</h5>
+                            <p className="text-sm text-foreground-muted mt-1">{issue.description}</p>
+                          </div>
+                          {issue.estimatedSavingsUSD && (
+                            <span className="ml-4 px-3 py-1 bg-success-light text-success rounded-lg text-sm font-semibold">
+                              ${issue.estimatedSavingsUSD.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        {issue.recommendation && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-sm font-medium text-foreground mb-1">Recommendation:</p>
+                            <p className="text-sm text-foreground-muted">{issue.recommendation}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-foreground-muted">
+                    <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No cost optimization opportunities identified.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Risks & Issues Tab */}
+          {activeTab === 'risks' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <AlertTriangle className="w-6 h-6 text-error" />
+                  <h3 className="text-xl font-semibold text-foreground">Risks & Issues</h3>
+                </div>
+                {results.risks && results.risks.length > 0 ? (
+                  <div className="space-y-4">
+                    {results.risks.map((risk: any, idx: number) => (
+                      <div key={risk.id || idx} className="bg-secondary rounded-lg p-4 border border-border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-foreground">{risk.title || risk.name || 'Risk'}</h5>
+                            <p className="text-sm text-foreground-muted mt-1">{risk.description}</p>
+                          </div>
+                          <span className={`ml-4 px-3 py-1 rounded-lg text-xs font-semibold ${getRiskLevelColor(risk.severity || risk.level || 'medium')}`}>
+                            {(risk.severity || risk.level || 'Medium').toUpperCase()}
+                          </span>
+                        </div>
+                        {risk.category && (
+                          <div className="mt-2">
+                            <span className="text-xs px-2 py-1 bg-muted rounded text-foreground-muted">
+                              {risk.category}
+                            </span>
+                          </div>
+                        )}
+                        {risk.impact && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-sm font-medium text-foreground mb-1">Impact:</p>
+                            <p className="text-sm text-foreground-muted">{risk.impact}</p>
+                          </div>
+                        )}
+                        {risk.recommendation && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-sm font-medium text-foreground mb-1">Recommendation:</p>
+                            <p className="text-sm text-foreground-muted">{risk.recommendation}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-foreground-muted">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No risks or issues identified.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Recommendations Tab */}
+          {activeTab === 'recommendations' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-semibold text-foreground">Recommendations</h3>
+                </div>
+                {results.recommendations && results.recommendations.length > 0 ? (
+                  <div className="space-y-4">
+                    {results.recommendations
+                      .sort((a: any, b: any) => (b.priority || 0) - (a.priority || 0))
+                      .map((rec: any, idx: number) => (
+                      <div key={rec.id || idx} className="bg-secondary rounded-lg p-4 border border-border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-foreground">{rec.issue || 'Recommendation'}</h5>
+                            {rec.category && (
+                              <span className="mt-1 inline-block text-xs px-2 py-1 bg-muted rounded text-foreground-muted">
+                                {rec.category}
+                              </span>
+                            )}
+                          </div>
+                          {rec.priority !== undefined && (
+                            <span className="ml-4 px-3 py-1 bg-primary-light text-primary rounded-lg text-xs font-semibold">
+                              Priority {rec.priority}
+                            </span>
+                          )}
+                        </div>
+                        {rec.fix && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium text-foreground mb-1">Solution:</p>
+                            <p className="text-sm text-foreground-muted">{rec.fix}</p>
+                          </div>
+                        )}
+                        {rec.impact && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-sm font-medium text-foreground mb-1">Impact:</p>
+                            <p className="text-sm text-foreground-muted">{rec.impact}</p>
+                          </div>
+                        )}
+                        {rec.effort && (
+                          <div className="mt-2">
+                            <span className="text-xs px-2 py-1 bg-muted rounded text-foreground-muted">
+                              Effort: {rec.effort}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-foreground-muted">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No recommendations available.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* JSON Export Tab */}
+          {activeTab === 'json' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-semibold text-foreground">JSON Export</h3>
+                  </div>
+                  <button
+                    onClick={downloadJSON}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download JSON
+                  </button>
+                </div>
+                <div className="bg-secondary rounded-lg p-4 border border-border overflow-auto max-h-[600px]">
+                  <pre className="text-xs text-foreground whitespace-pre-wrap font-mono">
+                    {JSON.stringify(results, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Terraform Export Tab */}
+          {activeTab === 'terraform' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <Code className="w-6 h-6 text-primary" />
+                    <h3 className="text-xl font-semibold text-foreground">Terraform Export</h3>
+                  </div>
+                  <button
+                    onClick={downloadTerraform}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Terraform
+                  </button>
+                </div>
+                <div className="bg-secondary rounded-lg p-4 border border-border overflow-auto max-h-[600px]">
+                  <pre className="text-xs text-foreground whitespace-pre-wrap font-mono">
+                    {generateTerraformCode()}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Search Tab */}
+          {activeTab === 'search' && (
+            <div className="space-y-6">
+              <div className="bg-surface border border-border rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Brain className="w-6 h-6 text-primary" />
+                  <h3 className="text-xl font-semibold text-foreground">AI Search</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      placeholder="Ask a question about this architecture..."
+                      className="flex-1 px-4 py-2 border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={handleSearch}
+                      disabled={searching || !searchQuery.trim()}
+                      className="px-6 py-2 bg-primary hover:bg-primary-hover disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {searching ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Searching...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4" />
+                          <span>Search</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {searchAnswer && (
+                    <div className="bg-secondary rounded-lg p-4 border border-border">
+                      <h4 className="font-semibold text-foreground mb-2">Answer:</h4>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{searchAnswer}</p>
+                    </div>
+                  )}
+                  {!searchAnswer && !searching && (
+                    <div className="text-center py-12 text-foreground-muted">
+                      <Brain className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Enter a question to search the architecture analysis.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
+
+      {/* Convert to Blueprint Modal */}
+      {showConvertModal && (
+        <ConvertToBlueprintModal
+          analysis={results}
+          isOpen={showConvertModal}
+          onClose={() => setShowConvertModal(false)}
+          onSuccess={() => {
+            setShowConvertModal(false);
+            // Show success message
+            alert('Blueprint created successfully! You can view it in the Library.');
+          }}
+        />
+      )}
     </div>
   );
 }

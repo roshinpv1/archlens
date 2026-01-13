@@ -45,8 +45,17 @@ export async function POST(
       );
     }
 
-    // Fetch the analysis
-    const analysis = await getAnalysisById(analysisId);
+    // Fetch the analysis - try both _id and custom id field
+    let analysis = await getAnalysisById(analysisId);
+    
+    // If not found, try with _id if analysisId looks like MongoDB ObjectId
+    if (!analysis && /^[0-9a-fA-F]{24}$/.test(analysisId)) {
+      const { connectToDatabase } = await import('@/services/analysisService');
+      await connectToDatabase();
+      const Analysis = (await import('@/models/Analysis')).default;
+      analysis = await Analysis.findById(analysisId).lean();
+    }
+    
     if (!analysis) {
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
